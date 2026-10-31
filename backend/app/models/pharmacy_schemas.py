@@ -1,0 +1,86 @@
+from datetime import datetime
+from math import isfinite
+from typing import Literal
+from pydantic import BaseModel, Field, model_validator
+
+PharmacyProvider = Literal["jan_aushadhi", "dava_india"]
+DeliveryAvailability = Literal["yes", "no", "unknown"]
+EnquiryStatus = Literal[
+    "draft", "ready_to_send", "user_opened_whatsapp", "awaiting_response",
+    "partially_available", "fully_available", "unavailable", "delivery_available",
+    "delivery_unavailable", "completed",
+]
+
+
+class NearbyPharmaciesRequest(BaseModel):
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    postal_code: str | None = Field(default=None, pattern=r"^\d{6}$")
+    area: str | None = Field(default=None, min_length=2, max_length=120)
+    radius_km: float = Field(default=10, gt=0, le=100)
+    providers: list[PharmacyProvider] = Field(default_factory=lambda: ["jan_aushadhi", "dava_india"], min_length=1, max_length=2)
+
+    @model_validator(mode="after")
+    def validate_location(self):
+        has_lat = self.latitude is not None
+        has_lon = self.longitude is not None
+        if has_lat != has_lon:
+            raise ValueError("latitude and longitude must be supplied together")
+        if (has_lat and (not isfinite(self.latitude) or not isfinite(self.longitude))) or not isfinite(self.radius_km):
+            raise ValueError("Location and radius values must be finite numbers")
+        if not has_lat and not (self.postal_code or self.area):
+            raise ValueError("Provide coordinates, a six-digit postal_code, or a manually entered area")
+        if len(set(self.providers)) != len(self.providers):
+            raise ValueError("providers must not contain duplicates")
+        return self
+
+
+class PharmacyStore(BaseModel):
+    store_id: str
+    store_name: str
+    provider: PharmacyProvider
+    address: str
+    latitude: float | None
+    longitude: float | None
+    distance_km: float | None
+    phone_number: str | None
+    whatsapp_number: str | None
+    whatsapp_verified: bool
+    opening_hours: str | None
+    delivery_available: DeliveryAvailability
+    source_url: str
+    last_verified_at: datetime
+
+
+class NearbyPharmaciesResponse(BaseModel):
+    success: bool
+    total_stores: int
+    stores: list[PharmacyStore]
+    cached: bool
+    warnings: list[str] = Field(default_factory=list)
+
+
+class EnquiryCreateRequest(BaseModel):
+    store_id: str = Field(min_length=1, max_length=100)
+    cart_session_id: str = Field(min_length=1, max_length=100)
+
+
+class EnquiryStatusUpdate(BaseModel):
+    status: EnquiryStatus
+
+
+class PharmacyEnquiryResponse(BaseModel):
+    success: bool
+    enquiry_id: str
+    store_id: str
+    store_name: str
+    message: str
+    whatsapp_url: str | None
+    phone_contact: str | None
+    status: EnquiryStatus
+    user_confirmation_required: bool
+    created_at: datetime
+
+
+class PharmacyEnquiryRecord(PharmacyEnquiryResponse):
+    pass
