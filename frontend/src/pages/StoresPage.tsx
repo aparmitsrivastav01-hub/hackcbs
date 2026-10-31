@@ -90,7 +90,8 @@ type DiscoveryState =
   | { status: "verified"; whatsappNumber: string; sourceUrl?: string | null; message: string }
   | { status: "phone_only"; phoneNumber: string; sourceUrl?: string | null; message: string }
   | { status: "not_found"; message: string }
-  | { status: "error"; error: string };
+  | { status: "ambiguous"; message: string }
+  | { status: "error"; error: string; isTimeout?: boolean; isUnavailable?: boolean };
 
 export function StoresPage() {
   const navigate = useNavigate();
@@ -117,6 +118,9 @@ export function StoresPage() {
   const [showCustomShopForm, setShowCustomShopForm] = useState(false);
   const [customShopName, setCustomShopName] = useState("");
   const [customShopAddress, setCustomShopAddress] = useState("");
+  const [customShopCity, setCustomShopCity] = useState("");
+  const [customShopMapsUrl, setCustomShopMapsUrl] = useState("");
+  const [customShopError, setCustomShopError] = useState<string | null>(null);
 
   // Screen 9: Shopkeeper response simulation form state
   const [showResponseModal, setShowResponseModal] = useState(false);
@@ -240,6 +244,7 @@ export function StoresPage() {
 
   async function handleOpenWhatsApp() {
     if (!selectedPharmacy) return;
+    if (discoveryState.status === "loading") return;
 
     // If verified WhatsApp number was already discovered, launch wa.me directly
     if (discoveryState.status === "verified" && discoveryState.whatsappNumber) {
@@ -285,15 +290,18 @@ export function StoresPage() {
       const payload: ShopWhatsAppContactRequest = {
         shop_name: selectedPharmacy.name,
         shop_address: selectedPharmacy.address,
-        city: customerArea || undefined,
-        locality: searchLocality || undefined,
+        city: customerArea || searchLocality || undefined,
+        locality: customerArea || searchLocality || undefined,
         maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selectedPharmacy.name} ${selectedPharmacy.address}`)}`,
         query: `${selectedPharmacy.name} ${selectedPharmacy.address} pharmacy contact phone whatsapp`,
       };
 
       const contactRes = await getShopWhatsAppContact(payload);
 
-      if (contactRes.verification_status === "verified_whatsapp" && contactRes.whatsapp_number) {
+      if (
+        (contactRes.verification_status === "verified" || contactRes.verification_status === "verified_whatsapp") &&
+        contactRes.whatsapp_number
+      ) {
         setDiscoveryState({
           status: "verified",
           whatsappNumber: contactRes.whatsapp_number,
@@ -311,6 +319,11 @@ export function StoresPage() {
           sourceUrl: contactRes.source_url,
           message: contactRes.message,
         });
+      } else if (contactRes.verification_status === "ambiguous") {
+        setDiscoveryState({
+          status: "ambiguous",
+          message: contactRes.message || "Multiple shops match this name. Please verify the exact shop address.",
+        });
       } else {
         setDiscoveryState({
           status: "not_found",
@@ -319,9 +332,13 @@ export function StoresPage() {
       }
     } catch (err: unknown) {
       const errDetail = err instanceof Error ? err.message : "Contact discovery request failed.";
+      const isTimeout = errDetail.toLowerCase().includes("timed out") || errDetail.toLowerCase().includes("timeout");
+      const isUnavailable = errDetail.includes("503") || errDetail.toLowerCase().includes("not configured");
       setDiscoveryState({
         status: "error",
         error: errDetail,
+        isTimeout,
+        isUnavailable,
       });
     }
   }
@@ -337,12 +354,23 @@ export function StoresPage() {
 
   function handleAddCustomShop(e: React.FormEvent) {
     e.preventDefault();
-    if (!customShopName.trim()) return;
+    const cleanName = customShopName.trim();
+    const cleanAddress = customShopAddress.trim();
+    if (!cleanName || !cleanAddress) {
+      setCustomShopError(
+        tr(
+          "Both pharmacy name and full shop address are required to identify the shop.",
+          "दुकान की पहचान के लिए नाम और पूरा पता दोनों आवश्यक हैं।"
+        )
+      );
+      return;
+    }
+    setCustomShopError(null);
     const customPharmacy: Pharmacy = {
       id: `custom-${Date.now()}`,
-      name: customShopName.trim(),
-      address: customShopAddress.trim() || searchLocality || "Local Pharmacy",
-      distance: "Local Area",
+      name: cleanName,
+      address: cleanAddress,
+      distance: customShopCity.trim() || searchLocality || "Local Area",
       open_now: true,
       is_generic_store: false,
       source: "places",
@@ -350,6 +378,12 @@ export function StoresPage() {
     setShowCustomShopForm(false);
     setCustomShopName("");
     setCustomShopAddress("");
+    const chosenCity = customShopCity.trim() || searchLocality || "";
+    setCustomShopCity("");
+    setCustomShopMapsUrl("");
+    if (chosenCity) {
+      setCustomerArea(chosenCity);
+    }
     handleSelectPharmacy(customPharmacy);
   }
 
@@ -550,14 +584,42 @@ export function StoresPage() {
             {showCustomShopForm && (
               <form
                 onSubmit={handleAddCustomShop}
-                className="rounded-2xl border border-brand/20 bg-[#f4f8ff] p-4 text-xs shadow-xs"
+                className="rounded-2xl border border-brand/20 bg-[#f4f8ff] p-5 text-xs shadow-xs"
               >
-                <p className="font-bold text-navy">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Store className="h-4 w-4 text-brand" />
+                    <p className="font-bold text-navy">
+                      {tr(
+                        "Enquire with any Pharmacy seen on Google Maps",
+                        "Google Maps में दिखने वाली किसी भी दुकान से पूछताछ करें"
+                      )}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCustomShopForm(false);
+                      setCustomShopError(null);
+                    }}
+                    className="text-slate-400 hover:text-navy"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="mt-1 text-slate-500">
                   {tr(
-                    "Found a pharmacy on the Google Map above? Enter its details to prepare an enquiry:",
-                    "ऊपर गूगल मैप में कोई मेडिकल स्टोर दिखा? पूछताछ तैयार करने के लिए विवरण दर्ज करें:"
+                    "Enter the exact shop name and full address from the map. TinyFish will search public records to discover verified WhatsApp and phone contacts.",
+                    "मैप से दुकान का सही नाम व पूरा पता दर्ज करें। TinyFish सार्वजनिक रिकॉर्ड्स से सत्यापित WhatsApp व फोन संपर्क खोजेगा।"
                   )}
                 </p>
+
+                {customShopError && (
+                  <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs font-semibold text-red-700">
+                    {customShopError}
+                  </div>
+                )}
+
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label className="block font-semibold text-slate-700">
@@ -567,29 +629,63 @@ export function StoresPage() {
                       type="text"
                       required
                       value={customShopName}
-                      onChange={(e) => setCustomShopName(e.target.value)}
+                      onChange={(e) => {
+                        setCustomShopName(e.target.value);
+                        if (customShopError) setCustomShopError(null);
+                      }}
                       placeholder={tr("e.g., Apollo Pharmacy, Green Park", "उदा. अपोलो फार्मेसी, ग्रीन पार्क")}
                       className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 font-medium text-navy focus:border-brand focus:outline-none"
                     />
                   </div>
                   <div>
                     <label className="block font-semibold text-slate-700">
-                      {tr("Address or Locality", "पता या इलाका")}
+                      {tr("Address or Locality", "पता या इलाका")} *
                     </label>
                     <input
                       type="text"
+                      required
                       value={customShopAddress}
-                      onChange={(e) => setCustomShopAddress(e.target.value)}
+                      onChange={(e) => {
+                        setCustomShopAddress(e.target.value);
+                        if (customShopError) setCustomShopError(null);
+                      }}
                       placeholder={tr("e.g., Main Market, Green Park, New Delhi", "उदा. मुख्य बाजार, ग्रीन पार्क, नई दिल्ली")}
                       className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 font-medium text-navy focus:border-brand focus:outline-none"
                     />
                   </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700">
+                      {tr("Locality / City", "इलाका / शहर")}
+                    </label>
+                    <input
+                      type="text"
+                      value={customShopCity}
+                      onChange={(e) => setCustomShopCity(e.target.value)}
+                      placeholder={tr("e.g., Lucknow", "उदा. लखनऊ")}
+                      className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 font-medium text-navy focus:border-brand focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700">
+                      {tr("Optional Google Maps URL", "वैकल्पिक Google Maps लिंक")}
+                    </label>
+                    <input
+                      type="url"
+                      value={customShopMapsUrl}
+                      onChange={(e) => setCustomShopMapsUrl(e.target.value)}
+                      placeholder="https://maps.google.com/..."
+                      className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-3 font-medium text-navy focus:border-brand focus:outline-none"
+                    />
+                  </div>
                 </div>
-                <div className="mt-3 flex justify-end gap-2">
+                <div className="mt-4 flex justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => setShowCustomShopForm(false)}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600"
+                    onClick={() => {
+                      setShowCustomShopForm(false);
+                      setCustomShopError(null);
+                    }}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                   >
                     {tr("Cancel", "रद्द करें")}
                   </button>
@@ -601,6 +697,40 @@ export function StoresPage() {
                   </button>
                 </div>
               </form>
+            )}
+
+            {displayedPharmacies.length === 0 && (
+              <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-6 text-center md:text-left">
+                <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
+                  <div className="rounded-2xl bg-white p-3 shadow-xs">
+                    <MapPin className="h-6 w-6 text-brand" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base font-bold text-navy">
+                      {searchLocality.trim()
+                        ? tr(`Live Google Maps Discovery for "${searchLocality}"`, `"${searchLocality}" के लिए लाइव Google Maps खोज`)
+                        : tr("Explore Local Pharmacies on the Map", "मैप पर स्थानीय मेडिकल स्टोर देखें")}
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-600 leading-relaxed max-w-2xl">
+                      {tr(
+                        "Google Maps above is currently displaying live pharmacies, Jan Aushadhi Kendras, and medical shops in this search area. Since Google Maps Embed is for interactive map discovery, select or enter any pharmacy seen on the map to discover its WhatsApp contact and send your enquiry.",
+                        "ऊपर Google Maps इस क्षेत्र के सभी सक्रिय जन औषधि केंद्र और मेडिकल स्टोर दिखा रहा है। मैप पर दिख रही किसी भी दुकान से संपर्क के लिए नीचे दिए गए बटन पर क्लिक करें।"
+                      )}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomShopCity(searchLocality.trim());
+                        setShowCustomShopForm(true);
+                      }}
+                      className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-brand-dark"
+                    >
+                      <Store className="h-4 w-4" />
+                      <span>{tr("Enquire with shop from map", "मैप से दुकान चुनें व पूछताछ करें")}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -833,6 +963,43 @@ export function StoresPage() {
                       >
                         <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
                         <span>{tr("Search on Google Maps", "Google Maps पर खोजें")}</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {discoveryState.status === "ambiguous" && (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900">
+                    <div className="flex items-center gap-2 font-bold text-amber-800">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <span>{tr("Multiple matching pharmacy locations found.", "फार्मेसी के कई स्थान मिले।")}</span>
+                    </div>
+                    <p className="mt-1 leading-relaxed text-amber-800">
+                      {tr(
+                        "Multiple branches or conflicting public contacts were found for this pharmacy. To ensure you reach the correct shopkeeper, please refine the shop address or view the listing on Google Maps.",
+                        "इस फार्मेसी के लिए कई शाखाएं या परस्पर विरोधी संपर्क मिले। सही दुकानदार तक पहुंचने के लिए, कृपया पता स्पष्ट करें या Google Maps पर देखें।"
+                      )}
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCloseModal();
+                          setShowCustomShopForm(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-900 transition hover:bg-amber-100"
+                      >
+                        <Store className="h-3.5 w-3.5 text-amber-700" />
+                        <span>{tr("Refine Shop Details", "दुकान का विवरण सुधारें")}</span>
+                      </button>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selectedPharmacy.name} ${selectedPharmacy.address}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-navy transition hover:bg-slate-50"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                        <span>{tr("View on Google Maps", "Google Maps पर देखें")}</span>
                       </a>
                     </div>
                   </div>

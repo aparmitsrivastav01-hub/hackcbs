@@ -1,6 +1,4 @@
 import type {
-  BatchAlertRecord,
-  BatchCheckResult,
   CategoriesResponse,
   Comparison,
   ConfirmedSearchResult,
@@ -432,7 +430,7 @@ export async function getShopWhatsAppContact(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     signal,
-    timeoutMs: 45000,
+    timeoutMs: 90000,
   });
 }
 
@@ -440,102 +438,15 @@ export async function getShopWhatsAppContact(
 // Batch Alert Safety Checker (Screen 10)
 // -------------------------------------------------------------
 
-export function getDatasetStatus(): Promise<DatasetStatus> {
-  return request<DatasetStatus>("/api/batch-safety/dataset-status").catch(() => ({
-    source_name: "CDSCO Monthly Not of Standard Quality (NSQ) Drug Alerts",
-    dataset_file: "CDSCO_NSQ_alerts_latest.csv",
-    records_loaded: 342,
-    last_modified: "October 2026",
-    note: "Official government testing alerts for substandard, spurious, or adulterated batches.",
-  }));
-}
-
-// Curated verified CDSCO test records for offline verification and testing
-const CDSCO_VERIFIED_ALERTS: BatchAlertRecord[] = [
-  {
-    product_name: "Pantoprazole Gastro-resistant Tablets IP",
-    manufacturer: "Alkem Laboratories Ltd (Baddi Unit)",
-    batch_number: "PNT24A09",
-    alert_type: "Not of Standard Quality (NSQ) - Failed Dissolution",
-    notice_date: "2026-09-15",
-    source_name: "Central Drugs Standard Control Organisation (CDSCO)",
-    source_url: "https://cdsco.gov.in/opencms/opencms/en/Drugs/Alerts/",
-    notes: "Failed dissolution test for gastro-resistant enteric coating at 120 mins.",
-  },
-  {
-    product_name: "Paracetamol Tablets IP 500mg",
-    manufacturer: "Karnataka Antibiotics & Pharmaceuticals Ltd",
-    batch_number: "PCM23H88",
-    alert_type: "Not of Standard Quality (NSQ) - Sub-potent Assay",
-    notice_date: "2026-08-10",
-    source_name: "CDSCO / State Drug Testing Laboratory",
-    source_url: "https://cdsco.gov.in",
-    notes: "Assay of Paracetamol found to be 86.4% against IP limit of 90.0% to 110.0%.",
-  },
-  {
-    product_name: "Amoxicillin and Potassium Clavulanate Tablets IP",
-    manufacturer: "Cipla Ltd",
-    batch_number: "AMX24C11",
-    alert_type: "Spurious / Misbranded Batch",
-    notice_date: "2026-07-22",
-    source_name: "CDSCO East Zone",
-    source_url: "https://cdsco.gov.in",
-    notes: "Unauthorized counterfeit packaging detected; not manufactured by named license holder.",
-  },
-];
-
-export async function checkBatchSafety(payload: {
-  product_name: string;
-  manufacturer?: string;
-  batch_number: string;
-}): Promise<BatchCheckResult> {
-  try {
-    return await request<BatchCheckResult>("/api/batch-safety/check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    // Client-side fallback against CDSCO verified dataset
-    const cleanBatch = payload.batch_number.trim().toUpperCase();
-    const cleanProd = payload.product_name.trim().toLowerCase();
-
-    const matches = CDSCO_VERIFIED_ALERTS.filter((record) => {
-      const matchBatch = record.batch_number.toUpperCase().includes(cleanBatch);
-      const matchProd =
-        record.product_name.toLowerCase().includes(cleanProd) ||
-        cleanProd.includes(record.product_name.toLowerCase().slice(0, 8));
-      return matchBatch && matchProd;
-    });
-
-    if (matches.length > 0) {
-      return {
-        status: "alert_match",
-        product_name: payload.product_name,
-        manufacturer: payload.manufacturer,
-        batch_number: payload.batch_number,
-        matches,
-        dataset_records: 342,
-        last_updated: "October 2026",
-        message: "ALERT MATCH FOUND: This batch was flagged in imported CDSCO alert reports.",
-        safety_note:
-          "Do not consume medicines from flagged batches. Return to the issuing pharmacy or contact your local state drug inspector.",
-      };
-    }
-
-    return {
-      status: "no_match",
-      product_name: payload.product_name,
-      manufacturer: payload.manufacturer,
-      batch_number: payload.batch_number,
-      matches: [],
-      dataset_records: 342,
-      last_updated: "October 2026",
-      message: "No matching alert found in the imported CDSCO dataset.",
-      safety_note:
-        "IMPORTANT: No matching alert found in the imported dataset. This is NOT a safety certificate or authenticity guarantee. Only lab testing can confirm medicine safety.",
-    };
-  }
+export async function getDatasetStatus(): Promise<DatasetStatus> {
+  const status = await request<{ dataset_file: string; records_loaded: number; dataset_latest_notice_month: string | null }>("/api/batch-safety/dataset-status");
+  return {
+    source_name: "CDSCO Monthly NSQ Dataset",
+    dataset_file: status.dataset_file,
+    records_loaded: status.records_loaded,
+    last_modified: status.dataset_latest_notice_month,
+    note: "Records loaded from the configured CDSCO NSQ dataset.",
+  };
 }
 
 // -------------------------------------------------------------
@@ -543,3 +454,25 @@ export async function checkBatchSafety(payload: {
 // -------------------------------------------------------------
 
 // Synthetic extraction fallback
+
+export type BatchExtraction = {
+  medicine_name: string | null; strength: string | null; dosage_form: string | null;
+  manufacturer: string | null; batch_number: string | null; manufacturing_date: string | null;
+  expiry_date: string | null; mrp: string | null; composition: string | null; raw_ocr_text: string;
+  field_confidence: Record<string, number | null>; needs_manual_review: boolean; warnings: string[];
+  extraction_status: string; model?: string | null;
+};
+export type BatchVerification = {
+  status: "MATCH_FOUND" | "NO_MATCH" | "INSUFFICIENT_DATA"; match_type?: string | null;
+  batch_number?: string | null; records: Array<Record<string, unknown>>; explanation: string;
+};
+export async function extractBatchDetails(files: File[]): Promise<BatchExtraction> {
+  const body = new FormData(); files.forEach((file) => body.append("files", file));
+  return request<BatchExtraction>("/api/batch-safety/extract", { method: "POST", body, timeoutMs: 120000 });
+}
+export async function verifyBatchDetails(payload: { medicine_name?: string; batch_number?: string; manufacturer?: string }): Promise<BatchVerification> {
+  return request<BatchVerification>("/api/batch-safety/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+}
+export async function getBatchDatasetInfo(): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>("/api/batch-safety/dataset-info");
+}

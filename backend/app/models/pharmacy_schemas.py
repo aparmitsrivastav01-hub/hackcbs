@@ -129,8 +129,8 @@ class ShopWhatsAppContactResponse(BaseModel):
     phone_number: str | None = None
     whatsapp_number: str | None = None
     source_url: str | None = None
-    verification_status: Literal["verified_whatsapp", "phone_only", "not_found"]
-    confidence: Literal["high", "medium", "low", "none"]
+    verification_status: Literal["verified", "verified_whatsapp", "phone_only", "not_found", "ambiguous"]
+    confidence: Literal["high", "medium", "low", "none"] | None = None
     message: str
     cached: bool = False
 

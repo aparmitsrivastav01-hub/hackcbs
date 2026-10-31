@@ -15,6 +15,7 @@ from app.api.routes.prescriptions import router as prescriptions_router
 from app.api.routes.cart import router as cart_router
 from app.api.routes.pharmacies import router as pharmacies_router
 from app.api.routes.stores import router as stores_router
+from app.api.routes.enquiries import router as enquiries_router
 from app.api.routes.safety import router as safety_router, batch_safety_router
 from app.api.routes.ai import router as ai_router
 from app.api.routes.elevenlabs import router as elevenlabs_router
@@ -39,6 +40,8 @@ async def lifespan(app: FastAPI):
     medicine_service.load_csv(csv_path)
     app.state.medicine_service = medicine_service
     app.state.prescription_service = PrescriptionService(medicine_service)
+    from app.services.batch_extraction_service import BatchExtractionService
+    app.state.batch_extraction_service = BatchExtractionService()
     app.state.gemini_service = GeminiService()
     app.state.ai_chat_sessions = TemporaryChatSessions()
     app.state.elevenlabs_service = ElevenLabsSpeechService()
@@ -91,6 +94,7 @@ app.include_router(prescriptions_router)
 app.include_router(cart_router)
 app.include_router(pharmacies_router)
 app.include_router(stores_router)
+app.include_router(enquiries_router)
 app.include_router(safety_router)
 app.include_router(batch_safety_router)
 app.include_router(ai_router)

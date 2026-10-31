@@ -1,375 +1,80 @@
-import {
-  AlertCircle,
-  AlertTriangle,
-  Database,
-  ExternalLink,
-  FileSearch,
-  Info,
-  ShieldAlert,
-  ShieldCheck,
-} from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { useSearchParams } from "react-router-dom";
-import { checkBatchSafety, getDatasetStatus } from "../api/client";
-import { Skeleton } from "../components/ui/Skeleton";
-import { useLanguage } from "../i18n/LanguageContext";
-import type { BatchCheckResult, DatasetStatus } from "../types";
+import { Camera, FileImage, LoaderCircle, ShieldAlert, ShieldCheck, Trash2, UploadCloud, XCircle } from "lucide-react";
+import { extractBatchDetails, getBatchDatasetInfo, verifyBatchDetails, type BatchExtraction, type BatchVerification } from "../api/client";
+
+const fields: Array<[keyof BatchExtraction, string]> = [
+  ["medicine_name", "Medicine name"], ["strength", "Strength"], ["dosage_form", "Dosage form"],
+  ["batch_number", "Batch number"], ["manufacturer", "Manufacturer"], ["manufacturing_date", "Manufacturing date"],
+  ["expiry_date", "Expiry date"], ["mrp", "MRP"],
+];
+const accepted = ".jpg,.jpeg,.png,.webp,.pdf";
 
 export function BatchSafetyPage() {
-  const { tr } = useLanguage();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initBatch = searchParams.get("batch") ?? "";
-  const initProduct = searchParams.get("product") ?? "";
-
-  const [batchNumber, setBatchNumber] = useState(initBatch);
-  const [productName, setProductName] = useState(initProduct);
-  const [manufacturer, setManufacturer] = useState("");
-
-  const [datasetStatus, setDatasetStatus] = useState<DatasetStatus | null>(null);
-  const [result, setResult] = useState<BatchCheckResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+  const input = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [extraction, setExtraction] = useState<BatchExtraction | null>(null);
+  const [dataset, setDataset] = useState<Record<string, unknown> | null>(null);
+  const [result, setResult] = useState<BatchVerification | null>(null);
+  const [stage, setStage] = useState<"idle" | "extract" | "verify">("idle");
+  const [error, setError] = useState("");
+  const [dragging, setDragging] = useState(false);
+  useEffect(() => { getBatchDatasetInfo().then(setDataset).catch(() => setDataset(null)); }, []);
   useEffect(() => {
-    getDatasetStatus().then(setDatasetStatus).catch(() => null);
-
-    if (initBatch.trim() && initProduct.trim()) {
-      executeCheck(initBatch.trim(), initProduct.trim(), "");
-    }
-  }, []);
-
-  async function executeCheck(batch: string, product: string, mfr: string) {
-    if (!batch.trim() || !product.trim()) {
-      setError(
-        tr(
-          "Please provide both product name and batch number printed on the medicine packaging.",
-          "कृपया दवा की पैकिंग पर छपा उत्पाद का नाम और बैच नंबर दोनों दर्ज करें।"
-        )
-      );
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await checkBatchSafety({
-        batch_number: batch.trim(),
-        product_name: product.trim(),
-        manufacturer: mfr.trim() || undefined,
-      });
-      setResult(res);
-      setSearchParams({ batch: batch.trim(), product: product.trim() });
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : tr("Batch safety verification request failed.", "बैच सुरक्षा सत्यापन अनुरोध विफल रहा।")
-      );
-    } finally {
-      setLoading(false);
-    }
+    const urls = files.map((file) => file.type.startsWith("image/") ? URL.createObjectURL(file) : "");
+    setPreviews(urls);
+    return () => urls.forEach((url) => url && URL.revokeObjectURL(url));
+  }, [files]);
+  function addFiles(list: FileList | File[]) {
+    const valid = Array.from(list).filter((file) => /\.(jpe?g|png|webp|pdf)$/i.test(file.name) && file.size <= 10 * 1024 * 1024);
+    if (valid.length !== list.length) setError("Use JPG, PNG, WEBP or PDF files up to 10 MB each.");
+    setFiles((old) => [...old, ...valid].slice(0, 5)); setExtraction(null); setResult(null);
   }
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    executeCheck(batchNumber, productName, manufacturer);
+  function update(key: keyof BatchExtraction, value: string) { if (extraction) setExtraction({ ...extraction, [key]: value || null }); }
+  async function extract() {
+    if (!files.length || stage !== "idle") return;
+    setStage("extract"); setError(""); setResult(null);
+    try { setExtraction(await extractBatchDetails(files)); } catch (e) { setError(e instanceof Error ? e.message : "Extraction failed. Please retry."); }
+    finally { setStage("idle"); }
   }
-
-  function handleQuickSample(sampleBatch: string, sampleProd: string, sampleMfr: string) {
-    setBatchNumber(sampleBatch);
-    setProductName(sampleProd);
-    setManufacturer(sampleMfr);
-    executeCheck(sampleBatch, sampleProd, sampleMfr);
+  async function verify() {
+    if (!extraction || stage !== "idle") return;
+    if (!extraction.batch_number?.trim()) { setError("Enter the batch number from the packaging before verification."); return; }
+    setStage("verify"); setError("");
+    try { setResult(await verifyBatchDetails({ medicine_name: extraction.medicine_name || undefined, batch_number: extraction.batch_number, manufacturer: extraction.manufacturer || undefined })); }
+    catch (e) { setError(e instanceof Error ? e.message : "Verification failed. Please retry."); }
+    finally { setStage("idle"); }
   }
-
-  return (
-    <>
-      <Helmet>
-        <title>{tr("Batch Drug Alert Checker — MedEasy", "बैच दवा अलर्ट जांच — MedEasy")}</title>
-        <meta
-          name="description"
-          content={tr(
-            "Verify medicine batch numbers against CDSCO official monthly Not of Standard Quality (NSQ) and spurious drug alerts before consumption.",
-            "दवा सेवन से पहले आधिकारिक CDSCO मासिक बुलेटिन में मानक गुणवत्ता (NSQ) और गुणवत्ता चेतावनी की जांच करें।"
-          )}
-        />
-      </Helmet>
-    <div className="min-h-screen bg-[#f7faff] pb-24 pt-8">
-      <div className="mx-auto max-w-[1080px] px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#eef5ff] px-3.5 py-1 text-xs font-bold text-brand">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>{tr("CDSCO Drug Quality Alert Verification", "CDSCO दवा गुणवत्ता अलर्ट सत्यापन")}</span>
-          </div>
-          <h1 className="mt-3 text-3xl font-extrabold text-navy sm:text-4xl">
-            {tr("Batch Alert & Substandard Drug Checker", "बैच अलर्ट व मानक गुणवत्ता जांच")}
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
-            {tr(
-              "Cross-check medicine batch numbers against the official Central Drugs Standard Control Organisation (CDSCO) monthly \"Not of Standard Quality\" (NSQ), spurious, and adulterated drug alerts.",
-              "केंद्रीय औषधि मानक नियंत्रण संगठन (CDSCO) के आधिकारिक मासिक गुणवत्ता अलर्ट (NSQ) और घटिया दवाओं की सूची में अपने बैच नंबर की जांच करें।"
-            )}
-          </p>
+  return <>
+    <Helmet><title>Batch Safety Verification — MedEasy</title><meta name="description" content="Check a medicine batch against loaded CDSCO NSQ alert records." /></Helmet>
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:py-14">
+      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div><p className="mb-2 text-sm font-bold uppercase tracking-wider text-blue-700">MedEasy · Batch check</p><h1 className="text-3xl font-extrabold tracking-tight text-navy sm:text-4xl">Batch Safety Verification</h1><p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">Upload your medicine packaging to check whether its batch appears in official CDSCO NSQ alerts.</p></div>
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm"><div className="flex items-center gap-2 font-bold text-navy"><span className={`h-2 w-2 rounded-full ${dataset?.ready ? "bg-emerald-500" : "bg-amber-400"}`} />CDSCO Monthly NSQ Dataset</div><p className="mt-1 text-slate-500">{dataset ? `${String(dataset.records_loaded ?? 0)} records · Updated ${String(dataset.last_update_date ?? "date unavailable")}` : "Dataset status unavailable"}</p></div>
+      </header>
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+        <div className="mb-5"><h2 className="text-xl font-bold">Add medicine packaging photos</h2><p className="mt-1 text-sm text-slate-500">Include the front and the side showing batch details for clearer extraction.</p></div>
+        <input ref={input} className="hidden" type="file" accept={accepted} multiple capture="environment" onChange={(e) => e.target.files && addFiles(e.target.files)} />
+        <div onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }} onClick={() => input.current?.click()} className={`cursor-pointer rounded-3xl border-2 border-dashed p-8 text-center transition sm:p-12 ${dragging ? "border-blue-500 bg-blue-50" : "border-slate-300 bg-slate-50 hover:border-blue-400 hover:bg-blue-50/50"}`}>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-700"><UploadCloud className="h-7 w-7" /></div><h3 className="mt-4 text-lg font-bold">Drop photos or browse files</h3><p className="mt-1 text-sm text-slate-500">Medicine strip, box or package · JPG, JPEG, PNG, WEBP, PDF · Up to 10 MB each</p><span className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white"><Camera className="h-4 w-4" />Choose photos</span>
         </div>
-
-        {/* Dataset Coverage Header Banner */}
-        <div className="mb-6 rounded-2xl border border-blue-100 bg-white p-4 shadow-xs">
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef5ff] text-brand">
-                <Database className="h-4.5 w-4.5" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-navy">
-                  {tr("Active Reference Dataset:", "सक्रिय संदर्भ डेटासेट:")} {datasetStatus?.source_name ?? "CDSCO Monthly NSQ Drug Alerts"}
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  {datasetStatus?.records_loaded ?? 342} {tr("verified batch alert records indexed · Last update:", "सत्यापित बैच अलर्ट रिकॉर्ड अनुक्रमित · अंतिम अपडेट:")} {datasetStatus?.last_modified ?? "October 2026"}
-                </p>
-              </div>
-            </div>
-
-            <a
-              href="https://cdsco.gov.in"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
-            >
-              <span>{tr("CDSCO Portal", "CDSCO पोर्टल")}</span>
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-        </div>
-
-        {/* Input Form Card */}
-        <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_12px_36px_rgba(15,40,90,0.06)] md:p-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {/* Product Name */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                  {tr("Medicine / Product Name", "दवाई / उत्पाद का नाम")} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  placeholder={tr("e.g., Paracetamol Tablets IP, Pantoprazole...", "उदा. पैरासिटामोल, पैंटोप्राजोल...")}
-                  className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 bg-[#f8fbff] px-4 text-sm font-medium text-navy placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              {/* Batch Number */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                  {tr("Batch Number (from packaging)", "बैच नंबर (पैकिंग से)")} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={batchNumber}
-                  onChange={(e) => setBatchNumber(e.target.value)}
-                  placeholder={tr("e.g., PCM23H88, PNT24A09, B2401...", "उदा. PCM23H88, PNT24A09, B2401...")}
-                  className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 bg-[#f8fbff] px-4 font-mono text-sm font-bold uppercase text-navy placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Manufacturer (Optional) */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                {tr("Manufacturer on packaging (Optional)", "निर्माता कंपनी (वैकल्पिक)")}
-              </label>
-              <input
-                type="text"
-                value={manufacturer}
-                onChange={(e) => setManufacturer(e.target.value)}
-                placeholder={tr("e.g., Alkem Laboratories, Cipla, Karnataka Antibiotics...", "उदा. अल्केम, सिप्ला, कर्नाटक एंटीबायोटिक्स...")}
-                className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 bg-[#f8fbff] px-4 text-sm font-medium text-navy placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none"
-              />
-            </div>
-
-            {/* Error banner */}
-            {error && (
-              <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-xs text-red-700">
-                <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Submit Button & Demo Presets */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-                <span className="font-semibold text-slate-400">{tr("Try test batches:", "सैंपल बैच जांचें:")}</span>
-                <button
-                  type="button"
-                  onClick={() => handleQuickSample("PCM23H88", "Paracetamol Tablets IP 500mg", "Karnataka Antibiotics")}
-                  className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-100"
-                >
-                  {tr("Flagged Batch (PCM23H88)", "अलर्ट बैच (PCM23H88)")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickSample("PNT24A09", "Pantoprazole Gastro-resistant Tablets", "Alkem Laboratories")}
-                  className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-100"
-                >
-                  {tr("Flagged Batch (PNT24A09)", "अलर्ट बैच (PNT24A09)")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickSample("GEN2026X", "Crocin Advance 500", "GSK")}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:border-slate-300"
-                >
-                  {tr("Unflagged Batch", "सुरक्षित बैच")}
-                </button>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-brand px-7 text-sm font-bold text-white shadow-xs transition hover:bg-brand-dark disabled:opacity-50"
-              >
-                {loading ? (
-                  <span>{tr("Checking CDSCO records...", "CDSCO रिकॉर्ड जांचे जा रहे हैं...")}</span>
-                ) : (
-                  <>
-                    <FileSearch className="h-4 w-4" />
-                    <span>{tr("Check Batch Number", "बैच नंबर जांचें")}</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* SKELETON LOADING STATE */}
-        {loading && (
-          <div className="mt-8 space-y-4">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
-              <div className="flex items-start gap-4">
-                <Skeleton className="h-12 w-12 rounded-2xl" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-40 rounded-full" />
-                  <Skeleton className="h-7 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
-                </div>
-              </div>
-              <div className="mt-6 space-y-3 border-t border-slate-100 pt-6">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-5/6" />
-                <Skeleton className="h-4 w-2/3" />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* RESULTS CARD */}
-        {!loading && result && (
-          <div className="mt-8">
-            {result.status === "alert_match" ? (
-              /* OUTCOME A: EXACT ALERT MATCH */
-              <div className="rounded-3xl border-2 border-red-400 bg-[linear-gradient(135deg,#fef2f2_0%,#ffffff_100%)] p-6 shadow-md md:p-8">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-600 text-white shadow-xs">
-                    <ShieldAlert className="h-7 w-7" />
-                  </div>
-                  <div className="flex-1">
-                    <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-black uppercase tracking-wider text-red-800">
-                      {tr("CDSCO Quality Alert Match Found", "CDSCO गुणवत्ता चेतावनी पाई गई")}
-                    </span>
-                    <h2 className="mt-2 text-2xl font-black text-red-950">
-                      {tr("Warning: Batch #", "सावधानी: बैच #")}{result.batch_number} {tr("is flagged in official alert records", "आधिकारिक अलर्ट रिकॉर्ड में दर्ज है")}
-                    </h2>
-                    <p className="mt-1 text-sm text-red-800">
-                      {tr(
-                        "This batch was tested by state or central drug laboratories and reported as substandard, adulterated, or spurious.",
-                        "इस बैच का परीक्षण सरकारी प्रयोगशालाओं द्वारा किया गया है और इसे अमानक या संदिग्ध घोषित किया गया है।"
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Flagged Records List */}
-                <div className="mt-6 space-y-3">
-                  {result.matches.map((item, idx) => (
-                    <div key={idx} className="rounded-2xl border border-red-200 bg-white p-5 text-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-red-100 pb-3">
-                        <span className="font-extrabold text-red-900">{item.alert_type}</span>
-                        <span className="text-xs font-semibold text-slate-500">{tr("Notice Date:", "नोटिस दिनांक:")} {item.notice_date}</span>
-                      </div>
-                      <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                        <p><strong className="text-navy">{tr("Product:", "उत्पाद:")}</strong> {item.product_name}</p>
-                        <p><strong className="text-navy">{tr("Manufacturer:", "निर्माता:")}</strong> {item.manufacturer}</p>
-                        <p><strong className="text-navy">{tr("Batch No:", "बैच सं.:")}</strong> <span className="font-mono font-bold text-red-700">{item.batch_number}</span></p>
-                        <p><strong className="text-navy">{tr("Testing Source:", "परीक्षण प्रयोगशाला:")}</strong> {item.source_name}</p>
-                      </div>
-                      <div className="mt-3 rounded-xl bg-red-50/70 p-3 text-xs text-red-900">
-                        <strong>{tr("Reason / Lab Finding:", "कारण / लैब रिपोर्ट:")}</strong> {item.notes}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Action guidance */}
-                <div className="mt-6 rounded-2xl bg-red-900 p-4 text-xs font-medium text-white">
-                  <p className="font-bold text-sm">{tr("Action Recommended:", "अनुशंसित कार्रवाई:")}</p>
-                  <p className="mt-1 leading-relaxed text-red-100">
-                    {tr(
-                      "Do not ingest or administer medicines from this batch. Return the strip/bottle to the issuing chemist along with the invoice, or notify the State Drugs Control Department.",
-                      "इस बैच की दवाइयों का सेवन न करें। बिल के साथ इस दवा को संबंधित मेडिकल स्टोर पर वापस करें या राज्य औषधि नियंत्रण विभाग को सूचित करें।"
-                    )}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              /* OUTCOME B: NO MATCHING ALERT FOUND */
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs md:p-8">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-brand">
-                    <Info className="h-6 w-6" />
-                  </div>
-                  <div className="flex-1">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                      {tr("Query Checked:", "जांचा गया:")} {result.batch_number} ({result.product_name})
-                    </span>
-                    <h2 className="mt-2 text-xl font-bold text-navy">
-                      {tr("No matching alert found in imported CDSCO dataset", "आधिकारिक CDSCO डेटासेट में कोई अलर्ट नहीं मिला")}
-                    </h2>
-                    <p className="mt-1 text-sm text-muted">
-                      {tr("Batch #", "बैच #")}{result.batch_number} {tr("does not appear in the imported government NSQ alert records.", "आयातित सरकारी गुणवत्ता अलर्ट रिकॉर्ड में दर्ज नहीं है।")}
-                    </p>
-                  </div>
-                </div>
-
-                {/* MANDATORY SAFETY NOTICE */}
-                <div className="mt-6 rounded-2xl border border-amber-200/90 bg-amber-50/70 p-5 text-xs text-amber-900">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-bold text-sm text-amber-950">
-                        {tr("Important Medical Safety Disclosure", "महत्वपूर्ण चिकित्सीय सुरक्षा सूचना")}
-                      </h4>
-                      <p className="mt-1 text-xs leading-relaxed text-amber-900 font-medium">
-                        &ldquo;{tr("No matching alert found in the imported dataset.", "आयातित डेटासेट में कोई अलर्ट नहीं मिला।")} <strong>{tr("This is NOT a safety certificate or authenticity guarantee.", "यह कोई सुरक्षा प्रमाणपत्र या प्रामाणिकता गारंटी नहीं है।")}</strong>&rdquo;
-                      </p>
-                      <p className="mt-2 text-xs leading-relaxed text-amber-800">
-                        {tr(
-                          "CDSCO only publishes alerts for batches that were actively sampled and tested in government laboratories. An absence of records means no test failure notice is recorded in the imported dataset, but only laboratory chemical analysis can verify absolute medicine quality.",
-                          "CDSCO केवल उन बैचों के लिए अलर्ट जारी करता है जिनका परीक्षण सरकारी प्रयोगशालाओं में हुआ हो। रिकॉर्ड न होने का अर्थ है कि कोई विफलता दर्ज नहीं है, किंतु पूर्ण गुणवत्ता केवल प्रयोगशाला विश्लेषण से ही सत्यापित हो सकती है।"
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        {files.length > 0 && <div className="mt-5 grid gap-3 sm:grid-cols-2">{files.map((file, i) => <div key={`${file.name}-${i}`} className="flex items-center gap-3 rounded-2xl border border-slate-200 p-3">{previews[i] ? <img src={previews[i]} alt={`Packaging ${i + 1}`} className="h-16 w-16 rounded-xl object-cover" /> : <div className="grid h-16 w-16 place-items-center rounded-xl bg-slate-100"><FileImage /></div>}<div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{file.name}</p><p className="text-xs text-slate-500">{(file.size / 1024 / 1024).toFixed(1)} MB</p></div><button aria-label={`Remove ${file.name}`} onClick={(e) => { e.stopPropagation(); setFiles((old) => old.filter((_, idx) => idx !== i)); }} className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button></div>)}</div>}
+        {error && <p role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{error}</p>}
+        <button onClick={extract} disabled={!files.length || stage !== "idle"} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-4 font-bold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">{stage === "extract" ? <><LoaderCircle className="h-5 w-5 animate-spin" />OCR and Gemini Vision processing…</> : "Extract Medicine Details"}</button>
+        {stage === "extract" && <div className="mt-4"><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-2/3 animate-pulse rounded-full bg-blue-600" /></div><p className="mt-2 text-sm text-slate-500">Validating files → preprocessing → OCR → Gemini Vision</p></div>}
+      </section>
+      {extraction && <section className="mt-7 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-bold">Review extracted details</h2><p className="mt-1 text-sm text-slate-500">Check each value against your packaging and correct anything unclear.</p></div><span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">{extraction.extraction_status === "complete" ? "Review recommended" : "Review required"}</span></div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">{fields.map(([key,label]) => <label key={key} className="block text-sm font-semibold text-slate-700">{label}{key === "batch_number" && !extraction.batch_number && <span className="ml-2 text-amber-700">Please enter this from the package</span>}<input value={String(extraction[key] ?? "")} onChange={(e) => update(key,e.target.value)} className={`mt-1.5 w-full rounded-xl border px-3 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${key === "batch_number" && !extraction.batch_number ? "border-amber-400 bg-amber-50" : "border-slate-200"}`} />{["medicine_name","batch_number","manufacturer","expiry_date"].includes(key) && <span className="mt-1 block text-xs text-slate-500">Confidence: {extraction.field_confidence[key] == null ? "not available" : `${Math.round(extraction.field_confidence[key]! * 100)}%`}</span>}</label>)}</div>
+        {extraction.warnings.length > 0 && <ul className="mt-4 space-y-1 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">{extraction.warnings.map((w,i) => <li key={i}>• {w}</li>)}</ul>}
+        <details className="mt-4"><summary className="cursor-pointer text-sm font-semibold text-slate-600">View OCR text</summary><pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs text-slate-600">{extraction.raw_ocr_text || "No local OCR text was available."}</pre></details>
+        <button onClick={verify} disabled={stage !== "idle"} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-navy px-6 py-3.5 font-bold text-white hover:bg-navy-soft disabled:opacity-50">{stage === "verify" ? <><LoaderCircle className="h-5 w-5 animate-spin" />Matching batch…</> : "Verify Against CDSCO Database"}</button>
+      </section>}
+      {result && <section aria-live="polite" className={`mt-7 rounded-3xl border-2 p-5 sm:p-8 ${result.status === "MATCH_FOUND" ? "border-red-300 bg-red-50" : result.status === "NO_MATCH" ? "border-emerald-300 bg-emerald-50" : "border-amber-300 bg-amber-50"}`}>
+        <div className="flex items-start gap-3">{result.status === "MATCH_FOUND" ? <ShieldAlert className="h-7 w-7 shrink-0 text-red-700" /> : result.status === "NO_MATCH" ? <ShieldCheck className="h-7 w-7 shrink-0 text-emerald-700" /> : <XCircle className="h-7 w-7 shrink-0 text-amber-700" />}<div><h2 className="text-xl font-extrabold">{result.status === "MATCH_FOUND" ? "NSQ ALERT MATCH FOUND" : result.status === "NO_MATCH" ? "NO MATCH IN LOADED DATASET" : "MANUAL REVIEW REQUIRED"}</h2><p className="mt-2 text-sm leading-6">{result.explanation}</p>{result.match_type && <p className="mt-2 text-sm font-semibold">Match: {result.match_type.replaceAll("_"," ")}</p>}</div></div>
+        {result.records.map((record,i) => <article key={String(record.alert_id ?? i)} className="mt-5 rounded-2xl border border-black/10 bg-white p-4"><h3 className="font-bold">{String(record.product_name ?? "CDSCO record")}</h3><dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">{(["batch_number","manufacturer","notice_month","nsq_result","reported_by","source_pdf"] as const).map((key) => <div key={key}><dt className="text-xs font-semibold uppercase text-slate-500">{key.replaceAll("_"," ")}</dt><dd className="mt-0.5 break-words text-slate-800">{String(record[key] ?? "—")}</dd></div>)}</dl></article>)}
+      </section>}
+      <p className="mt-6 text-center text-xs leading-5 text-slate-500">A missing record in this dataset does not prove that a medicine is safe, authentic, approved, or free from defects.</p>
     </div>
-    </>
-  );
+  </>;
 }

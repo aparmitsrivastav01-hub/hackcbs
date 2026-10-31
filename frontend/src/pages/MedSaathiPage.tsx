@@ -28,6 +28,7 @@ import type {
   SpeechState,
 } from "../components/assistant/assistantTypes";
 import { VoiceVisualizer } from "../components/assistant/VoiceVisualizer";
+import { useElevenLabsTTS } from "../hooks/useElevenLabsTTS";
 import { useLanguage } from "../i18n/LanguageContext";
 
 function getActionLabel(action: AssistantAction, isHindi: boolean): string {
@@ -52,6 +53,18 @@ export function MedSaathiPage() {
   const [memoryUpdating, setMemoryUpdating] = useState(false);
   const requestInFlight = useRef(false);
   const voiceQueryPending = useRef(false);
+
+  const tts = useElevenLabsTTS();
+
+  useEffect(() => {
+    if (tts.isLoading) {
+      setSpeechState("generating");
+    } else if (tts.isPlaying) {
+      setSpeechState("speaking");
+    } else if (speechState === "speaking" || speechState === "generating") {
+      setSpeechState("idle");
+    }
+  }, [tts.isLoading, tts.isPlaying]);
 
   useEffect(() => {
     fetch("/api/memory/consent")
@@ -100,7 +113,7 @@ export function MedSaathiPage() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatContainerRef.current?.scrollIntoView({ behavior: "smooth" });
+    chatContainerRef.current?.scrollIntoView?.({ behavior: "smooth" });
   }, [messages, transcriptPreview]);
 
   // Handle Voice Interaction
@@ -111,7 +124,8 @@ export function MedSaathiPage() {
       return;
     }
 
-    if (["speaking", "generating", "paused"].includes(speechState)) {
+    if (["speaking", "generating", "paused"].includes(speechState) || tts.isPlaying || tts.isLoading) {
+      tts.stop();
       assistantService.stopSpeaking();
       setSpeechState("idle");
       return;
@@ -133,6 +147,12 @@ export function MedSaathiPage() {
           addMessage(
             "Microphone permission was denied. Please allow microphone access or type your query below.",
             "माइक्रोफ़ोन की अनुमति नहीं मिली। कृपया माइक्रोफ़ोन चालू करें या नीचे लिखकर पूछें।",
+            "assistant"
+          );
+        } else if (error.includes("not supported") || error.includes("समर्थित नहीं")) {
+          addMessage(
+            "Voice recognition is not supported in this browser. Please type your query in the chat input below.",
+            "आपके ब्राउज़र में वॉइस रिकग्निशन समर्थित नहीं है। कृपया नीचे लिखकर पूछें।",
             "assistant"
           );
         }
@@ -159,19 +179,13 @@ export function MedSaathiPage() {
       const response = await assistantService.processUserInput(queryText, locale, chatSessionId, (delta) => setStreamingText((current) => current + delta));
       setChatSessionId(response.session_id);
       setStreamingText("");
-      addMessage(response.response, response.response, "assistant", response.action, response.safety_flags, response.usage);
+      const newMsgId = `asst-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      addMessage(response.response, response.response, "assistant", response.action, response.safety_flags, response.usage, newMsgId);
 
       const speakThisVoiceTurn = voiceQueryPending.current;
       voiceQueryPending.current = false;
       if (speakThisVoiceTurn && !isVoiceMuted) {
-        setSpeechState("generating");
-        await assistantService.speakText(
-          response.response,
-          locale,
-          () => setSpeechState("generating"),
-          () => setSpeechState("speaking"),
-          () => setSpeechState("idle")
-        );
+        await tts.speak(newMsgId, isHi ? response.response : response.response, locale);
       } else {
         setSpeechState("idle");
       }
@@ -191,12 +205,13 @@ export function MedSaathiPage() {
     role: "user" | "assistant",
     action?: AssistantAction,
     safetyFlags?: string[],
-    usage?: AssistantMessage["usage"]
+    usage?: AssistantMessage["usage"],
+    customId?: string
   ) {
     setMessages((prev) => [
       ...prev,
       {
-        id: Math.random().toString(36).substring(7),
+        id: customId || Math.random().toString(36).substring(7),
         role,
         textEn,
         textHi,
@@ -217,6 +232,7 @@ export function MedSaathiPage() {
   }
 
   function handleReset() {
+    tts.stop();
     assistantService.stopSpeaking();
     assistantService.stopListening();
     requestInFlight.current = false;
@@ -511,12 +527,46 @@ export function MedSaathiPage() {
                     >
                       <p>{isHi ? msg.textHi : msg.textEn}</p>
                       {msg.safetyFlags?.includes("potential_emergency") && <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{tr("Potential emergency detected. Seek urgent local medical care.", "संभावित आपातस्थिति है। तुरंत स्थानीय चिकित्सा सहायता लें।")}</p>}
-                      {msg.role === "assistant" && msg.id !== "medsaathi-welcome" && msg.id !== "reset-welcome" && <button type="button" onClick={() => {
-                        setChatError("");
-                        void assistantService.speakText(isHi ? msg.textHi : msg.textEn, locale,
-                          () => setSpeechState("generating"), () => setSpeechState("speaking"), () => setSpeechState("idle")
-                        ).catch((error: unknown) => { setSpeechState("idle"); setChatError(error instanceof Error ? error.message : "Voice playback failed."); });
-                      }} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand"><Volume2 className="h-3.5 w-3.5" />{tr("Speak response", "जवाब सुनें")}</button>}
+                      {msg.role === "assistant" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChatError("");
+                            tts.clearError();
+                            const textToSpeak = isHi ? msg.textHi : msg.textEn;
+                            void tts.speak(msg.id, textToSpeak, locale);
+                          }}
+                          className={`mt-2.5 inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                            tts.activeId === msg.id && tts.isPlaying
+                              ? "bg-brand text-white shadow-xs hover:bg-brand-dark"
+                              : tts.activeId === msg.id && tts.isLoading
+                                ? "bg-blue-100 text-brand animate-pulse"
+                                : "border border-slate-200 bg-white text-brand hover:border-brand/40 hover:bg-blue-50/50"
+                          }`}
+                          title={
+                            tts.activeId === msg.id && tts.isPlaying
+                              ? tr("Stop speaking", "बोलना रोकें")
+                              : tr("Listen to this response aloud", "यह जवाब आवाज़ में सुनें")
+                          }
+                        >
+                          {tts.activeId === msg.id && tts.isLoading ? (
+                            <>
+                              <div className="h-3 w-3 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+                              <span>{tr("Generating voice...", "आवाज़ तैयार हो रही है...")}</span>
+                            </>
+                          ) : tts.activeId === msg.id && tts.isPlaying ? (
+                            <>
+                              <Square className="h-3 w-3 fill-current" />
+                              <span>{tr("Stop speaking", "बोलना रोकें")}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 className="h-3.5 w-3.5" />
+                              <span>{tr("Speak response", "जवाब सुनें")}</span>
+                            </>
+                          )}
+                        </button>
+                      )}
 
                       {/* Interactive Execution Action */}
                       {msg.action && (
@@ -545,7 +595,7 @@ export function MedSaathiPage() {
                   </div>
                 )}
                 {streamingText && <div className="flex flex-col items-start"><div className="max-w-[85%] rounded-3xl rounded-bl-xs border border-slate-200 bg-[#f8fbff] px-5 py-3.5 text-sm leading-relaxed text-navy">{streamingText}<span className="ml-1 animate-pulse">▍</span></div></div>}
-                {chatError && <p role="alert" className="rounded-xl bg-red-50 px-4 py-2 text-xs text-red-700">{chatError}</p>}
+                {(chatError || tts.error) && <p role="alert" className="rounded-xl bg-red-50 px-4 py-2 text-xs text-red-700">{chatError || tts.error}</p>}
                 <div ref={chatContainerRef} />
               </div>
 

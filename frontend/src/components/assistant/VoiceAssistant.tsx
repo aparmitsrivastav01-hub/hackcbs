@@ -91,11 +91,17 @@ export function VoiceAssistant() {
       },
       (error) => {
         setSpeechState("idle");
-        // Show guidance message if permission denied
+        // Show guidance message if permission denied or unsupported
         if (error.includes("not-allowed") || error.includes("denied")) {
           addMessage(
             "Microphone permission was denied. Please allow microphone access or type your query below.",
             "माइक्रोफ़ोन की अनुमति नहीं मिली। कृपया माइक्रोफ़ोन चालू करें या नीचे लिखकर पूछें।",
+            "assistant"
+          );
+        } else if (error.includes("not supported") || error.includes("समर्थित नहीं")) {
+          addMessage(
+            "Voice recognition is not supported in this browser. Please type your query in the input below.",
+            "आपके ब्राउज़र में वॉइस रिकग्निशन समर्थित नहीं है। कृपया नीचे लिखकर पूछें।",
             "assistant"
           );
         }

@@ -1,5 +1,6 @@
 import hmac
 import os
+import re
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 
@@ -103,3 +104,84 @@ def review_alert(
     if result is None:
         raise HTTPException(status_code=404, detail="CDSCO alert record not found")
     return result
+
+# Image first extraction and user reviewed verification endpoints.
+from fastapi import File, UploadFile, status
+from app.models.batch_extraction_schemas import BatchMedicineExtraction, BatchVerifyRequest, BatchVerifyResponse
+from app.services.prescription.document_service import (
+    DocumentValidationError, UnsupportedDocumentFormat, UploadTooLarge, validate_document,
+)
+from app.services.batch_extraction_service import BatchExtractionService
+
+
+def get_batch_extractor(request: Request) -> BatchExtractionService:
+    if not hasattr(request.app.state, "batch_extraction_service"):
+        request.app.state.batch_extraction_service = BatchExtractionService()
+    return request.app.state.batch_extraction_service
+
+
+@batch_safety_router.get("/dataset-info")
+def dataset_info(service: CDSCOSafetyService = Depends(get_safety_service)):
+    status = service.dataset_status()
+    status["source"] = "CDSCO Monthly NSQ Dataset"
+    status["last_update_date"] = status.get("dataset_latest_notice_month")
+    return status
+
+
+@batch_safety_router.post("/extract", response_model=BatchMedicineExtraction)
+async def extract_batch_details(
+    files: list[UploadFile] = File(..., description="JPG, JPEG, PNG, WEBP, or PDF; maximum 10 MB each"),
+    extractor: BatchExtractionService = Depends(get_batch_extractor),
+):
+    if not files or len(files) > 5:
+        raise HTTPException(status_code=400, detail="Upload between 1 and 5 packaging images or PDFs")
+    documents = []
+    try:
+        for file in files:
+            content = await file.read(10 * 1024 * 1024 + 1)
+            documents.append(validate_document(content, file.filename))
+    except UploadTooLarge as exc:
+        raise HTTPException(status_code=413, detail=str(exc)) from exc
+    except UnsupportedDocumentFormat as exc:
+        raise HTTPException(status_code=415, detail=str(exc)) from exc
+    except DocumentValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    finally:
+        for file in files:
+            await file.close()
+    try:
+        return await extractor.extract(documents)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Image extraction failed. Please retry or enter details from a clearer photo.") from exc
+
+
+@batch_safety_router.post("/verify", response_model=BatchVerifyResponse)
+def verify_batch(payload: BatchVerifyRequest, service: CDSCOSafetyService = Depends(get_safety_service)):
+    batch = re.sub(r"\s+", " ", (payload.batch_number or "").strip()).casefold()
+    product = re.sub(r"\s+", " ", (payload.medicine_name or "").strip()).casefold()
+    manufacturer = re.sub(r"\s+", " ", (payload.manufacturer or "").strip()).casefold()
+    if not batch:
+        return {"status": "INSUFFICIENT_DATA", "batch_number": payload.batch_number,
+                "explanation": "A readable batch number is required for exact verification."}
+    if not (payload.medicine_name or "").strip():
+        return {"status": "INSUFFICIENT_DATA", "batch_number": payload.batch_number,
+                "explanation": "Medicine identity is needed to interpret an exact batch number safely. Enter or confirm the medicine name from the packaging."}
+    rows = [row for row in service._rows if re.sub(r"\s+", " ", str(row.get("batch_number") or "").strip()).casefold() == batch]
+    if not rows:
+        return {"status": "NO_MATCH", "batch_number": payload.batch_number, "records": [],
+                "explanation": "No matching record was found in the currently loaded CDSCO NSQ dataset. Absence from this dataset is not proof of safety."}
+    records = [service._public_record(row) for row in rows]
+    from app.services.cdsco_safety_service import normalize_product, normalize_manufacturer
+    product_key = normalize_product(payload.medicine_name)
+    manufacturer_key = normalize_manufacturer(payload.manufacturer)
+    identities = [row for row in rows if (not product_key or not row.get("_product_normalized") or product_key == row.get("_product_normalized") or product_key in row.get("_product_normalized", "") or row.get("_product_normalized", "") in product_key)
+                  and (not manufacturer_key or not row.get("_manufacturer_normalized") or manufacturer_key == row.get("_manufacturer_normalized") or manufacturer_key in row.get("_manufacturer_normalized", "") or row.get("_manufacturer_normalized", "") in manufacturer_key)]
+    confirmed = bool(identities and product_key)
+    if not confirmed:
+        return {"status": "INSUFFICIENT_DATA", "match_type": "exact_batch_identity_review", "batch_number": payload.batch_number,
+                "records": records, "explanation": "The batch number appears in CDSCO NSQ records, but the medicine identity is missing or conflicts with the record. Review the packaging and source notice before treating this as a match."}
+    return {"status": "MATCH_FOUND", "match_type": "exact_batch_and_identity" if manufacturer_key else "exact_batch_and_product",
+            "batch_number": payload.batch_number, "records": records,
+            "explanation": "This batch number and medicine identity appear in the loaded CDSCO NSQ records. Verify the details with the manufacturer, pharmacist, or relevant authority."}

@@ -6,6 +6,8 @@ from typing import Any
 logger = logging.getLogger(__name__)
 ELEVENLABS_TIMEOUT_SECONDS = 35
 MAX_SPEECH_CHARS = 2500
+DEFAULT_PREMADE_VOICE_ID = "EXAVITQu4vr4xnSDxMaL"
+DEFAULT_MODEL_ID = "eleven_multilingual_v2"
 
 
 class ElevenLabsConfigurationError(Exception):
@@ -37,8 +39,8 @@ class ElevenLabsSpeechService:
         client_factory: Any | None = None,
     ):
         self.api_key = api_key if api_key is not None else os.getenv("ELEVENLABS_API_KEY")
-        self.voice_id = voice_id if voice_id is not None else os.getenv("ELEVENLABS_VOICE_ID")
-        self.model_id = model_id if model_id is not None else os.getenv("ELEVENLABS_MODEL_ID")
+        self.voice_id = voice_id if voice_id is not None else (os.getenv("ELEVENLABS_VOICE_ID") or DEFAULT_PREMADE_VOICE_ID)
+        self.model_id = model_id if model_id is not None else (os.getenv("ELEVENLABS_MODEL_ID") or DEFAULT_MODEL_ID)
         self.client_factory = client_factory
 
     def _generate_blocking(self, text: str, language: str) -> bytes:
@@ -55,17 +57,36 @@ class ElevenLabsSpeechService:
             client = ElevenLabs(api_key=self.api_key, timeout=ELEVENLABS_TIMEOUT_SECONDS)
         else:
             client = self.client_factory(api_key=self.api_key, timeout=ELEVENLABS_TIMEOUT_SECONDS)
-        options: dict[str, Any] = {
-            "voice_id": self.voice_id,
-            "text": text,
-            "model_id": self.model_id,
-            "output_format": "mp3_44100_128",
-        }
-        # Eleven Multilingual v2 infers the language from the text; it does not accept language_code.
-        if self.model_id != "eleven_multilingual_v2":
-            options["language_code"] = language
-        chunks = client.text_to_speech.convert(**options)
-        audio = b"".join(chunks)
+
+        def _call_convert(target_voice_id: str) -> bytes:
+            options: dict[str, Any] = {
+                "voice_id": target_voice_id,
+                "text": text,
+                "model_id": self.model_id,
+                "output_format": "mp3_44100_128",
+            }
+            # Eleven Multilingual v2 infers the language from the text; it does not accept language_code.
+            if self.model_id != "eleven_multilingual_v2":
+                options["language_code"] = language
+            chunks = client.text_to_speech.convert(**options)
+            return b"".join(chunks)
+
+        try:
+            audio = _call_convert(self.voice_id)
+        except Exception as exc:
+            status = getattr(exc, "status_code", None)
+            err_msg = str(exc).lower()
+            # If library voice requires paid plan, auto-fallback to verified premade voice
+            if (status == 402 or "library voices" in err_msg or "paid_plan_required" in err_msg) and self.voice_id != DEFAULT_PREMADE_VOICE_ID:
+                logger.warning(
+                    "Configured voice %s is restricted to paid accounts; falling back to premade voice %s",
+                    self.voice_id,
+                    DEFAULT_PREMADE_VOICE_ID,
+                )
+                audio = _call_convert(DEFAULT_PREMADE_VOICE_ID)
+            else:
+                raise
+
         if not audio:
             raise ElevenLabsProviderError("ElevenLabs returned empty audio")
         return audio

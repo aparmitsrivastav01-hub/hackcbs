@@ -73,3 +73,35 @@ def test_elevenlabs_service_reports_missing_credentials(monkeypatch):
         response = client.post("/api/voice/elevenlabs/speak", json={"text": "Hello", "language": "en"})
         assert response.status_code == 503
         assert "ELEVENLABS_API_KEY" in response.json()["detail"]
+
+
+def test_elevenlabs_service_library_voice_fallback():
+    from app.services.elevenlabs_service import ElevenLabsSpeechService, DEFAULT_PREMADE_VOICE_ID
+
+    calls = []
+
+    class DummyConvertClient:
+        class text_to_speech:
+            @staticmethod
+            def convert(**kwargs):
+                calls.append(kwargs["voice_id"])
+                if kwargs["voice_id"] == "library-voice-id":
+                    class DummyApiError(Exception):
+                        status_code = 402
+                    raise DummyApiError("Free users cannot use library voices via the API.")
+                return [b"premade-audio-chunk"]
+
+    def dummy_factory(api_key, timeout):
+        return DummyConvertClient
+
+    service = ElevenLabsSpeechService(
+        api_key="test-key",
+        voice_id="library-voice-id",
+        model_id="eleven_multilingual_v2",
+        client_factory=dummy_factory,
+    )
+
+    import asyncio
+    audio = asyncio.run(service.synthesize("Test fallback speech", "en"))
+    assert audio == b"premade-audio-chunk"
+    assert calls == ["library-voice-id", DEFAULT_PREMADE_VOICE_ID]

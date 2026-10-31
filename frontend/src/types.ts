@@ -278,8 +278,8 @@ export type ShopWhatsAppContactResponse = {
   phone_number?: string | null;
   whatsapp_number?: string | null;
   source_url?: string | null;
-  verification_status: "verified_whatsapp" | "phone_only" | "not_found";
-  confidence: "high" | "medium" | "low" | "none";
+  verification_status: "verified" | "verified_whatsapp" | "phone_only" | "not_found" | "ambiguous";
+  confidence?: "high" | "medium" | "low" | "none" | null;
   message: string;
   cached?: boolean;
 };

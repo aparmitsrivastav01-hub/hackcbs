@@ -143,7 +143,9 @@ class PharmacyService:
 
         result_copy = dict(result)
         result_copy["cached"] = False
-        self._whatsapp_cache[cache_key] = (time.monotonic() + self.cache_ttl_seconds, result_copy)
+        # Cache only verified or phone-only results; never cache ambiguous or transient errors
+        if result_copy.get("verification_status") in ("verified_whatsapp", "verified", "phone_only"):
+            self._whatsapp_cache[cache_key] = (time.monotonic() + self.cache_ttl_seconds, result_copy)
         return dict(result_copy)
 
     def create_enquiry(self, store_id: str, cart_session_id: str) -> dict[str, Any]:

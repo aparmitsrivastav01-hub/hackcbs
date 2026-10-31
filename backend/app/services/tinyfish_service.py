@@ -1,6 +1,7 @@
 """Thin HTTP integration built from TinyFish's official Search and Agent REST docs."""
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 from urllib.parse import urlparse
@@ -9,8 +10,34 @@ import httpx
 
 from app.services.phone_utils import normalize_indian_phone, verified_whatsapp
 
+logger = logging.getLogger(__name__)
+
 TINYFISH_SEARCH_URL = "https://api.search.tinyfish.ai"
 TINYFISH_AGENT_RUN_URL = "https://agent.tinyfish.ai/v1/automation/run"
+
+BLOCKED_OR_LOW_PRIORITY_DOMAINS = (
+    "justdial.com",
+    "youtube.com",
+    "instagram.com",
+    "pinterest.com",
+    "twitter.com",
+    "x.com",
+    "linkedin.com",
+)
+
+
+def _candidate_priority(url: str) -> int:
+    """Prioritize official pharmacy websites, brand locators, and business listings over scrap-blocking directories."""
+    domain = urlparse(url).netloc.lower()
+    for blocked in BLOCKED_OR_LOW_PRIORITY_DOMAINS:
+        if blocked in domain:
+            return 10
+    # Official pharmacy chains, government kendra locators, and direct business sites get top priority
+    if any(k in domain for k in ("davaindia", "janaushadhi", "apollopharmacy", "medplus", "netmeds", "1mg", "pharmeasy", "business.site")):
+        return 1
+    if "facebook.com" in domain or "maps.google" in domain or "google.com" in domain:
+        return 2
+    return 5
 
 STORE_OUTPUT_SCHEMA = {
     "type": "object",
@@ -189,8 +216,10 @@ class TinyFishService:
             "url": source_url,
             "goal": goal,
             "output_schema": WHATSAPP_CONTACT_SCHEMA,
-            "agent_config": {"max_duration_seconds": 45},
+            "browser_profile": "lite",
+            "agent_config": {"max_duration_seconds": 55},
         }
+        logger.info("TinyFish extraction starting on URL: %s for shop: %s", source_url, shop_name)
         try:
             async with httpx.AsyncClient(timeout=self.agent_timeout_seconds, transport=self.transport) as client:
                 response = await client.post(
@@ -201,11 +230,15 @@ class TinyFishService:
                 response.raise_for_status()
                 result_body = response.json()
         except httpx.TimeoutException as exc:
+            logger.warning("TinyFish contact extraction timed out on %s: %s", source_url, type(exc).__name__)
             raise TinyFishTimeout("TinyFish contact extraction request timed out") from exc
         except (httpx.HTTPError, ValueError) as exc:
+            logger.warning("TinyFish contact extraction HTTP error on %s: %s", source_url, type(exc).__name__)
             raise TinyFishError("TinyFish contact extraction request failed") from exc
 
-        if not isinstance(result_body, dict) or result_body.get("status") != "COMPLETED":
+        status = result_body.get("status") if isinstance(result_body, dict) else None
+        logger.info("TinyFish task response status: %s (run_id=%s)", status, result_body.get("run_id") if isinstance(result_body, dict) else None)
+        if not isinstance(result_body, dict) or status != "COMPLETED":
             raise TinyFishError("TinyFish contact extraction did not complete")
         extracted = result_body.get("result")
         if isinstance(extracted, dict) and isinstance(extracted.get("result"), dict):
@@ -222,6 +255,10 @@ class TinyFishService:
         query: str | None = None,
     ) -> dict[str, Any]:
         """Search publicly accessible sources via TinyFish and extract verified contact."""
+        logger.info(
+            "TinyFish WhatsApp discovery initiated: shop='%s', address='%s', city='%s', maps_url='%s'",
+            shop_name, shop_address or "", city or locality or "", maps_url or "",
+        )
         location_part = shop_address or locality or city or ""
         search_query = (
             query.strip()
@@ -246,6 +283,7 @@ class TinyFishService:
                 raise
 
         if not candidate_urls:
+            logger.info("TinyFish search returned 0 candidates for query: %s", search_query)
             return {
                 "shop_name": shop_name,
                 "phone_number": None,
@@ -256,10 +294,15 @@ class TinyFishService:
                 "message": "No public listings found for this shop.",
             }
 
+        # Sort candidate URLs to prioritize official brand locators and sites over bot-blocking directories
+        candidate_urls.sort(key=_candidate_priority)
+        logger.info("TinyFish search found %d candidates for '%s'. Top candidates: %s", len(candidate_urls), shop_name, candidate_urls[:3])
+
         candidate_urls = candidate_urls[:2]
 
         found_phone: str | None = None
         phone_source_url: str | None = None
+        has_ambiguous_candidate = False
         errors: list[Exception] = []
 
         for candidate_url in candidate_urls:
@@ -274,7 +317,16 @@ class TinyFishService:
                 errors.append(exc)
                 continue
 
-            if not extracted.get("matched_exact_shop"):
+            matched = bool(extracted.get("matched_exact_shop"))
+            notes = str(extracted.get("notes") or "").lower()
+            logger.info(
+                "TinyFish extraction completed on %s: matched=%s, has_phone=%s, is_explicit_wa=%s, notes='%s'",
+                candidate_url, matched, bool(extracted.get("phone_number")), extracted.get("is_explicit_whatsapp"), notes[:80],
+            )
+
+            if not matched:
+                if any(w in notes for w in ("ambiguous", "multiple", "different branch", "another store", "differ")):
+                    has_ambiguous_candidate = True
                 continue
 
             raw_wa = extracted.get("whatsapp_number")
@@ -289,7 +341,7 @@ class TinyFishService:
             if raw_wa_url:
                 verified_num, is_wa = verified_whatsapp(norm_wa or raw_phone, raw_wa_url)
                 if is_wa and verified_num:
-                    return {
+                    result = {
                         "shop_name": shop_name,
                         "phone_number": norm_phone or verified_num,
                         "whatsapp_number": verified_num,
@@ -298,9 +350,11 @@ class TinyFishService:
                         "confidence": "high",
                         "message": "Verified WhatsApp number found.",
                     }
+                    logger.info("Verified WhatsApp contact found: shop='%s', wa=%s, source=%s", shop_name, verified_num, candidate_url)
+                    return result
 
             if is_explicit_wa and norm_wa:
-                return {
+                result = {
                     "shop_name": shop_name,
                     "phone_number": norm_phone or norm_wa,
                     "whatsapp_number": norm_wa,
@@ -309,6 +363,8 @@ class TinyFishService:
                     "confidence": "high",
                     "message": "Verified WhatsApp number found.",
                 }
+                logger.info("Verified explicit WhatsApp contact found: shop='%s', wa=%s, source=%s", shop_name, norm_wa, candidate_url)
+                return result
 
             if not found_phone and norm_phone:
                 found_phone = norm_phone
@@ -321,7 +377,7 @@ class TinyFishService:
                 raise first_err
 
         if found_phone:
-            return {
+            result = {
                 "shop_name": shop_name,
                 "phone_number": found_phone,
                 "whatsapp_number": None,
@@ -330,8 +386,23 @@ class TinyFishService:
                 "confidence": "medium",
                 "message": "Public phone number found, but WhatsApp could not be verified for this shop.",
             }
+            logger.info("Phone-only contact found: shop='%s', phone=%s, source=%s", shop_name, found_phone, phone_source_url)
+            return result
 
-        return {
+        if has_ambiguous_candidate:
+            result = {
+                "shop_name": shop_name,
+                "phone_number": None,
+                "whatsapp_number": None,
+                "source_url": candidate_urls[0] if candidate_urls else None,
+                "verification_status": "ambiguous",
+                "confidence": "low",
+                "message": "Multiple or ambiguous shop matches found. Please specify the exact branch or street address.",
+            }
+            logger.info("Ambiguous shop matches found for shop='%s'", shop_name)
+            return result
+
+        result = {
             "shop_name": shop_name,
             "phone_number": None,
             "whatsapp_number": None,
@@ -340,6 +411,8 @@ class TinyFishService:
             "confidence": "none",
             "message": "WhatsApp number could not be verified for this shop.",
         }
+        logger.info("No contact found for shop='%s'", shop_name)
+        return result
 
     @staticmethod
     def _valid_http_url(value: Any) -> bool:

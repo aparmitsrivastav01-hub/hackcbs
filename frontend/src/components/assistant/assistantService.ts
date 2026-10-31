@@ -52,6 +52,8 @@ async function errorFromResponse(response: Response): Promise<Error> {
   return new Error(`Request failed (${response.status})`);
 }
 
+const assistantAudioCache = new Map<string, Blob>();
+
 export class AssistantService {
   private recognition: any = null;
   private currentAudio: HTMLAudioElement | null = null;
@@ -62,6 +64,12 @@ export class AssistantService {
 
   constructor() {
     this.initSpeechRecognition();
+  }
+
+  public isSpeechSupported(): boolean {
+    if (typeof window === "undefined") return false;
+    const win = window as IWindow;
+    return Boolean(win.SpeechRecognition || win.webkitSpeechRecognition);
   }
 
   private initSpeechRecognition() {
@@ -83,6 +91,9 @@ export class AssistantService {
     onEnd: () => void,
   ) {
     if (!this.recognition) {
+      this.initSpeechRecognition();
+    }
+    if (!this.recognition) {
       onError(locale === "hi"
         ? "आपके ब्राउज़र में वॉइस रिकग्निशन समर्थित नहीं है। कृपया नीचे लिखकर पूछें।"
         : "Voice recognition is not supported in this browser. Please type your question.");
@@ -93,11 +104,17 @@ export class AssistantService {
     this.stopSpeaking();
     this.recognition.lang = locale === "hi" ? "hi-IN" : "en-IN";
     this.recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
+      const transcript = event.results?.[0]?.[0]?.transcript;
       if (transcript) onResult(transcript);
     };
     this.recognition.onerror = (event: any) => {
-      onError(event.error || "Speech recognition error");
+      const err = event?.error;
+      if (err === "no-speech") {
+        this.isListening = false;
+        onEnd();
+        return;
+      }
+      onError(err || "Speech recognition error");
       this.isListening = false;
       onEnd();
     };
@@ -159,15 +176,23 @@ export class AssistantService {
     const controller = new AbortController();
     this.speechController = controller;
     onGenerating?.();
+    const cleanText = text.trim();
+    const cacheKey = `${locale}:${cleanText}`;
     try {
-      const response = await fetch("/api/voice/elevenlabs/speak", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text.slice(0, 2500), language: locale }),
-        signal: controller.signal,
-      });
-      if (!response.ok) throw await errorFromResponse(response);
-      const blob = await response.blob();
+      let blob: Blob;
+      if (assistantAudioCache.has(cacheKey)) {
+        blob = assistantAudioCache.get(cacheKey)!;
+      } else {
+        const response = await fetch("/api/voice/elevenlabs/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: cleanText.slice(0, 2500), language: locale }),
+          signal: controller.signal,
+        });
+        if (!response.ok) throw await errorFromResponse(response);
+        blob = await response.blob();
+        assistantAudioCache.set(cacheKey, blob);
+      }
       const audioUrl = URL.createObjectURL(blob);
       this.currentAudioUrl = audioUrl;
       const audio = new Audio(audioUrl);

@@ -243,4 +243,93 @@ describe("StoresPage — Google Maps Embed & On-Demand TinyFish WhatsApp Discove
     expect(screen.getByText(/TinyFish contact discovery timed out/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Retry Discovery/i })).toBeInTheDocument();
   });
+
+  it("handles ambiguous contact status and offers refinement option", async () => {
+    mockGetShopWhatsAppContact.mockResolvedValueOnce({
+      shop_name: "Apollo Pharmacy",
+      phone_number: "+911145678900",
+      whatsapp_number: null,
+      source_url: "https://apollopharmacy.in/branches",
+      verification_status: "ambiguous",
+      confidence: "low",
+      message: "Multiple branches or conflicting contacts found. Unable to verify exact store.",
+      cached: false,
+    });
+
+    renderStoresPage();
+
+    const prepareButtons = screen.getAllByRole("button", { name: /Prepare enquiry/i });
+    fireEvent.click(prepareButtons[0]);
+
+    const openWhatsAppButton = screen.getByRole("button", { name: /Open in WhatsApp →/i });
+    fireEvent.click(openWhatsAppButton);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Multiple matching pharmacy locations found/i)
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("button", { name: /Refine Shop Details/i })).toBeInTheDocument();
+    expect(mockWindowOpen).not.toHaveBeenCalled();
+  });
+
+  it("supports enquiring with custom shop from map with validation", async () => {
+    mockGetShopWhatsAppContact.mockResolvedValueOnce({
+      shop_name: "Dava India Generic Pharmacy",
+      phone_number: "+919044366999",
+      whatsapp_number: "+919044366999",
+      source_url: "https://picnicspotroad-indiranagar.davaindia.com/",
+      verification_status: "verified",
+      confidence: "high",
+      message: "Verified WhatsApp contact found.",
+      cached: false,
+    });
+
+    renderStoresPage();
+
+    // Click "Enquire with shop from map"
+    const mapEnquiryButtons = screen.getAllByRole("button", { name: /Enquire with shop from map/i });
+    fireEvent.click(mapEnquiryButtons[0]);
+
+    // Form opens
+    expect(screen.getByText(/Enquire with any Pharmacy seen on Google Maps/i)).toBeInTheDocument();
+
+    const nameInput = screen.getByPlaceholderText(/e\.g\., Apollo Pharmacy/i);
+    const addressInput = screen.getByPlaceholderText(/e\.g\., Main Market/i);
+    const cityInput = screen.getByPlaceholderText(/e\.g\., Lucknow/i);
+
+    // Fill form
+    fireEvent.change(nameInput, { target: { value: "Dava India Generic Pharmacy" } });
+    fireEvent.change(addressInput, { target: { value: "Picnic Spot Rd, Indira Nagar, Lucknow" } });
+    fireEvent.change(cityInput, { target: { value: "Lucknow" } });
+
+    // Submit custom shop
+    const proceedButton = screen.getByRole("button", { name: /Prepare Enquiry →/i });
+    fireEvent.click(proceedButton);
+
+    // Enquiry modal opens with custom shop details
+    await waitFor(() => {
+      expect(screen.getByText(/Enquire with Dava India Generic Pharmacy/i)).toBeInTheDocument();
+    });
+
+    // Now trigger WhatsApp discovery
+    const openWhatsAppButton = screen.getByRole("button", { name: /Open in WhatsApp →/i });
+    fireEvent.click(openWhatsAppButton);
+
+    await waitFor(() => {
+      expect(mockGetShopWhatsAppContact).toHaveBeenCalledTimes(1);
+    });
+
+    const callArg = mockGetShopWhatsAppContact.mock.calls[0][0];
+    expect(callArg.shop_name).toBe("Dava India Generic Pharmacy");
+    expect(callArg.shop_address).toBe("Picnic Spot Rd, Indira Nagar, Lucknow");
+    expect(callArg.locality).toBe("Lucknow");
+
+    await waitFor(() => {
+      expect(mockWindowOpen).toHaveBeenCalledTimes(1);
+    });
+    const openedUrl = mockWindowOpen.mock.calls[0][0] as string;
+    expect(openedUrl).toContain("https://wa.me/919044366999?text=");
+  });
 });
