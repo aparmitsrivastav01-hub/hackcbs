@@ -9,8 +9,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
+import { Helmet } from "react-helmet-async";
 import { useSearchParams } from "react-router-dom";
 import { checkBatchSafety, getDatasetStatus } from "../api/client";
+import { Skeleton } from "../components/ui/Skeleton";
 import type { BatchCheckResult, DatasetStatus } from "../types";
 
 export function BatchSafetyPage() {
@@ -71,6 +73,14 @@ export function BatchSafetyPage() {
   }
 
   return (
+    <>
+      <Helmet>
+        <title>Batch Drug Alert Checker — MedEasy</title>
+        <meta
+          name="description"
+          content="Verify medicine batch numbers against CDSCO official monthly Not of Standard Quality (NSQ) and spurious drug alerts before consumption."
+        />
+      </Helmet>
     <div className="min-h-screen bg-[#f7faff] pb-24 pt-8">
       <div className="mx-auto max-w-[1080px] px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -219,8 +229,29 @@ export function BatchSafetyPage() {
           </form>
         </div>
 
+        {/* SKELETON LOADING STATE */}
+        {loading && (
+          <div className="mt-8 space-y-4">
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+              <div className="flex items-start gap-4">
+                <Skeleton className="h-12 w-12 rounded-2xl" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-40 rounded-full" />
+                  <Skeleton className="h-7 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              </div>
+              <div className="mt-6 space-y-3 border-t border-slate-100 pt-6">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* RESULTS CARD (Screen 10 Outcomes) */}
-        {result && (
+        {!loading && result && (
           <div className="mt-8">
             {result.status === "alert_match" ? (
               /* OUTCOME A: EXACT ALERT MATCH */
@@ -315,5 +346,6 @@ export function BatchSafetyPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

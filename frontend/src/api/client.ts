@@ -203,13 +203,62 @@ export async function extractPrescription(file: File): Promise<ExtractionRespons
   const form = new FormData();
   form.append("file", file);
   try {
+    // 1. Try backend /api/prescriptions/scan (teammate's live route)
+    try {
+      const scanRes = await request<{
+        success: boolean;
+        prescription_id?: string;
+        total_medicines_detected?: number;
+        medicines?: Array<{
+          prescribed_name?: string | null;
+          normalized_name?: string | null;
+          strength?: string | null;
+          dosage_form?: string | null;
+          dosage_instructions?: string | null;
+          extraction_confidence?: number | null;
+        }>;
+      }>("/api/prescriptions/scan", {
+        method: "POST",
+        body: form,
+        timeoutMs: 15000,
+      });
+
+      if (scanRes && Array.isArray(scanRes.medicines) && scanRes.medicines.length > 0) {
+        return {
+          status: "success",
+          message: `${scanRes.total_medicines_detected ?? scanRes.medicines.length} medicines extracted from prescription for review`,
+          search_performed: true,
+          model: "Gemini",
+          file_name: file.name,
+          extraction: {
+            document_language: "English",
+            items: scanRes.medicines.map((m) => ({
+              medicine_name: m.prescribed_name || m.normalized_name || "",
+              strength: m.strength || "",
+              dosage_form: m.dosage_form || "",
+              instructions: m.dosage_instructions || null,
+              raw_text: m.prescribed_name || m.normalized_name || "",
+              confidence: m.extraction_confidence != null ? `${Math.round(m.extraction_confidence * 100)}%` : "high",
+              uncertain_parts: [],
+              needs_user_confirmation: true,
+            })),
+            other_text: [],
+            warnings: [],
+          },
+        };
+      }
+    } catch {
+      /* Fall through to legacy /extract attempt */
+    }
+
+    // 2. Try legacy /api/prescriptions/extract if supported
     return await request<ExtractionResponse>("/api/prescriptions/extract", {
       method: "POST",
       body: form,
       timeoutMs: 12000,
     });
   } catch {
-    // Graceful fallback to client-side extraction preview if teammate has not deployed OCR route yet
+    // Graceful fallback to client-side extraction preview if backend OCR is unavailable or unconfigured
     return getSyntheticExtraction(file.name);
   }
 }

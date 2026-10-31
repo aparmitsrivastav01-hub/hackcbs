@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import { createEnquiry, formatInr } from "../api/client";
 import { useCart } from "../context/CartContext";
@@ -206,6 +207,14 @@ export function StoresPage() {
   }
 
   return (
+    <>
+      <Helmet>
+        <title>Nearby Pharmacies & Enquiry Handoff — MedEasy</title>
+        <meta
+          name="description"
+          content="Locate nearby Jan Aushadhi Kendras, Dava India outlets, and local licensed pharmacies. Prepare structured enquiries and connect via WhatsApp."
+        />
+      </Helmet>
     <div className="min-h-screen bg-[#f7faff] pb-24 pt-8">
       <div className="mx-auto max-w-[1180px] px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -598,5 +607,6 @@ export function StoresPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

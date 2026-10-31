@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Trash2,
 } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import { formatInr } from "../api/client";
 import { useCart } from "../context/CartContext";
@@ -18,6 +19,14 @@ export function CartPage() {
   const { items, updateQuantity, removeItem, clearCart, subtotal, itemCount } = useCart();
 
   return (
+    <>
+      <Helmet>
+        <title>Pharmacy Enquiry Cart — MedEasy</title>
+        <meta
+          name="description"
+          content="Review your medicine enquiry list, adjust quantities, and send a prefilled WhatsApp message to your nearest pharmacy."
+        />
+      </Helmet>
     <div className="min-h-screen bg-[#f7faff] pb-24 pt-8">
       <div className="mx-auto max-w-[1080px] px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -239,5 +248,6 @@ export function CartPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

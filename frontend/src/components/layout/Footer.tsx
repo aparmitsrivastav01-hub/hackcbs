@@ -17,9 +17,11 @@ export function Footer() {
         <p className="max-w-xl text-sm text-muted">
           Price comparisons are informational and based on the loaded catalogue. They are not medical advice or a recommendation to switch treatment.
         </p>
-        <div className="flex gap-5 text-sm font-medium text-slate-500">
+        <div className="flex flex-wrap gap-5 text-sm font-medium text-slate-500">
           <Link to="/data-sources" className="hover:text-navy">Data Sources</Link>
           <Link to="/help" className="hover:text-navy">Help</Link>
+          <Link to="/privacy" className="hover:text-navy">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-navy">Terms of Use</Link>
         </div>
       </div>
     </footer>

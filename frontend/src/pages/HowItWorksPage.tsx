@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 
 const steps = [
@@ -29,20 +30,29 @@ const steps = [
 
 export function HowItWorksPage() {
   return (
-    <div className="mx-auto max-w-4xl px-5 py-12 md:px-8">
-      <h1 className="text-3xl font-extrabold text-navy">How it works</h1>
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        {steps.map((step, index) => (
-          <article key={step.title} className="rounded-2xl border border-slate-100 p-6 shadow-sm">
-            <p className="text-sm font-semibold text-brand">Step {index + 1}</p>
-            <h2 className="mt-2 text-xl font-bold text-navy">{step.title}</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">{step.body}</p>
-            <Link to={step.to} className="mt-4 inline-block text-sm font-semibold text-brand">
-              {step.cta} →
-            </Link>
-          </article>
-        ))}
+    <>
+      <Helmet>
+        <title>How It Works — MedEasy Price Comparison Flow</title>
+        <meta
+          name="description"
+          content="Step-by-step guide on how MedEasy works: upload prescriptions, confirm extracted medicines, compare Jan Aushadhi generic prices, and connect with local stores."
+        />
+      </Helmet>
+      <div className="mx-auto max-w-4xl px-5 py-12 md:px-8">
+        <h1 className="text-3xl font-extrabold text-navy">How it works</h1>
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          {steps.map((step, index) => (
+            <article key={step.title} className="rounded-2xl border border-slate-100 p-6 shadow-sm">
+              <p className="text-sm font-semibold text-brand">Step {index + 1}</p>
+              <h2 className="mt-2 text-xl font-bold text-navy">{step.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-muted">{step.body}</p>
+              <Link to={step.to} className="mt-4 inline-block text-sm font-semibold text-brand">
+                {step.cta} →
+              </Link>
+            </article>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
