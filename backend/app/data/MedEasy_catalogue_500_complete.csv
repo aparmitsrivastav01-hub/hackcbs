@@ -499,3 +499,6 @@ id,brand_name,active_salt,dosage_form,private_brand_price,jan_aushadhi_price,dav
 498,Enterogermina Respules 5ml (5s),Bacillus Clausii Spores Suspension 2 Billion / 5 ml (5 Mini Bottles),Suspension,295.0,65.0,105.0,PROBIOTIC
 499,Evion LC,Levocarnitine 150 mg + Vitamin E 200 mg Tab,Tablet,88.0,18.5,30.0,VITAMIN & SUPPLE
 500,Shelcal HD,Calcium 500 mg + Vitamin D3 500 IU Tab,Tablet,138.0,14.5,24.0,VITAMIN & SUPPLE
+501,Cabugolin / Cabgolin 0.5,Cabergoline 0.5 mg Tab (4s),Tablet,245.0,44.0,72.0,Endocrinology
+502,Dailyshire 60k / Dailyshine 60k / Methylcal 60k / Devivo 60k,"Cholecalciferol (Vitamin D3) 60,000 IU Tab / Softgel Caps (4s)",Tablet,108.0,22.0,36.0,VITAMIN & SUPPLE
+503,Thyronorm,Levothyroxine Sodium 50 mcg Tab (100s / 120s bottle),Tablet,132.5,28.0,48.0,Endocrinology

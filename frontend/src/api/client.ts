@@ -202,8 +202,16 @@ export async function compareMedicine(id: number, signal?: AbortSignal): Promise
 export async function extractPrescription(file: File): Promise<ExtractionResponse> {
   const form = new FormData();
   form.append("file", file);
+
+  // Call the real Gemini Vision + OCR extraction endpoint
   try {
-    // 1. Try backend /api/prescriptions/scan (teammate's live route)
+    return await request<ExtractionResponse>("/api/prescriptions/extract", {
+      method: "POST",
+      body: form,
+      timeoutMs: 35000,
+    });
+  } catch (err: unknown) {
+    // If /extract fails, try /scan as fallback
     try {
       const scanRes = await request<{
         success: boolean;
@@ -216,50 +224,52 @@ export async function extractPrescription(file: File): Promise<ExtractionRespons
           dosage_form?: string | null;
           dosage_instructions?: string | null;
           extraction_confidence?: number | null;
+          raw_text?: string | null;
+          uncertain_parts?: string[];
+          needs_review?: boolean;
         }>;
       }>("/api/prescriptions/scan", {
         method: "POST",
         body: form,
-        timeoutMs: 15000,
+        timeoutMs: 35000,
       });
 
-      if (scanRes && Array.isArray(scanRes.medicines) && scanRes.medicines.length > 0) {
+      if (scanRes && Array.isArray(scanRes.medicines)) {
         return {
           status: "success",
           message: `${scanRes.total_medicines_detected ?? scanRes.medicines.length} medicines extracted from prescription for review`,
-          search_performed: true,
-          model: "Gemini",
+          search_performed: false,
+          model: "Gemini Vision",
           file_name: file.name,
           extraction: {
             document_language: "English",
-            items: scanRes.medicines.map((m) => ({
-              medicine_name: m.prescribed_name || m.normalized_name || "",
-              strength: m.strength || "",
-              dosage_form: m.dosage_form || "",
-              instructions: m.dosage_instructions || null,
-              raw_text: m.prescribed_name || m.normalized_name || "",
-              confidence: m.extraction_confidence != null ? `${Math.round(m.extraction_confidence * 100)}%` : "high",
-              uncertain_parts: [],
-              needs_user_confirmation: true,
-            })),
+            items: scanRes.medicines.map((m) => {
+              const conf = m.extraction_confidence != null ? m.extraction_confidence : 0.6;
+              const confStr = conf >= 0.85 ? "High" : conf >= 0.60 ? "Medium" : "Low";
+              return {
+                medicine_name: m.prescribed_name || m.normalized_name || "",
+                strength: m.strength || "",
+                dosage_form: m.dosage_form || "",
+                instructions: m.dosage_instructions || null,
+                raw_text: m.raw_text || m.prescribed_name || m.normalized_name || "",
+                confidence: confStr,
+                uncertain_parts: m.uncertain_parts || [],
+                needs_user_confirmation: true,
+              };
+            }),
             other_text: [],
-            warnings: [],
+            warnings: [
+              "Please verify medicine names and dosages with your doctor or licensed pharmacist.",
+            ],
           },
         };
       }
     } catch {
-      /* Fall through to legacy /extract attempt */
+      // Ignore secondary fallback error
     }
 
-    // 2. Try legacy /api/prescriptions/extract if supported
-    return await request<ExtractionResponse>("/api/prescriptions/extract", {
-      method: "POST",
-      body: form,
-      timeoutMs: 12000,
-    });
-  } catch {
-    // Graceful fallback to client-side extraction preview if backend OCR is unavailable or unconfigured
-    return getSyntheticExtraction(file.name);
+    const message = err instanceof Error ? err.message : "Failed to extract prescription from document.";
+    throw new Error(message);
   }
 }
 
@@ -514,7 +524,7 @@ export async function checkBatchSafety(payload: {
 
 export function formatInr(value: number | null | undefined): string {
   if (value == null) return "Not available";
-  return `₹${value.toLocaleString("en-IN", {
+  return `â‚¹${value.toLocaleString("en-IN", {
     minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
     maximumFractionDigits: 2,
   })}`;
@@ -532,75 +542,3 @@ export function formatSavingsText(amount: number | null | undefined, percentage:
 }
 
 // Synthetic extraction fallback
-function getSyntheticExtraction(fileName: string): ExtractionResponse {
-  return {
-    status: "success",
-    message: "5 medicines extracted from prescription for review",
-    search_performed: false,
-    model: "gemini-1.5-flash-prescription",
-    file_name: fileName,
-    extraction: {
-      document_language: "en",
-      items: [
-        {
-          raw_text: "T. Paracetamol 500mg (1-0-1)",
-          medicine_name: "Paracetamol",
-          strength: "500 mg",
-          dosage_form: "Tablet",
-          instructions: "1 tablet morning and night after food",
-          confidence: "High",
-          uncertain_parts: [],
-          needs_user_confirmation: false,
-        },
-        {
-          raw_text: "T. Azithromycin 500mg (1-0-0)",
-          medicine_name: "Azithromycin",
-          strength: "500 mg",
-          dosage_form: "Tablet",
-          instructions: "1 tablet daily before meal for 3 days",
-          confidence: "High",
-          uncertain_parts: [],
-          needs_user_confirmation: false,
-        },
-        {
-          raw_text: "Cap. Pantoprazole 40mg (1-0-0)",
-          medicine_name: "Pantoprazole",
-          strength: "40 mg",
-          dosage_form: "Capsule",
-          instructions: "1 capsule empty stomach in morning",
-          confidence: "High",
-          uncertain_parts: [],
-          needs_user_confirmation: false,
-        },
-        {
-          raw_text: "T. Cetirizine 10mg (0-0-1)",
-          medicine_name: "Cetirizine",
-          strength: "10 mg",
-          dosage_form: "Tablet",
-          instructions: "1 tablet at bedtime",
-          confidence: "Medium",
-          uncertain_parts: ["Handwritten strength partially smudged"],
-          needs_user_confirmation: true,
-        },
-        {
-          raw_text: "T. Multivitamin with Zinc (0-1-0)",
-          medicine_name: "Multivitamin",
-          strength: "Standard",
-          dosage_form: "Tablet",
-          instructions: "1 tablet afternoon after lunch",
-          confidence: "Medium",
-          uncertain_parts: [],
-          needs_user_confirmation: true,
-        },
-      ],
-      other_text: [
-        "Patient: Shailendra, Age: 45 / Male",
-        "Doctor: Dr. M. Tripathi (M.B.B.S., D.Ortho)",
-        "Chief Complaints: Joint pain and seasonal fever",
-      ],
-      warnings: [
-        "AI-assisted transcription draft. Always review and verify each item before searching catalogue.",
-      ],
-    },
-  };
-}

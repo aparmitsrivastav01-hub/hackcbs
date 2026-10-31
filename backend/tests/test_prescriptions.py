@@ -249,3 +249,82 @@ def test_provider_timeout_returns_gateway_timeout(client):
     response = client.post("/api/prescriptions/scan", files={"file": ("rx.jpg", image_bytes(), "image/jpeg")})
     assert response.status_code == 504
     assert "timed out" in response.json()["detail"]
+
+
+def test_extract_draft_endpoint_success(client):
+    fake = FakeProvider([
+        ExtractedMedicine(
+            raw_text="T. Etolasse-P 1-0-1",
+            prescribed_name="Etolasse-P",
+            strength="400mg + 325mg",
+            dosage_form="Tablet",
+            dosage_instructions="1-0-1",
+            confidence=0.92,
+            needs_review=False,
+        ),
+        ExtractedMedicine(
+            raw_text="Unclear handwriting line",
+            prescribed_name="Unclear",
+            confidence=0.45,
+            uncertain_parts=["Handwriting illegible"],
+            needs_review=True,
+        ),
+    ])
+    client.app.state.prescription_service.extraction_provider = fake
+    response = client.post("/api/prescriptions/extract", files={"file": ("rx.jpg", image_bytes(), "image/jpeg")})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["search_performed"] is False
+    assert len(data["extraction"]["items"]) == 2
+    item1 = data["extraction"]["items"][0]
+    assert item1["medicine_name"] == "Etolasse-P"
+    assert item1["confidence"] == "High"
+    assert item1["needs_review"] is False
+    item2 = data["extraction"]["items"][1]
+    assert item2["confidence"] == "Low"
+    assert item2["needs_review"] is True
+    assert len(item2["uncertain_parts"]) == 1
+
+
+def test_extract_draft_pdf_with_embedded_text(client):
+    fake = FakeProvider([
+        ExtractedMedicine(
+            raw_text="Paracetamol 500mg",
+            prescribed_name="Paracetamol",
+            strength="500mg",
+            dosage_form="Tablet",
+            confidence=0.95,
+        ),
+    ])
+    client.app.state.prescription_service.extraction_provider = fake
+    response = client.post("/api/prescriptions/extract", files={"file": ("rx.pdf", pdf_bytes(), "application/pdf")})
+    assert response.status_code == 200
+    assert len(response.json()["extraction"]["items"]) == 1
+
+
+def test_extract_draft_empty_result(client):
+    client.app.state.prescription_service.extraction_provider = FakeProvider([])
+    response = client.post("/api/prescriptions/extract", files={"file": ("rx.jpg", image_bytes(), "image/jpeg")})
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["extraction"]["items"]) == 0
+
+
+def test_search_confirmed_endpoint(client):
+    payload = {
+        "items": [
+            {
+                "medicine_name": "Zerodol-P",
+                "strength": "100 mg + 325 mg",
+                "dosage_form": "Tablet",
+            }
+        ]
+    }
+    response = client.post("/api/prescriptions/search-confirmed", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert len(data["results"]) == 1
+    assert data["results"][0]["confirmed_input"]["medicine_name"] == "Zerodol-P"
+    assert data["results"][0]["match_count"] >= 1
