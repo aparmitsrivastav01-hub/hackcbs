@@ -1,7 +1,10 @@
 import { Plus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 export function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="border-t border-slate-100 bg-white">
       <div className="mx-auto flex max-w-[1280px] flex-col gap-4 px-5 py-8 md:flex-row md:items-center md:justify-between md:px-8">
@@ -15,13 +18,13 @@ export function Footer() {
           </span>
         </div>
         <p className="max-w-xl text-sm text-muted">
-          Price comparisons are informational and based on the loaded catalogue. They are not medical advice or a recommendation to switch treatment.
+          {t.footerDisclaimer}
         </p>
         <div className="flex flex-wrap gap-5 text-sm font-medium text-slate-500">
-          <Link to="/data-sources" className="hover:text-navy">Data Sources</Link>
-          <Link to="/help" className="hover:text-navy">Help</Link>
-          <Link to="/privacy" className="hover:text-navy">Privacy Policy</Link>
-          <Link to="/terms" className="hover:text-navy">Terms of Use</Link>
+          <Link to="/data-sources" className="hover:text-navy">{t.footerDataSources}</Link>
+          <Link to="/help" className="hover:text-navy">{t.footerHelp}</Link>
+          <Link to="/privacy" className="hover:text-navy">{t.footerPrivacy}</Link>
+          <Link to="/terms" className="hover:text-navy">{t.footerTerms}</Link>
         </div>
       </div>
     </footer>

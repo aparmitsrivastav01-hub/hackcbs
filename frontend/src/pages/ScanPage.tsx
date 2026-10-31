@@ -15,6 +15,7 @@ import { Helmet } from "react-helmet-async";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { extractPrescription, formatInr, searchConfirmed } from "../api/client";
 import samplePrescriptionImg from "../assets/sample-prescription.jpg";
+import { useLanguage } from "../i18n/LanguageContext";
 import type { ConfirmedSearchResult, ExtractedItem, ExtractionResponse } from "../types";
 
 type EditableItem = {
@@ -256,6 +257,7 @@ const SUPPORTED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
 export function ScanPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, tr } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const locationHandledRef = useRef(false);
 
@@ -481,10 +483,13 @@ export function ScanPage() {
   return (
     <>
       <Helmet>
-        <title>Scan Prescription — MedEasy</title>
+        <title>{tr("Scan Prescription — MedEasy", "पर्चा स्कैन करें — MedEasy")}</title>
         <meta
           name="description"
-          content="Upload your prescription for AI-assisted medicine extraction and price comparison across Jan Aushadhi and generic options."
+          content={tr(
+            "Upload your prescription for AI-assisted medicine extraction and price comparison across Jan Aushadhi and generic options.",
+            "AI सहायता से दवाइयों के नाम निकालने और जन औषधि जेनेरिक विकल्पों की तुलना के लिए अपना पर्चा अपलोड करें।"
+          )}
         />
       </Helmet>
     <div className="min-h-[calc(100vh-76px)] bg-[linear-gradient(180deg,#ffffff_0%,#f4f8fe_45%,#edf5ff_100%)]">
@@ -495,18 +500,20 @@ export function ScanPage() {
             {/* Top Eyebrow Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100/90 bg-[#eef5ff] px-3.5 py-1 text-[11px] font-bold tracking-[0.08em] text-brand">
               <Sparkles className="h-3.5 w-3.5 text-brand" />
-              YOUR HEALTH • CLEARER CHOICES • CLOSER TO YOU
+              {t.eyebrow}
             </div>
 
             {/* Main Heading */}
             <h1 className="mt-2.5 text-3xl font-extrabold tracking-tight text-navy sm:text-4xl lg:text-[46px] lg:leading-[1.1]">
-              Scan Your <span className="text-brand">Prescription</span>
+              {tr("Scan Your", "अपना पर्चा")} <span className="text-brand">{tr("Prescription", "स्कैन करें")}</span>
             </h1>
 
             {/* Subtitle */}
             <p className="mt-2.5 max-w-[540px] text-[15px] leading-relaxed text-slate-600">
-              Upload a clear photo of your prescription. We&apos;ll extract the medicines, dosage and
-              key details for you to review.
+              {tr(
+                "Upload a clear photo of your prescription. We'll extract the medicines, dosage and key details for you to review.",
+                "अपने पर्चे की स्पष्ट फोटो अपलोड करें। हम समीक्षा के लिए दवाइयों, खुराक और विवरण को पहचानेंगे।"
+              )}
             </p>
           </div>
 
@@ -546,9 +553,7 @@ export function ScanPage() {
             {/* Script Text with Arrow */}
             <div className="absolute -bottom-4 right-0 z-20 flex flex-col items-end">
               <span className="rotate-[-8deg] font-semibold italic text-[12.5px] text-brand whitespace-nowrap">
-                From prescription
-                <br />
-                to better choices.
+                {tr("From prescription\nto better choices.", "पर्चे से लेकर\nबेहतर विकल्पों तक।")}
               </span>
               <svg className="mr-6 mt-1 h-6 w-6 text-brand" viewBox="0 0 32 32" fill="none">
                 <path
@@ -589,9 +594,9 @@ export function ScanPage() {
           <div className="flex flex-col justify-between rounded-[26px] border border-slate-100/90 bg-white p-6 shadow-[0_12px_32px_rgba(8,123,255,0.06)] sm:p-7">
             <div>
               {/* Heading */}
-              <h2 className="text-[19px] font-bold text-navy">Upload Prescription</h2>
+              <h2 className="text-[19px] font-bold text-navy">{tr("Upload Prescription", "पर्चा अपलोड करें")}</h2>
               <p className="mt-0.5 text-[13px] text-slate-500">
-                Drag and drop your file here, or click to browse
+                {tr("Drag and drop your file here, or click to browse", "फ़ाइल यहां खींचें और छोड़ें, या चुनने के लिए क्लिक करें")}
               </p>
 
               {/* Hidden file input */}
@@ -637,9 +642,10 @@ export function ScanPage() {
                 </div>
 
                 <p className="text-[14px] font-bold text-navy">
-                  Click to upload <span className="font-normal text-slate-600">or drag and drop</span>
+                  {tr("Click to upload", "अपलोड के लिए क्लिक करें")}{" "}
+                  <span className="font-normal text-slate-600">{tr("or drag and drop", "या फ़ाइल यहां छोड़ें")}</span>
                 </p>
-                <p className="mt-0.5 text-xs text-slate-400">JPG, PNG, WEBP or PDF (max 10 MB)</p>
+                <p className="mt-0.5 text-xs text-slate-400">{tr("JPG, PNG, WEBP or PDF (max 10 MB)", "JPG, PNG, WEBP या PDF (अधिकतम 10 MB)")}</p>
 
                 {/* Format Badges */}
                 <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
@@ -672,9 +678,9 @@ export function ScanPage() {
                   <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef5ff] text-brand">
                     <ImageIcon className="h-4.5 w-4.5" strokeWidth={2} />
                   </div>
-                  <h4 className="text-[12.5px] font-bold text-navy">Clear image</h4>
+                  <h4 className="text-[12.5px] font-bold text-navy">{tr("Clear image", "स्पष्ट फोटो")}</h4>
                   <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
-                    Make sure the text is readable
+                    {tr("Make sure the text is readable", "लिखावट पढ़ने योग्य हो")}
                   </p>
                 </div>
 
@@ -683,9 +689,9 @@ export function ScanPage() {
                   <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef5ff] text-brand">
                     <Sun className="h-4.5 w-4.5" strokeWidth={2} />
                   </div>
-                  <h4 className="text-[12.5px] font-bold text-navy">Good lighting</h4>
+                  <h4 className="text-[12.5px] font-bold text-navy">{tr("Good lighting", "अच्छा प्रकाश")}</h4>
                   <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
-                    Avoid shadows and glare
+                    {tr("Avoid shadows and glare", "छाया या चमक से बचें")}
                   </p>
                 </div>
 
@@ -694,9 +700,9 @@ export function ScanPage() {
                   <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef5ff] text-brand">
                     <FileText className="h-4.5 w-4.5" strokeWidth={2} />
                   </div>
-                  <h4 className="text-[12.5px] font-bold text-navy">Include full page</h4>
+                  <h4 className="text-[12.5px] font-bold text-navy">{tr("Include full page", "पूरा पर्चा")}</h4>
                   <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
-                    Capture the complete prescription
+                    {tr("Capture the complete prescription", "पूरे पर्चे की फोटो लें")}
                   </p>
                 </div>
 
@@ -705,7 +711,7 @@ export function ScanPage() {
                   <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef5ff] text-brand">
                     <FileCheck className="h-4.5 w-4.5" strokeWidth={2} />
                   </div>
-                  <h4 className="text-[12.5px] font-bold text-navy">Max 10 MB</h4>
+                  <h4 className="text-[12.5px] font-bold text-navy">{tr("Max 10 MB", "अधिकतम 10 MB")}</h4>
                   <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
                     JPG, PNG, WEBP or PDF
                   </p>
@@ -722,7 +728,7 @@ export function ScanPage() {
                 className="flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-brand text-[14.5px] font-semibold text-white shadow-[0_8px_20px_rgba(8,123,255,0.28)] transition hover:bg-brand-dark disabled:opacity-60"
               >
                 <ScanLine className="h-4.5 w-4.5" />
-                <span>{busy ? "Analyzing your prescription..." : "Scan Prescription →"}</span>
+                <span>{busy ? tr("Analyzing your prescription...", "पर्चे का विश्लेषण हो रहा है...") : tr("Scan Prescription →", "पर्चा स्कैन करें →")}</span>
               </button>
             </div>
           </div>
@@ -732,7 +738,7 @@ export function ScanPage() {
             <div>
               {/* Header with Title & Remove Button */}
               <div className="flex items-center justify-between">
-                <h2 className="text-[19px] font-bold text-navy">Uploaded Prescription</h2>
+                <h2 className="text-[19px] font-bold text-navy">{tr("Uploaded Prescription", "अपलोड किया गया पर्चा")}</h2>
                 {file || previewUrl ? (
                   <button
                     type="button"
@@ -740,7 +746,7 @@ export function ScanPage() {
                     className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-2xs transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                   >
                     <Trash2 className="h-3.5 w-3.5 text-slate-500" />
-                    <span>Remove</span>
+                    <span>{tr("Remove", "हटाएं")}</span>
                   </button>
                 ) : null}
               </div>
@@ -761,7 +767,7 @@ export function ScanPage() {
                       <FileText className="h-7 w-7" />
                     </div>
                     <p className="text-[14px] font-bold text-navy">{file?.name}</p>
-                    <p className="mt-1 text-xs text-slate-400">PDF Document ready to scan</p>
+                    <p className="mt-1 text-xs text-slate-400">{tr("PDF Document ready to scan", "PDF दस्तावेज़ स्कैन के लिए तैयार")}</p>
                   </div>
                 ) : (
                   /* Empty state */
@@ -769,9 +775,12 @@ export function ScanPage() {
                     <div className="mb-2.5 flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200/80 bg-white text-slate-400 shadow-xs">
                       <FileText className="h-7 w-7 text-slate-400" />
                     </div>
-                    <p className="text-[14.5px] font-bold text-navy">No prescription uploaded yet</p>
+                    <p className="text-[14.5px] font-bold text-navy">{tr("No prescription uploaded yet", "अभी कोई पर्चा अपलोड नहीं हुआ")}</p>
                     <p className="mt-1 max-w-[260px] text-xs text-slate-400">
-                      Upload or drag & drop your prescription on the left to view the preview here.
+                      {tr(
+                        "Upload or drag & drop your prescription on the left to view the preview here.",
+                        "पूर्वावलोकन देखने के लिए बाईं ओर पर्चा अपलोड करें।"
+                      )}
                     </p>
                     <button
                       type="button"
@@ -779,7 +788,7 @@ export function ScanPage() {
                       className="mt-3.5 inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-white px-4 py-1.5 text-xs font-semibold text-brand shadow-2xs transition hover:bg-sky/50"
                     >
                       <Sparkles className="h-3.5 w-3.5" />
-                      Try sample prescription
+                      {tr("Try sample prescription", "सैंपल पर्चा आज़माएं")}
                     </button>
                   </div>
                 )}
@@ -793,7 +802,7 @@ export function ScanPage() {
                 className="flex h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-brand bg-white text-[14.5px] font-semibold text-brand transition hover:bg-sky/40"
               >
                 <Search className="h-4.5 w-4.5" />
-                <span>Go to Search Medicines →</span>
+                <span>{tr("Go to Search Medicines →", "दवाइयां खोजें →")}</span>
               </Link>
             </div>
           </div>
@@ -821,11 +830,11 @@ export function ScanPage() {
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div>
                 <span className="inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                  Extracted from Prescription
+                  {tr("Extracted from Prescription", "पर्चे से निकाली गई दवाइयां")}
                 </span>
-                <h3 className="mt-2 text-2xl font-bold text-navy">Review Extracted Medicines</h3>
+                <h3 className="mt-2 text-2xl font-bold text-navy">{tr("Review Extracted Medicines", "निकाली गई दवाइयों की समीक्षा करें")}</h3>
                 <p className="text-sm text-slate-500">
-                  Verify or edit names and strengths before searching catalogue matches.
+                  {tr("Verify or edit names and strengths before searching catalogue matches.", "कैटलॉग में खोजने से पहले नाम और मात्रा की पुष्टि या संपादन करें।")}
                 </p>
               </div>
               <button
@@ -834,14 +843,14 @@ export function ScanPage() {
                 className="inline-flex items-center gap-1.5 self-start rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-navy shadow-xs transition hover:border-brand hover:text-brand sm:self-auto"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Add medicine
+                {tr("Add medicine", "दवाई जोड़ें")}
               </button>
             </div>
 
             {/* Extracted hospital/doctor context if present */}
             {extraction.extraction.other_text.length ? (
               <div className="mt-4 rounded-xl border border-slate-100 bg-[#f8fafc] p-3.5 text-xs text-slate-600">
-                <span className="font-bold text-navy">Prescription Details: </span>
+                <span className="font-bold text-navy">{tr("Prescription Details:", "पर्चे का विवरण:")} </span>
                 {extraction.extraction.other_text.join(" · ")}
               </div>
             ) : null}
@@ -855,17 +864,17 @@ export function ScanPage() {
                 >
                   <div className="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-100">
                     <span className="font-medium">
-                      Raw script: <span className="font-bold text-navy">{item.raw_text || "—"}</span>
+                      {tr("Raw script:", "पर्चे का मूल पाठ:")} <span className="font-bold text-navy">{item.raw_text || "—"}</span>
                     </span>
                     <div className="flex items-center gap-3">
                       <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                        Confidence: {item.confidence || "Good"}
+                        {tr("Confidence:", "सटीकता:")} {item.confidence || "Good"}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleRemoveItem(index)}
                         className="text-slate-400 hover:text-red-600"
-                        title="Delete item"
+                        title={tr("Delete item", "हटाएं")}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -874,7 +883,7 @@ export function ScanPage() {
 
                   <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <div>
-                      <label className="block text-xs font-bold text-navy">Medicine Name</label>
+                      <label className="block text-xs font-bold text-navy">{tr("Medicine Name", "दवाई का नाम")}</label>
                       <input
                         type="text"
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-navy focus:border-brand focus:outline-none"
@@ -888,7 +897,7 @@ export function ScanPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-navy">Strength / Composition</label>
+                      <label className="block text-xs font-bold text-navy">{tr("Strength / Composition", "मात्रा / सामग्री")}</label>
                       <input
                         type="text"
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand focus:outline-none"
@@ -902,7 +911,7 @@ export function ScanPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-navy">Dosage Form</label>
+                      <label className="block text-xs font-bold text-navy">{tr("Dosage Form", "खुराक का प्रकार")}</label>
                       <input
                         type="text"
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand focus:outline-none"
@@ -926,14 +935,14 @@ export function ScanPage() {
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-brand px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(8,123,255,0.28)] transition hover:bg-brand-dark disabled:opacity-60"
                 >
                   <Search className="h-4 w-4" />
-                  <span>Search Confirmed Medicines →</span>
+                  <span>{tr("Search Confirmed Medicines →", "पुष्टीकृत दवाइयां खोजें →")}</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleRemove}
                   className="text-xs font-semibold text-slate-500 hover:text-navy"
                 >
-                  Reset / Scan Another
+                  {tr("Reset / Scan Another", "रीसेट / दूसरा पर्चा स्कैन करें")}
                 </button>
               </div>
             </form>
@@ -948,7 +957,7 @@ export function ScanPage() {
           >
             <div className="flex flex-col justify-between gap-2 border-b border-slate-100 pb-4 sm:flex-row sm:items-center">
               <div>
-                <h3 className="text-2xl font-bold text-navy">Available Generic Matches</h3>
+                <h3 className="text-2xl font-bold text-navy">{tr("Available Generic Matches", "उपलब्ध जेनेरिक विकल्प")}</h3>
                 <p className="text-sm text-slate-500">{results.note}</p>
               </div>
               <button
@@ -956,7 +965,7 @@ export function ScanPage() {
                 onClick={() => navigate("/medicines")}
                 className="text-xs font-bold text-brand hover:underline"
               >
-                Browse all medicines →
+                {tr("Browse all medicines →", "सभी दवाइयां देखें →")}
               </button>
             </div>
 
@@ -969,7 +978,7 @@ export function ScanPage() {
                   <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200/70">
                     <div>
                       <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        Prescribed
+                        {tr("Prescribed", "पर्चे में लिखी दवा")}
                       </span>
                       <p className="text-lg font-bold text-navy">
                         {res.confirmed_input.medicine_name}{" "}
@@ -979,7 +988,7 @@ export function ScanPage() {
                       </p>
                     </div>
                     <span className="rounded-full bg-sky px-3 py-1 text-xs font-bold text-brand">
-                      {res.match_count} match{res.match_count === 1 ? "" : "es"} found
+                      {res.match_count} {tr("match(es) found", "विकल्प मिले")}
                     </span>
                   </div>
 
@@ -994,9 +1003,9 @@ export function ScanPage() {
                       >
                         <div>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-brand">Generic Option</span>
+                            <span className="text-xs font-bold text-brand">{tr("Generic Option", "जेनेरिक विकल्प")}</span>
                             <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                              {match.recommended_option?.savings_percent}% Cheaper
+                              {match.recommended_option?.savings_percent}% {tr("Cheaper", "सस्ता")}
                             </span>
                           </div>
                           <p className="mt-1 text-base font-bold text-navy">{match.medicine.brand_name}</p>
@@ -1005,13 +1014,13 @@ export function ScanPage() {
 
                         <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
                           <div>
-                            <span className="block text-[10px] text-slate-400">Jan Aushadhi Price</span>
+                            <span className="block text-[10px] text-slate-400">{tr("Jan Aushadhi Price", "जन औषधि मूल्य")}</span>
                             <span className="text-lg font-extrabold text-emerald-600">
                               {formatInr(match.recommended_option?.price ?? match.medicine.jan_aushadhi_price)}
                             </span>
                           </div>
                           <div className="text-right">
-                            <span className="block text-[10px] text-slate-400">Market MRP</span>
+                            <span className="block text-[10px] text-slate-400">{tr("Market MRP", "बाजार MRP")}</span>
                             <span className="text-sm font-semibold text-slate-400 line-through">
                               {formatInr(match.medicine.private_brand_price)}
                             </span>

@@ -16,10 +16,12 @@ import { Link, useParams } from "react-router-dom";
 import { formatInr, formatSavingsText, getMedicine } from "../api/client";
 import { Skeleton } from "../components/ui/Skeleton";
 import { useCart } from "../context/CartContext";
+import { useLanguage } from "../i18n/LanguageContext";
 import type { MedicineResponse } from "../types";
 
 export function MedicineDetailPage() {
   const { id } = useParams();
+  const { tr } = useLanguage();
   const { addItem } = useCart();
 
   const [medicine, setMedicine] = useState<MedicineResponse | null>(null);
@@ -217,7 +219,7 @@ export function MedicineDetailPage() {
         <div className="mb-6 flex items-center gap-2 text-xs font-semibold text-slate-500">
           <Link to="/medicines" className="flex items-center gap-1 hover:text-brand">
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>All medicines</span>
+            <span>{tr("All medicines", "सभी दवाइयां")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <span className="text-slate-400">{medicine.category}</span>
@@ -244,7 +246,7 @@ export function MedicineDetailPage() {
                 {medicine.brand_name}
               </h1>
               <p className="mt-2 text-base font-medium text-slate-600">
-                Active Salt / Composition: <span className="font-bold text-navy">{medicine.active_salt}</span>
+                {tr("Active Salt / Composition:", "सक्रिय साल्ट / घटक:")} <span className="font-bold text-navy">{medicine.active_salt}</span>
               </p>
             </div>
 
@@ -253,7 +255,7 @@ export function MedicineDetailPage() {
               <div className="rounded-2xl border border-emerald-200 bg-[linear-gradient(135deg,#ecfdf5_0%,#ffffff_100%)] p-4 text-right shadow-xs">
                 <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-emerald-700">
                   <TrendingDown className="h-4 w-4" />
-                  Maximum Potential Savings
+                  {tr("Maximum Potential Savings", "अधिकतम संभावित बचत")}
                 </span>
                 <p className="mt-1 text-2xl font-black text-emerald-800">
                   {formatSavingsText(maxSaving.amount, maxSaving.percentage)}
@@ -278,19 +280,19 @@ export function MedicineDetailPage() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Private Brand
+                  {tr("Private Brand", "प्राइवेट ब्रांड")}
                 </span>
                 <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                  Market MRP
+                  {tr("Market MRP", "बाजार MRP")}
                 </span>
               </div>
               <p className="mt-3 text-3xl font-extrabold text-navy">
                 {formatInr(medicine.prices.private_brand)}
               </p>
-              <p className="mt-1 text-xs text-slate-500">Standard retail benchmark</p>
+              <p className="mt-1 text-xs text-slate-500">{tr("Standard retail benchmark", "मानक खुदरा बेंचमार्क")}</p>
 
               <div className="mt-4 border-t border-slate-100 pt-3">
-                <span className="text-xs text-slate-400">Baseline price for comparison</span>
+                <span className="text-xs text-slate-400">{tr("Baseline price for comparison", "तुलना के लिए आधार मूल्य")}</span>
               </div>
             </div>
 
@@ -305,10 +307,10 @@ export function MedicineDetailPage() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-                  Jan Aushadhi (PMBJP)
+                  {tr("Jan Aushadhi (PMBJP)", "जन औषधि (PMBJP)")}
                 </span>
                 <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                  Govt Generic
+                  {tr("Govt Generic", "सरकारी जेनेरिक")}
                 </span>
               </div>
               <p className="mt-3 text-3xl font-extrabold text-navy">
@@ -317,12 +319,12 @@ export function MedicineDetailPage() {
               <p className="mt-1 text-xs font-semibold text-emerald-700">
                 {jaSavings?.savings_amount != null
                   ? formatSavingsText(jaSavings.savings_amount, jaSavings.savings_percentage)
-                  : "Not available in catalogue"}
+                  : tr("Not available in catalogue", "कैटलॉग में उपलब्ध नहीं")}
               </p>
 
               <div className="mt-4 border-t border-emerald-100 pt-3">
                 <span className="text-xs text-slate-500">
-                  Available at PMBJP Kendras across India
+                  {tr("Available at PMBJP Kendras across India", "पूरे भारत में जन औषधि केंद्रों पर उपलब्ध")}
                 </span>
               </div>
             </div>
@@ -338,10 +340,10 @@ export function MedicineDetailPage() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-brand">
-                  Dava India
+                  {tr("Dava India", "दवा इंडिया")}
                 </span>
                 <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-brand">
-                  Pharmacy Network
+                  {tr("Pharmacy Network", "फार्मेसी नेटवर्क")}
                 </span>
               </div>
               <p className="mt-3 text-3xl font-extrabold text-navy">
@@ -350,12 +352,12 @@ export function MedicineDetailPage() {
               <p className="mt-1 text-xs font-semibold text-brand">
                 {diSavings?.savings_amount != null
                   ? formatSavingsText(diSavings.savings_amount, diSavings.savings_percentage)
-                  : "Not available in catalogue"}
+                  : tr("Not available in catalogue", "कैटलॉग में उपलब्ध नहीं")}
               </p>
 
               <div className="mt-4 border-t border-blue-100 pt-3">
                 <span className="text-xs text-slate-500">
-                  Available at Dava India retail outlets
+                  {tr("Available at Dava India retail outlets", "दवा इंडिया के मेडिकल स्टोरों पर उपलब्ध")}
                 </span>
               </div>
             </div>

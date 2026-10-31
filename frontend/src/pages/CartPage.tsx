@@ -13,18 +13,23 @@ import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import { formatInr } from "../api/client";
 import { useCart } from "../context/CartContext";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function CartPage() {
   const navigate = useNavigate();
+  const { tr } = useLanguage();
   const { items, updateQuantity, removeItem, clearCart, subtotal, itemCount } = useCart();
 
   return (
     <>
       <Helmet>
-        <title>Pharmacy Enquiry Cart — MedEasy</title>
+        <title>{tr("Pharmacy Enquiry Cart — MedEasy", "फार्मेसी पूछताछ कार्ट — MedEasy")}</title>
         <meta
           name="description"
-          content="Review your medicine enquiry list, adjust quantities, and send a prefilled WhatsApp message to your nearest pharmacy."
+          content={tr(
+            "Review your medicine enquiry list, adjust quantities, and send a prefilled WhatsApp message to your nearest pharmacy.",
+            "अपनी दवा सूची की समीक्षा करें, मात्रा समायोजित करें और नज़दीकी स्टोर को व्हाट्सएप पूछताछ भेजें।"
+          )}
         />
       </Helmet>
     <div className="min-h-screen bg-[#f7faff] pb-24 pt-8">
@@ -34,13 +39,16 @@ export function CartPage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-[#eef5ff] px-3.5 py-1 text-xs font-bold text-brand">
               <ShoppingCart className="h-3.5 w-3.5" />
-              <span>Pharmacy Enquiry List</span>
+              <span>{tr("Pharmacy Enquiry List", "फार्मेसी पूछताछ सूची")}</span>
             </div>
             <h1 className="mt-3 text-3xl font-extrabold text-navy sm:text-4xl">
-              Your Medicine Enquiry List
+              {tr("Your Medicine Enquiry List", "आपकी दवा पूछताछ सूची")}
             </h1>
             <p className="mt-1 text-sm text-muted">
-              Review requested medicines before sending availability and price queries to nearby pharmacies.
+              {tr(
+                "Review requested medicines before sending availability and price queries to nearby pharmacies.",
+                "पास के मेडिकल स्टोर को उपलब्धता और कीमत पूछने से पहले चुनी गई दवाइयों की समीक्षा करें।"
+              )}
             </p>
           </div>
 
@@ -50,7 +58,7 @@ export function CartPage() {
               onClick={clearCart}
               className="text-xs font-semibold text-slate-400 hover:text-red-600"
             >
-              Clear entire list
+              {tr("Clear entire list", "पूरी सूची साफ़ करें")}
             </button>
           )}
         </div>
@@ -61,9 +69,14 @@ export function CartPage() {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#eef5ff] text-brand">
               <ShoppingCart className="h-8 w-8" />
             </div>
-            <h2 className="mt-4 text-xl font-bold text-navy">Your enquiry list is empty</h2>
+            <h2 className="mt-4 text-xl font-bold text-navy">
+              {tr("Your enquiry list is empty", "आपकी पूछताछ सूची खाली है")}
+            </h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-              Add medicines from the catalogue search or upload a prescription to extract and confirm items.
+              {tr(
+                "Add medicines from the catalogue search or upload a prescription to extract and confirm items.",
+                "कैटलॉग से दवाइयां जोड़ें या पर्चा अपलोड करके सूची तैयार करें।"
+              )}
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link
@@ -71,14 +84,14 @@ export function CartPage() {
                 className="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-sm font-bold text-white shadow-xs hover:bg-brand-dark"
               >
                 <Search className="h-4 w-4" />
-                <span>Explore catalogue</span>
+                <span>{tr("Explore catalogue", "कैटलॉग देखें")}</span>
               </Link>
               <Link
                 to="/scan"
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-2.5 text-sm font-semibold text-navy hover:border-brand"
               >
                 <Pill className="h-4 w-4 text-brand" />
-                <span>Scan prescription</span>
+                <span>{tr("Scan prescription", "पर्चा स्कैन करें")}</span>
               </Link>
             </div>
           </div>
@@ -90,10 +103,10 @@ export function CartPage() {
                 const itemTotal = (item.selected_price ?? 0) * item.quantity;
                 const providerLabel =
                   item.selected_provider === "jan_aushadhi"
-                    ? "Jan Aushadhi (Govt Generic)"
+                    ? tr("Jan Aushadhi (Govt Generic)", "जन औषधि (सरकारी जेनेरिक)")
                     : item.selected_provider === "dava_india"
-                      ? "Dava India Generic"
-                      : "Private Brand (Benchmark)";
+                      ? tr("Dava India Generic", "दवा इंडिया जेनेरिक")
+                      : tr("Private Brand (Benchmark)", "प्राइवेट ब्रांड (मानक)");
 
                 return (
                   <div
@@ -123,7 +136,7 @@ export function CartPage() {
                             {providerLabel}
                           </span>
                           <span className="text-[11px] font-medium text-slate-400">
-                            Unit: {formatInr(item.selected_price)}
+                            {tr("Unit:", "इकाई:")} {formatInr(item.selected_price)}
                           </span>
                         </div>
                       </div>
@@ -166,7 +179,7 @@ export function CartPage() {
                         type="button"
                         onClick={() => removeItem(item.id)}
                         className="p-1.5 text-slate-400 hover:text-red-600"
-                        title="Remove from list"
+                        title={tr("Remove from list", "सूची से हटाएं")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -180,39 +193,43 @@ export function CartPage() {
                   to="/medicines"
                   className="font-semibold text-brand hover:underline"
                 >
-                  + Add more medicines from catalogue
+                  {tr("+ Add more medicines from catalogue", "+ कैटलॉग से और दवाइयां जोड़ें")}
                 </Link>
-                <span>{itemCount} total units in enquiry</span>
+                <span>
+                  {itemCount} {tr("total units in enquiry", "दवाइयां सूची में")}
+                </span>
               </div>
             </div>
 
             {/* Right: Summary & Next Step */}
             <div className="space-y-4">
               <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_12px_36px_rgba(15,40,90,0.06)]">
-                <h2 className="text-lg font-bold text-navy">Enquiry Summary</h2>
+                <h2 className="text-lg font-bold text-navy">
+                  {tr("Enquiry Summary", "पूछताछ सारांश")}
+                </h2>
 
                 <div className="mt-4 space-y-2 border-b border-slate-100 pb-4 text-sm">
                   <div className="flex justify-between text-slate-600">
-                    <span>Medicines in list</span>
-                    <span className="font-semibold text-navy">{items.length} item(s)</span>
+                    <span>{tr("Medicines in list", "सूची में दवाइयां")}</span>
+                    <span className="font-semibold text-navy">{items.length} {tr("item(s)", "आइटम")}</span>
                   </div>
                   <div className="flex justify-between text-slate-600">
-                    <span>Total units / packs</span>
-                    <span className="font-semibold text-navy">{itemCount} units</span>
+                    <span>{tr("Total units / packs", "कुल इकाइयां / पैक")}</span>
+                    <span className="font-semibold text-navy">{itemCount} {tr("units", "इकाइयां")}</span>
                   </div>
                   <div className="flex justify-between text-slate-600">
-                    <span>Catalogue reference subtotal</span>
+                    <span>{tr("Catalogue reference subtotal", "कैटलॉग संदर्भ उपकुल")}</span>
                     <span className="font-bold text-navy">{formatInr(subtotal)}</span>
                   </div>
                 </div>
 
                 <div className="pt-4">
                   <span className="block text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Indicative Catalogue Subtotal
+                    {tr("Indicative Catalogue Subtotal", "अनुमानित कैटलॉग उपकुल")}
                   </span>
                   <p className="mt-1 text-3xl font-black text-navy">{formatInr(subtotal)}</p>
                   <p className="mt-1 text-xs text-slate-500">
-                    Estimated based on loaded benchmark prices.
+                    {tr("Estimated based on loaded benchmark prices.", "उपलब्ध बेंचमार्क कीमतों के आधार पर अनुमानित।")}
                   </p>
                 </div>
 
@@ -221,10 +238,14 @@ export function CartPage() {
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
                     <div>
-                      <p className="font-bold">Not a checkout or online payment</p>
+                      <p className="font-bold">
+                        {tr("Not a checkout or online payment", "यह ऑनलाइन भुगतान या बिक्री नहीं है")}
+                      </p>
                       <p className="mt-0.5 leading-relaxed text-amber-800">
-                        Final prices and stock must be confirmed directly with your chosen local pharmacy.
-                        MedEasy does not sell medicines or collect payments.
+                        {tr(
+                          "Final prices and stock must be confirmed directly with your chosen local pharmacy. MedEasy does not sell medicines or collect payments.",
+                          "अंतिम कीमतों और स्टॉक की पुष्टि स्थानीय मेडिकल स्टोर से की जानी चाहिए। MedEasy दवाइयां नहीं बेचता और न ही भुगतान स्वीकार करता है।"
+                        )}
                       </p>
                     </div>
                   </div>
@@ -238,7 +259,7 @@ export function CartPage() {
                     className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brand font-bold text-white shadow-[0_10px_24px_rgba(8,102,255,0.25)] transition hover:bg-brand-dark"
                   >
                     <MapPin className="h-4 w-4" />
-                    <span>Find nearby pharmacies to enquire</span>
+                    <span>{tr("Find nearby pharmacies to enquire", "पूछताछ के लिए नज़दीकी स्टोर खोजें")}</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 </div>

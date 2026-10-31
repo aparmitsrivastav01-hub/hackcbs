@@ -18,9 +18,11 @@ import {
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 export function LandingGuide() {
   const navigate = useNavigate();
+  const { tr, locale } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -42,43 +44,51 @@ export function LandingGuide() {
 
   const userPaths = [
     {
-      title: "I have a paper prescription",
-      badge: "AI-Assisted Scan",
+      title: tr("I have a paper prescription", "मेरे पास डॉक्टर का पर्चा है"),
+      badge: tr("AI-Assisted Scan", "AI स्कैन सहायता"),
       icon: ScanLine,
       color: "brand",
-      description:
+      description: tr(
         "Upload a photo or PDF of your doctor's prescription. Our optical OCR extracts medicine names for you to review and confirm before comparing catalogue prices.",
-      cta: "Scan Prescription",
+        "डॉक्टर के पर्चे का फोटो या पीडीएफ अपलोड करें। हमारा OCR दवाइयों के नाम निकालता है ताकि आप कीमतों की तुलना से पहले पुष्टि कर सकें।"
+      ),
+      cta: tr("Scan Prescription", "पर्चा स्कैन करें"),
       href: "/scan",
     },
     {
-      title: "I know my medicine or salt name",
-      badge: "Instant Price Compare",
+      title: tr("I know my medicine or salt name", "मुझे दवाई या साल्ट का नाम पता है"),
+      badge: tr("Instant Price Compare", "तुरंत दाम तुलना"),
       icon: Search,
       color: "emerald",
-      description:
+      description: tr(
         "Search our indexed catalogue directly. Compare Jan Aushadhi (PMBJP), Dava India generic alternatives, and private brands side-by-side.",
-      cta: "Search Medicines",
+        "सीधे हमारे कैटलॉग में खोजें। जन औषधि (PMBJP), दवा इंडिया जेनेरिक और ब्रांडेड दवाओं की साथ-साथ तुलना करें।"
+      ),
+      cta: tr("Search Medicines", "दवाइयां खोजें"),
       href: "/medicines",
     },
     {
-      title: "I want to check batch safety",
-      badge: "CDSCO Quality Check",
+      title: tr("I want to check batch safety", "मुझे बैच सुरक्षा की जांच करनी है"),
+      badge: tr("CDSCO Quality Check", "CDSCO गुणवत्ता जांच"),
       icon: ShieldAlert,
       color: "amber",
-      description:
+      description: tr(
         "Verify your batch number against official monthly Central Drugs Standard Control Organisation (CDSCO) alerts for substandard or spurious drugs.",
-      cta: "Check Batch Alert",
+        "मानक गुणवत्ता के अनुरूप न पाए गए अलर्ट के लिए अपने बैच नंबर की आधिकारिक CDSCO सूची में जांच करें।"
+      ),
+      cta: tr("Check Batch Alert", "बैच अलर्ट जांचें"),
       href: "/batch-safety",
     },
     {
-      title: "I want to locate nearby stores",
-      badge: "Pharmacy & WhatsApp",
+      title: tr("I want to locate nearby stores", "मुझे नज़दीकी स्टोर ढूंढने हैं"),
+      badge: tr("Pharmacy & WhatsApp", "फार्मेसी व व्हाट्सएप"),
       icon: MapPin,
       color: "blue",
-      description:
+      description: tr(
         "Locate Pradhan Mantri Jan Aushadhi Kendras and local licensed pharmacies around you. Export a structured medicine inquiry straight to WhatsApp.",
-      cta: "Find Pharmacies",
+        "अपने आस-पास प्रधानमंत्री जन औषधि केंद्र और मेडिकल स्टोर खोजें। दवा उपलब्धता के लिए सीधा व्हाट्सएप संदेश तैयार करें।"
+      ),
+      cta: tr("Find Pharmacies", "मेडिकल स्टोर खोजें"),
       href: "/stores",
     },
   ];
@@ -86,26 +96,38 @@ export function LandingGuide() {
   const journeySteps = [
     {
       step: "01",
-      title: "Provide your medicine details",
-      desc: "Upload your prescription or type generic / branded medicine names directly. Everything runs locally in your browser session.",
+      title: tr("Provide your medicine details", "अपनी दवाई का विवरण दें"),
+      desc: tr(
+        "Upload your prescription or type generic / branded medicine names directly. Everything runs locally in your browser session.",
+        "अपना पर्चा अपलोड करें या सीधे दवाई का नाम लिखें। सब कुछ आपके ब्राउज़र सत्र में स्थानीय रूप से चलता है।"
+      ),
       icon: FileSearch,
     },
     {
       step: "02",
-      title: "Human-in-the-loop verification",
-      desc: "Review and edit extracted items. You always have full oversight to correct strength, dosage form, or spelling before searching.",
+      title: tr("Human-in-the-loop verification", "स्वयं समीक्षा और पुष्टि"),
+      desc: tr(
+        "Review and edit extracted items. You always have full oversight to correct strength, dosage form, or spelling before searching.",
+        "निकाले गए नामों की समीक्षा और संपादन करें। खोज से पहले मात्रा, खुराक का रूप या वर्तनी सुधारने का पूरा नियंत्रण आपके पास है।"
+      ),
       icon: FileCheck,
     },
     {
       step: "03",
-      title: "Compare verified generic prices",
-      desc: "View official benchmark prices from Pradhan Mantri Jan Aushadhi Pariyojana (PMBJP) and Dava India against commercial MRPs.",
+      title: tr("Compare verified generic prices", "प्रमाणित जेनेरिक कीमतों की तुलना"),
+      desc: tr(
+        "View official benchmark prices from Pradhan Mantri Jan Aushadhi Pariyojana (PMBJP) and Dava India against commercial MRPs.",
+        "कमर्शियल एमआरपी के मुकाबले प्रधानमंत्री जन औषधि परियोजना (PMBJP) और दवा इंडिया की आधिकारिक कीमतों की तुलना देखें।"
+      ),
       icon: TrendingDown,
     },
     {
       step: "04",
-      title: "Connect with local pharmacies",
-      desc: "Find nearest PMBJP Kendras and open a pre-filled WhatsApp message to confirm stock availability with licensed pharmacists.",
+      title: tr("Connect with local pharmacies", "स्थानीय मेडिकल स्टोर से जुड़ें"),
+      desc: tr(
+        "Find nearest PMBJP Kendras and open a pre-filled WhatsApp message to confirm stock availability with licensed pharmacists.",
+        "निकटतम जन औषधि केंद्र खोजें और प्रमाणित फार्मासिस्ट के साथ स्टॉक उपलब्धता की पुष्टि के लिए पूर्व-लिखित व्हाट्सएप संदेश खोलें।"
+      ),
       icon: MapPin,
     },
   ];
@@ -113,42 +135,69 @@ export function LandingGuide() {
   const trustPillars = [
     {
       icon: Lock,
-      title: "Zero Data Retention",
-      desc: "No account required. Uploaded prescription images are processed ephemerally in memory and never saved to databases or disk.",
+      title: tr("Zero Data Retention", "डेटा का कोई संचय नहीं"),
+      desc: tr(
+        "No account required. Uploaded prescription images are processed ephemerally in memory and never saved to databases or disk.",
+        "किसी खाते की आवश्यकता नहीं है। अपलोड किए गए पर्चे केवल मेमोरी में अस्थायी रूप से प्रोसेस होते हैं और कभी भी डेटाबेस में सहेजे नहीं जाते।"
+      ),
     },
     {
       icon: Database,
-      title: "Official Government Data",
-      desc: "Prices and batch notices are sourced from official PMBJP (Jan Aushadhi) catalogues and monthly CDSCO safety advisories.",
+      title: tr("Official Government Data", "आधिकारिक सरकारी डेटा"),
+      desc: tr(
+        "Prices and batch notices are sourced from official PMBJP (Jan Aushadhi) catalogues and monthly CDSCO safety advisories.",
+        "कीमतें और बैच सूचनाएं आधिकारिक जन औषधि (PMBJP) कैटलॉग और मासिक CDSCO सुरक्षा सलाह से ली गई हैं।"
+      ),
     },
     {
       icon: ShieldCheck,
-      title: "Informational & Independent",
-      desc: "We don't sell medicines or take commissions from pharmaceutical companies. Our sole goal is transparent price benchmarking.",
+      title: tr("Informational & Independent", "केवल सूचनात्मक और स्वतंत्र"),
+      desc: tr(
+        "We don't sell medicines or take commissions from pharmaceutical companies. Our sole goal is transparent price benchmarking.",
+        "हम दवाइयां नहीं बेचते और न ही कमीशन लेते हैं। हमारा एकमात्र लक्ष्य पारदर्शी मूल्य तुलना उपलब्ध कराना है।"
+      ),
     },
     {
       icon: Users,
-      title: "Doctor & Pharmacist First",
-      desc: "We never recommend switching medications without clinical supervision. We empower patients to have informed conversations with clinicians.",
+      title: tr("Doctor & Pharmacist First", "डॉक्टर व फार्मासिस्ट सर्वोपरि"),
+      desc: tr(
+        "We never recommend switching medications without clinical supervision. We empower patients to have informed conversations with clinicians.",
+        "हम चिकित्सीय सलाह के बिना दवा बदलने की सलाह कभी नहीं देते। हम मरीज़ों को डॉक्टर से सूचित बातचीत करने में सक्षम बनाते हैं।"
+      ),
     },
   ];
 
   const faqs = [
     {
-      q: "How are Jan Aushadhi medicines 50% to 80% more affordable?",
-      a: "Pradhan Mantri Bhartiya Janaushadhi Pariyojana (PMBJP) is an initiative of the Government of India. Generics contain the exact same active pharmaceutical ingredients (APIs) but eliminate high marketing, brand promotion, and middleman markups, passing pure savings to the public.",
+      q: tr(
+        "How are Jan Aushadhi medicines 50% to 80% more affordable?",
+        "जन औषधि की दवाइयां 50% से 80% तक सस्ती कैसे होती हैं?"
+      ),
+      a: tr(
+        "Pradhan Mantri Bhartiya Janaushadhi Pariyojana (PMBJP) is an initiative of the Government of India. Generics contain the exact same active pharmaceutical ingredients (APIs) but eliminate high marketing, brand promotion, and middleman markups, passing pure savings to the public.",
+        "प्रधानमंत्री भारतीय जनऔषधि परियोजना (PMBJP) भारत सरकार की एक पहल है। जेनेरिक दवाओं में वही समान सक्रिय औषधीय तत्व (API) होते हैं, परंतु भारी विपणन और ब्रांडिंग खर्च न होने से सीधी बचत जनता तक पहुंचती है।"
+      ),
     },
     {
-      q: "Does MedEasy sell or dispense medicines online?",
-      a: "No. MedEasy is strictly an informational and price transparency tool. We help you prepare enquiry lists to check availability at licensed local Jan Aushadhi Kendras or your neighborhood chemist.",
+      q: tr("Does MedEasy sell or dispense medicines online?", "क्या MedEasy ऑनलाइन दवाइयां बेचता या डिलीवर करता है?"),
+      a: tr(
+        "No. MedEasy is strictly an informational and price transparency tool. We help you prepare enquiry lists to check availability at licensed local Jan Aushadhi Kendras or your neighborhood chemist.",
+        "नहीं। MedEasy पूरी तरह से एक सूचनात्मक और मूल्य पारदर्शिता मंच है। हम केवल आपकी दवा सूची तैयार करने में मदद करते हैं ताकि आप नज़दीकी जन औषधि केंद्र या दवा दुकान से उपलब्धता जान सकें।"
+      ),
     },
     {
-      q: "Is my medical data and prescription kept private?",
-      a: "Yes, completely. MedEasy does not have user accounts or login walls. Prescriptions processed via OCR are handled ephemerally and discarded immediately after extraction. Your cart data stays only in your browser's temporary session.",
+      q: tr("Is my medical data and prescription kept private?", "क्या मेरी मेडिकल जानकारी और पर्चा गोपनीय रहता है?"),
+      a: tr(
+        "Yes, completely. MedEasy does not have user accounts or login walls. Prescriptions processed via OCR are handled ephemerally and discarded immediately after extraction. Your cart data stays only in your browser's temporary session.",
+        "हाँ, पूर्णतः। MedEasy पर कोई खाता या लॉगिन नहीं होता। OCR द्वारा पढ़े जाने वाले पर्चे प्रोसेस होने के तुरंत बाद हटा दिए जाते हैं। आपका कार्ट डेटा केवल आपके ब्राउज़र में अस्थायी रूप से रहता है।"
+      ),
     },
     {
-      q: "What should I do if a medicine is not listed in the catalogue?",
-      a: "Our catalogue indexes over 500 common essential medicines. If your specific medicine isn't present, search by its active salt composition, or consult a licensed pharmacist at a Jan Aushadhi Kendra who can look up government generic equivalents.",
+      q: tr("What should I do if a medicine is not listed in the catalogue?", "यदि कोई दवाई कैटलॉग में न मिले तो क्या करें?"),
+      a: tr(
+        "Our catalogue indexes over 500 common essential medicines. If your specific medicine isn't present, search by its active salt composition, or consult a licensed pharmacist at a Jan Aushadhi Kendra who can look up government generic equivalents.",
+        "हमारे कैटलॉग में 500 से अधिक सामान्य आवश्यक दवाइयां हैं। यदि आपकी विशिष्ट दवा सूची में नहीं है, तो उसके मूल साल्ट नाम से खोजें या जन औषधि केंद्र के फार्मासिस्ट से सरकारी जेनेरिक विकल्प जानें।"
+      ),
     },
   ];
 
@@ -160,13 +209,16 @@ export function LandingGuide() {
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eef5ff] px-3 py-1 text-xs font-bold text-brand">
               <Search className="h-3.5 w-3.5" />
-              Quick Catalogue Search
+              {tr("Quick Catalogue Search", "त्वरित कैटलॉग खोज")}
             </span>
             <h2 className="mt-3 text-2xl font-extrabold text-navy sm:text-3xl">
-              Search any medicine to check price differences
+              {tr("Search any medicine to check price differences", "दामों में अंतर देखने के लिए किसी भी दवाई को खोजें")}
             </h2>
             <p className="mt-1.5 text-sm text-muted">
-              Instantly find Jan Aushadhi and Dava India alternatives for your regular prescriptions.
+              {tr(
+                "Instantly find Jan Aushadhi and Dava India alternatives for your regular prescriptions.",
+                "अपने नियमित पर्चे के लिए तुरंत जन औषधि और दवा इंडिया विकल्प खोजें।"
+              )}
             </p>
           </div>
 
@@ -177,7 +229,10 @@ export function LandingGuide() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Try 'Paracetamol', 'Metformin', 'Telmisartan' or brand name..."
+                placeholder={tr(
+                  "Try 'Paracetamol', 'Metformin', 'Telmisartan' or brand name...",
+                  "पैरासिटामोल, मेटफॉर्मिन, टेल्मिसर्टन या ब्रांड नाम खोजें..."
+                )}
                 className="h-12 w-full rounded-2xl border border-slate-200 bg-[#f8fbff] pl-12 pr-4 text-sm font-medium text-navy placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none focus:ring-3 focus:ring-brand/10"
               />
             </div>
@@ -185,14 +240,16 @@ export function LandingGuide() {
               type="submit"
               className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-brand px-7 text-sm font-bold text-white shadow-xs transition hover:bg-brand-dark"
             >
-              <span>Compare Prices</span>
+              <span>{tr("Compare Prices", "कीमतों की तुलना करें")}</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
 
           {/* Popular pills */}
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-            <span className="font-semibold text-slate-400">Popular searches:</span>
+            <span className="font-semibold text-slate-400">
+              {tr("Popular searches:", "लोकप्रिय खोजें:")}
+            </span>
             {popularMedicines.map((med) => (
               <button
                 key={med}
@@ -212,13 +269,16 @@ export function LandingGuide() {
         <div className="text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eef5ff] px-3.5 py-1 text-xs font-bold text-brand">
             <Sparkles className="h-3.5 w-3.5" />
-            Designed For Your Specific Needs
+            {tr("Designed For Your Specific Needs", "आपकी विशिष्ट ज़रूरतों के लिए निर्मित")}
           </span>
           <h2 className="mt-3 text-3xl font-extrabold text-navy sm:text-4xl">
-            How can MedEasy help you today?
+            {tr("How can MedEasy help you today?", "आज MedEasy आपकी कैसे सहायता कर सकता है?")}
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-muted">
-            Whether you hold a doctor's paper slip or want to inspect generic pricing, choose your path below for a streamlined experience.
+            {tr(
+              "Whether you hold a doctor's paper slip or want to inspect generic pricing, choose your path below for a streamlined experience.",
+              "चाहे आपके पास डॉक्टर का पर्चा हो या आप जेनेरिक कीमतें देखना चाहते हों, नीचे अपना विकल्प चुनें।"
+            )}
           </p>
         </div>
 
@@ -269,13 +329,16 @@ export function LandingGuide() {
           <div className="text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eef5ff] px-3.5 py-1 text-xs font-bold text-brand">
               <Pill className="h-3.5 w-3.5" />
-              Transparent Clinical Workflow
+              {tr("Transparent Clinical Workflow", "पारदर्शी क्लिनिकल प्रक्रिया")}
             </span>
             <h2 className="mt-3 text-3xl font-extrabold text-navy sm:text-4xl">
-              How the platform works step-by-step
+              {tr("How the platform works step-by-step", "मंच चरण-दर-चरण कैसे काम करता है")}
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-muted">
-              Built with patient safety in mind. At every stage, you remain in complete control before any data is searched or shared.
+              {tr(
+                "Built with patient safety in mind. At every stage, you remain in complete control before any data is searched or shared.",
+                "मरीज़ों की सुरक्षा को ध्यान में रखकर निर्मित। किसी भी डेटा को खोजने या साझा करने से पहले आप हर चरण में पूर्ण नियंत्रण में रहते हैं।"
+              )}
             </p>
           </div>
 
@@ -304,13 +367,16 @@ export function LandingGuide() {
         <div className="text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eef5ff] px-3.5 py-1 text-xs font-bold text-brand">
             <ShieldCheck className="h-3.5 w-3.5" />
-            Trust & Clinical Boundaries
+            {tr("Trust & Clinical Boundaries", "विश्वास और सुरक्षा सीमाएं")}
           </span>
           <h2 className="mt-3 text-3xl font-extrabold text-navy sm:text-4xl">
-            Why patients trust MedEasy
+            {tr("Why patients trust MedEasy", "मरीज़ MedEasy पर भरोसा क्यों करते हैं")}
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-muted">
-            Healthcare requires absolute integrity. Here are our strict commitments to your privacy and clinical safety.
+            {tr(
+              "Healthcare requires absolute integrity. Here are our strict commitments to your privacy and clinical safety.",
+              "स्वास्थ्य सेवा में पूर्ण निष्ठा आवश्यक है। आपकी गोपनीयता और सुरक्षा के प्रति ये हमारी प्रतिबद्धताएं हैं।"
+            )}
           </p>
         </div>
 
@@ -338,10 +404,10 @@ export function LandingGuide() {
         <div className="text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eef5ff] px-3.5 py-1 text-xs font-bold text-brand">
             <HelpCircle className="h-3.5 w-3.5" />
-            Frequently Asked Questions
+            {tr("Frequently Asked Questions", "अक्सर पूछे जाने वाले प्रश्न")}
           </span>
           <h2 className="mt-3 text-3xl font-extrabold text-navy sm:text-4xl">
-            Common questions about medicine pricing
+            {tr("Common questions about medicine pricing", "दवाइयों के दाम से जुड़े सामान्य सवाल")}
           </h2>
         </div>
 
@@ -381,13 +447,19 @@ export function LandingGuide() {
         <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0d5cdb_0%,#1769ff_100%)] p-8 text-white shadow-xl md:p-12">
           <div className="relative z-10 max-w-2xl">
             <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold tracking-wide text-white">
-              START SAVING TODAY
+              {tr("START SAVING TODAY", "आज ही बचत शुरू करें")}
             </span>
             <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
-              Ready to verify medicine prices and save up to 80%?
+              {tr(
+                "Ready to verify medicine prices and save up to 80%?",
+                "दवाइयों के दामों की जांच करने और 80% तक बचत करने के लिए तैयार हैं?"
+              )}
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-blue-100">
-              Zero registration. Free forever. Start by uploading a prescription photo or browsing our indexed catalogue.
+              {tr(
+                "Zero registration. Free forever. Start by uploading a prescription photo or browsing our indexed catalogue.",
+                "कोई पंजीकरण नहीं। सदैव निःशुल्क। पर्चे की फोटो अपलोड करके या हमारे कैटलॉग में देखकर शुरुआत करें।"
+              )}
             </p>
 
             <div className="mt-8 flex flex-col gap-3.5 sm:flex-row">
@@ -396,7 +468,7 @@ export function LandingGuide() {
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-bold text-brand shadow-md transition hover:bg-blue-50"
               >
                 <ScanLine className="h-4 w-4" />
-                <span>Scan Prescription</span>
+                <span>{tr("Scan Prescription", "पर्चा स्कैन करें")}</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
@@ -404,7 +476,7 @@ export function LandingGuide() {
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-7 text-sm font-bold text-white backdrop-blur-xs transition hover:bg-white/20"
               >
                 <Search className="h-4 w-4" />
-                <span>Explore Medicines</span>
+                <span>{tr("Explore Medicines", "दवाइयां देखें")}</span>
               </Link>
             </div>
           </div>

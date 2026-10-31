@@ -13,9 +13,11 @@ import { Helmet } from "react-helmet-async";
 import { useSearchParams } from "react-router-dom";
 import { checkBatchSafety, getDatasetStatus } from "../api/client";
 import { Skeleton } from "../components/ui/Skeleton";
+import { useLanguage } from "../i18n/LanguageContext";
 import type { BatchCheckResult, DatasetStatus } from "../types";
 
 export function BatchSafetyPage() {
+  const { tr } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const initBatch = searchParams.get("batch") ?? "";
   const initProduct = searchParams.get("product") ?? "";
@@ -39,7 +41,12 @@ export function BatchSafetyPage() {
 
   async function executeCheck(batch: string, product: string, mfr: string) {
     if (!batch.trim() || !product.trim()) {
-      setError("Please provide both product name and batch number printed on the medicine packaging.");
+      setError(
+        tr(
+          "Please provide both product name and batch number printed on the medicine packaging.",
+          "कृपया दवा की पैकिंग पर छपा उत्पाद का नाम और बैच नंबर दोनों दर्ज करें।"
+        )
+      );
       return;
     }
 
@@ -54,7 +61,11 @@ export function BatchSafetyPage() {
       setResult(res);
       setSearchParams({ batch: batch.trim(), product: product.trim() });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Batch safety verification request failed.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : tr("Batch safety verification request failed.", "बैच सुरक्षा सत्यापन अनुरोध विफल रहा।")
+      );
     } finally {
       setLoading(false);
     }
@@ -75,10 +86,13 @@ export function BatchSafetyPage() {
   return (
     <>
       <Helmet>
-        <title>Batch Drug Alert Checker — MedEasy</title>
+        <title>{tr("Batch Drug Alert Checker — MedEasy", "बैच दवा अलर्ट जांच — MedEasy")}</title>
         <meta
           name="description"
-          content="Verify medicine batch numbers against CDSCO official monthly Not of Standard Quality (NSQ) and spurious drug alerts before consumption."
+          content={tr(
+            "Verify medicine batch numbers against CDSCO official monthly Not of Standard Quality (NSQ) and spurious drug alerts before consumption.",
+            "दवा सेवन से पहले आधिकारिक CDSCO मासिक बुलेटिन में मानक गुणवत्ता (NSQ) और गुणवत्ता चेतावनी की जांच करें।"
+          )}
         />
       </Helmet>
     <div className="min-h-screen bg-[#f7faff] pb-24 pt-8">
@@ -87,14 +101,16 @@ export function BatchSafetyPage() {
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 rounded-full bg-[#eef5ff] px-3.5 py-1 text-xs font-bold text-brand">
             <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Screen 10 · CDSCO Drug Quality Alert Verification</span>
+            <span>{tr("CDSCO Drug Quality Alert Verification", "CDSCO दवा गुणवत्ता अलर्ट सत्यापन")}</span>
           </div>
           <h1 className="mt-3 text-3xl font-extrabold text-navy sm:text-4xl">
-            Batch Alert & Substandard Drug Checker
+            {tr("Batch Alert & Substandard Drug Checker", "बैच अलर्ट व मानक गुणवत्ता जांच")}
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
-            Cross-check medicine batch numbers against the official Central Drugs Standard Control Organisation (CDSCO)
-            monthly &ldquo;Not of Standard Quality&rdquo; (NSQ), spurious, and adulterated drug alerts.
+            {tr(
+              "Cross-check medicine batch numbers against the official Central Drugs Standard Control Organisation (CDSCO) monthly \"Not of Standard Quality\" (NSQ), spurious, and adulterated drug alerts.",
+              "केंद्रीय औषधि मानक नियंत्रण संगठन (CDSCO) के आधिकारिक मासिक गुणवत्ता अलर्ट (NSQ) और घटिया दवाओं की सूची में अपने बैच नंबर की जांच करें।"
+            )}
           </p>
         </div>
 
@@ -107,10 +123,10 @@ export function BatchSafetyPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-navy">
-                  Active Reference Dataset: {datasetStatus?.source_name ?? "CDSCO Monthly NSQ Drug Alerts"}
+                  {tr("Active Reference Dataset:", "सक्रिय संदर्भ डेटासेट:")} {datasetStatus?.source_name ?? "CDSCO Monthly NSQ Drug Alerts"}
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  {datasetStatus?.records_loaded ?? 342} verified batch alert records indexed · Last update: {datasetStatus?.last_modified ?? "October 2026"}
+                  {datasetStatus?.records_loaded ?? 342} {tr("verified batch alert records indexed · Last update:", "सत्यापित बैच अलर्ट रिकॉर्ड अनुक्रमित · अंतिम अपडेट:")} {datasetStatus?.last_modified ?? "October 2026"}
                 </p>
               </div>
             </div>
@@ -121,7 +137,7 @@ export function BatchSafetyPage() {
               rel="noreferrer"
               className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
             >
-              <span>CDSCO Portal</span>
+              <span>{tr("CDSCO Portal", "CDSCO पोर्टल")}</span>
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
@@ -134,14 +150,14 @@ export function BatchSafetyPage() {
               {/* Product Name */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                  Medicine / Product Name <span className="text-red-500">*</span>
+                  {tr("Medicine / Product Name", "दवाई / उत्पाद का नाम")} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={productName}
                   onChange={(e) => setProductName(e.target.value)}
-                  placeholder="e.g., Paracetamol Tablets IP, Pantoprazole..."
+                  placeholder={tr("e.g., Paracetamol Tablets IP, Pantoprazole...", "उदा. पैरासिटामोल, पैंटोप्राजोल...")}
                   className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 bg-[#f8fbff] px-4 text-sm font-medium text-navy placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none"
                 />
               </div>
@@ -149,7 +165,7 @@ export function BatchSafetyPage() {
               {/* Batch Number */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                  Batch Number (from packaging) <span className="text-red-500">*</span>
+                  {tr("Batch Number (from packaging)", "बैच नंबर (पैकिंग से)")} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -165,13 +181,13 @@ export function BatchSafetyPage() {
             {/* Manufacturer (Optional) */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                Manufacturer on packaging (Optional)
+                {tr("Manufacturer on packaging (Optional)", "निर्माता कंपनी (वैकल्पिक)")}
               </label>
               <input
                 type="text"
                 value={manufacturer}
                 onChange={(e) => setManufacturer(e.target.value)}
-                placeholder="e.g., Alkem Laboratories, Cipla, Karnataka Antibiotics..."
+                placeholder={tr("e.g., Alkem Laboratories, Cipla, Karnataka Antibiotics...", "उदा. अल्केम, सिप्ला, कर्नाटक एंटीबायोटिक्स...")}
                 className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 bg-[#f8fbff] px-4 text-sm font-medium text-navy placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none"
               />
             </div>
@@ -187,27 +203,27 @@ export function BatchSafetyPage() {
             {/* Submit Button & Demo Presets */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-                <span className="font-semibold text-slate-400">Try test batches:</span>
+                <span className="font-semibold text-slate-400">{tr("Try test batches:", "सैंपल बैच जांचें:")}</span>
                 <button
                   type="button"
                   onClick={() => handleQuickSample("PCM23H88", "Paracetamol Tablets IP 500mg", "Karnataka Antibiotics")}
                   className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-100"
                 >
-                  Flagged Batch (PCM23H88)
+                  {tr("Flagged Batch (PCM23H88)", "अलर्ट बैच (PCM23H88)")}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickSample("PNT24A09", "Pantoprazole Gastro-resistant Tablets", "Alkem Laboratories")}
                   className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-100"
                 >
-                  Flagged Batch (PNT24A09)
+                  {tr("Flagged Batch (PNT24A09)", "अलर्ट बैच (PNT24A09)")}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickSample("GEN2026X", "Crocin Advance 500", "GSK")}
                   className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:border-slate-300"
                 >
-                  Unflagged Batch
+                  {tr("Unflagged Batch", "सुरक्षित बैच")}
                 </button>
               </div>
 
@@ -217,11 +233,11 @@ export function BatchSafetyPage() {
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-brand px-7 text-sm font-bold text-white shadow-xs transition hover:bg-brand-dark disabled:opacity-50"
               >
                 {loading ? (
-                  <span>Checking CDSCO records...</span>
+                  <span>{tr("Checking CDSCO records...", "CDSCO रिकॉर्ड जांचे जा रहे हैं...")}</span>
                 ) : (
                   <>
                     <FileSearch className="h-4 w-4" />
-                    <span>Check Batch Number</span>
+                    <span>{tr("Check Batch Number", "बैच नंबर जांचें")}</span>
                   </>
                 )}
               </button>
@@ -250,7 +266,7 @@ export function BatchSafetyPage() {
           </div>
         )}
 
-        {/* RESULTS CARD (Screen 10 Outcomes) */}
+        {/* RESULTS CARD */}
         {!loading && result && (
           <div className="mt-8">
             {result.status === "alert_match" ? (
@@ -262,13 +278,16 @@ export function BatchSafetyPage() {
                   </div>
                   <div className="flex-1">
                     <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-black uppercase tracking-wider text-red-800">
-                      CDSCO Quality Alert Match Found
+                      {tr("CDSCO Quality Alert Match Found", "CDSCO गुणवत्ता चेतावनी पाई गई")}
                     </span>
                     <h2 className="mt-2 text-2xl font-black text-red-950">
-                      Warning: Batch #{result.batch_number} is flagged in official alert records
+                      {tr("Warning: Batch #", "सावधानी: बैच #")}{result.batch_number} {tr("is flagged in official alert records", "आधिकारिक अलर्ट रिकॉर्ड में दर्ज है")}
                     </h2>
                     <p className="mt-1 text-sm text-red-800">
-                      This batch was tested by state or central drug laboratories and reported as substandard, adulterated, or spurious.
+                      {tr(
+                        "This batch was tested by state or central drug laboratories and reported as substandard, adulterated, or spurious.",
+                        "इस बैच का परीक्षण सरकारी प्रयोगशालाओं द्वारा किया गया है और इसे अमानक या संदिग्ध घोषित किया गया है।"
+                      )}
                     </p>
                   </div>
                 </div>
@@ -279,16 +298,16 @@ export function BatchSafetyPage() {
                     <div key={idx} className="rounded-2xl border border-red-200 bg-white p-5 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-red-100 pb-3">
                         <span className="font-extrabold text-red-900">{item.alert_type}</span>
-                        <span className="text-xs font-semibold text-slate-500">Notice Date: {item.notice_date}</span>
+                        <span className="text-xs font-semibold text-slate-500">{tr("Notice Date:", "नोटिस दिनांक:")} {item.notice_date}</span>
                       </div>
                       <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                        <p><strong className="text-navy">Product:</strong> {item.product_name}</p>
-                        <p><strong className="text-navy">Manufacturer:</strong> {item.manufacturer}</p>
-                        <p><strong className="text-navy">Batch No:</strong> <span className="font-mono font-bold text-red-700">{item.batch_number}</span></p>
-                        <p><strong className="text-navy">Testing Source:</strong> {item.source_name}</p>
+                        <p><strong className="text-navy">{tr("Product:", "उत्पाद:")}</strong> {item.product_name}</p>
+                        <p><strong className="text-navy">{tr("Manufacturer:", "निर्माता:")}</strong> {item.manufacturer}</p>
+                        <p><strong className="text-navy">{tr("Batch No:", "बैच सं.:")}</strong> <span className="font-mono font-bold text-red-700">{item.batch_number}</span></p>
+                        <p><strong className="text-navy">{tr("Testing Source:", "परीक्षण प्रयोगशाला:")}</strong> {item.source_name}</p>
                       </div>
                       <div className="mt-3 rounded-xl bg-red-50/70 p-3 text-xs text-red-900">
-                        <strong>Reason / Lab Finding:</strong> {item.notes}
+                        <strong>{tr("Reason / Lab Finding:", "कारण / लैब रिपोर्ट:")}</strong> {item.notes}
                       </div>
                     </div>
                   ))}
@@ -296,10 +315,12 @@ export function BatchSafetyPage() {
 
                 {/* Action guidance */}
                 <div className="mt-6 rounded-2xl bg-red-900 p-4 text-xs font-medium text-white">
-                  <p className="font-bold text-sm">Action Recommended:</p>
+                  <p className="font-bold text-sm">{tr("Action Recommended:", "अनुशंसित कार्रवाई:")}</p>
                   <p className="mt-1 leading-relaxed text-red-100">
-                    Do not ingest or administer medicines from this batch. Return the strip/bottle to the issuing chemist
-                    along with the invoice, or notify the State Drugs Control Department.
+                    {tr(
+                      "Do not ingest or administer medicines from this batch. Return the strip/bottle to the issuing chemist along with the invoice, or notify the State Drugs Control Department.",
+                      "इस बैच की दवाइयों का सेवन न करें। बिल के साथ इस दवा को संबंधित मेडिकल स्टोर पर वापस करें या राज्य औषधि नियंत्रण विभाग को सूचित करें।"
+                    )}
                   </p>
                 </div>
               </div>
@@ -312,30 +333,33 @@ export function BatchSafetyPage() {
                   </div>
                   <div className="flex-1">
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                      Query Checked: {result.batch_number} ({result.product_name})
+                      {tr("Query Checked:", "जांचा गया:")} {result.batch_number} ({result.product_name})
                     </span>
                     <h2 className="mt-2 text-xl font-bold text-navy">
-                      No matching alert found in imported CDSCO dataset
+                      {tr("No matching alert found in imported CDSCO dataset", "आधिकारिक CDSCO डेटासेट में कोई अलर्ट नहीं मिला")}
                     </h2>
                     <p className="mt-1 text-sm text-muted">
-                      Batch #{result.batch_number} does not appear in the {result.dataset_records} imported government
-                      &ldquo;Not of Standard Quality&rdquo; (NSQ) alert records as of {result.last_updated}.
+                      {tr("Batch #", "बैच #")}{result.batch_number} {tr("does not appear in the imported government NSQ alert records.", "आयातित सरकारी गुणवत्ता अलर्ट रिकॉर्ड में दर्ज नहीं है।")}
                     </p>
                   </div>
                 </div>
 
-                {/* MANDATORY SAFETY NOTICE (as per docs/ui_ux_guidelines.md Section 6 & docs/mvp_screens.md Screen 10) */}
+                {/* MANDATORY SAFETY NOTICE */}
                 <div className="mt-6 rounded-2xl border border-amber-200/90 bg-amber-50/70 p-5 text-xs text-amber-900">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
                     <div>
-                      <h4 className="font-bold text-sm text-amber-950">Important Medical Safety Disclosure</h4>
+                      <h4 className="font-bold text-sm text-amber-950">
+                        {tr("Important Medical Safety Disclosure", "महत्वपूर्ण चिकित्सीय सुरक्षा सूचना")}
+                      </h4>
                       <p className="mt-1 text-xs leading-relaxed text-amber-900 font-medium">
-                        &ldquo;No matching alert found in the imported dataset. <strong>This is NOT a safety certificate or authenticity guarantee.</strong>&rdquo;
+                        &ldquo;{tr("No matching alert found in the imported dataset.", "आयातित डेटासेट में कोई अलर्ट नहीं मिला।")} <strong>{tr("This is NOT a safety certificate or authenticity guarantee.", "यह कोई सुरक्षा प्रमाणपत्र या प्रामाणिकता गारंटी नहीं है।")}</strong>&rdquo;
                       </p>
                       <p className="mt-2 text-xs leading-relaxed text-amber-800">
-                        CDSCO only publishes alerts for batches that were actively sampled and tested in government laboratories.
-                        An absence of records means no test failure notice is recorded in the imported dataset, but only laboratory chemical analysis can verify absolute medicine quality.
+                        {tr(
+                          "CDSCO only publishes alerts for batches that were actively sampled and tested in government laboratories. An absence of records means no test failure notice is recorded in the imported dataset, but only laboratory chemical analysis can verify absolute medicine quality.",
+                          "CDSCO केवल उन बैचों के लिए अलर्ट जारी करता है जिनका परीक्षण सरकारी प्रयोगशालाओं में हुआ हो। रिकॉर्ड न होने का अर्थ है कि कोई विफलता दर्ज नहीं है, किंतु पूर्ण गुणवत्ता केवल प्रयोगशाला विश्लेषण से ही सत्यापित हो सकती है।"
+                        )}
                       </p>
                     </div>
                   </div>

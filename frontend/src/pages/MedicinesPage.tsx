@@ -23,9 +23,11 @@ import {
 } from "../api/client";
 import { useCart } from "../context/CartContext";
 import { Skeleton } from "../components/ui/Skeleton";
+import { useLanguage } from "../i18n/LanguageContext";
 import type { MaximumSavingsResponse, MedicineResponse } from "../types";
 
 export function MedicinesPage() {
+  const { tr } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") ?? "";
 
@@ -197,14 +199,16 @@ export function MedicinesPage() {
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 rounded-full bg-[#eef5ff] px-3.5 py-1 text-xs font-bold text-brand">
             <Pill className="h-3.5 w-3.5" />
-            <span>Catalogue Search & Verified Pricing</span>
+            <span>{tr("Catalogue Search & Verified Pricing", "कैटलॉग खोज व सत्यापित मूल्य")}</span>
           </div>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-navy sm:text-4xl">
-            Explore medicines & compare prices
+            {tr("Explore medicines & compare prices", "दवाइयां खोजें और कीमतों की तुलना करें")}
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted sm:text-base">
-            Search 500+ verified medicines across private brands, Jan Aushadhi (PMBJP), and Dava India.
-            Prices and savings are computed directly by the catalogue API.
+            {tr(
+              "Search 500+ verified medicines across private brands, Jan Aushadhi (PMBJP), and Dava India. Prices and savings are computed directly by the catalogue API.",
+              "ब्रांडेड दवाओं, जन औषधि (PMBJP) और दवा इंडिया के 500+ सत्यापित विकल्पों में खोजें। कीमतें व बचत सीधे कैटलॉग डेटा से दर्शायी जाती हैं।"
+            )}
           </p>
         </div>
 
@@ -218,7 +222,7 @@ export function MedicinesPage() {
                 type="text"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search brand (e.g., Crocin, Zerodol), salt (Paracetamol), or form..."
+                placeholder={tr("Search brand (e.g., Crocin, Zerodol), salt (Paracetamol), or form...", "दवाई का नाम, साल्ट (उदा. पैरासिटामोल) या रूप खोजें...")}
                 className="h-12 w-full rounded-2xl border border-slate-200 bg-[#f8fbff] pl-11 pr-4 text-sm font-medium text-navy placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/20"
               />
               {q && (
@@ -227,7 +231,7 @@ export function MedicinesPage() {
                   onClick={() => setQ("")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-xs text-slate-400 hover:text-navy"
                 >
-                  Clear
+                  {tr("Clear", "साफ़ करें")}
                 </button>
               )}
             </div>
@@ -240,7 +244,7 @@ export function MedicinesPage() {
                 onChange={(e) => setCategory(e.target.value)}
                 className="h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-[#f8fbff] pl-10 pr-8 text-sm font-medium text-navy focus:border-brand focus:bg-white focus:outline-none"
               >
-                <option value="">All Categories ({categories.length})</option>
+                <option value="">{tr("All Categories", "सभी श्रेणियां")} ({categories.length})</option>
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
@@ -254,14 +258,14 @@ export function MedicinesPage() {
               type="submit"
               className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-brand px-6 text-sm font-bold text-white shadow-xs transition hover:bg-brand-dark"
             >
-              <span>Search</span>
+              <span>{tr("Search", "खोजें")}</span>
               <ChevronRight className="h-4 w-4" />
             </button>
           </form>
 
           {/* Quick Suggestions */}
           <div className="mt-4 flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs text-slate-500">
-            <span className="font-semibold text-slate-400">Popular searches:</span>
+            <span className="font-semibold text-slate-400">{tr("Popular searches:", "लोकप्रिय खोजें:")}</span>
             {["Paracetamol 500 mg", "Crocin Advance 500", "Azithromycin 500 mg", "Pantoprazole 40 mg", "Zerodol-P"].map(
               (term) => (
                 <button
@@ -281,18 +285,18 @@ export function MedicinesPage() {
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-navy">
-              {activeQuery ? `Results for "${activeQuery}"` : "Catalogue Top Savings Opportunities"}
+              {activeQuery ? `${tr("Results for", "परिणाम:")} "${activeQuery}"` : tr("Catalogue Top Savings Opportunities", "कैटलॉग में सबसे अधिक बचत के अवसर")}
             </h2>
             {loading && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-brand animate-pulse">
                 <span className="h-2 w-2 rounded-full bg-brand animate-ping" />
-                Searching...
+                {tr("Searching...", "खोज जारी है...")}
               </span>
             )}
           </div>
           {totalResults != null && (
             <span className="text-sm font-semibold text-muted">
-              {filteredResults.length} {filteredResults.length === 1 ? "match" : "matches"} found
+              {filteredResults.length} {filteredResults.length === 1 ? tr("match", "विकल्प") : tr("matches", "विकल्प")} {tr("found", "मिले")}
               {category ? ` in ${category}` : ""}
             </span>
           )}
@@ -423,11 +427,11 @@ export function MedicinesPage() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-semibold text-emerald-800">
-                            Jan Aushadhi (PMBJP)
+                            {tr("Jan Aushadhi (PMBJP)", "जन औषधि (PMBJP)")}
                           </span>
                           {hasJa && (
                             <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-800">
-                              Govt generic
+                              {tr("Govt generic", "सरकारी जेनेरिक")}
                             </span>
                           )}
                         </div>
@@ -440,7 +444,7 @@ export function MedicinesPage() {
                                 med.savings_comparison.jan_aushadhi.savings_amount,
                                 med.savings_comparison.jan_aushadhi.savings_percentage,
                               )
-                            : "No alternative listed"}
+                            : tr("No alternative listed", "कोई विकल्प सूचीबद्ध नहीं")}
                         </span>
                       </div>
 
@@ -454,11 +458,11 @@ export function MedicinesPage() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-semibold text-brand">
-                            Dava India Generic
+                            {tr("Dava India Generic", "दवा इंडिया जेनेरिक")}
                           </span>
                           {hasDi && (
                             <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[9px] font-bold text-brand">
-                              Pharmacy chain
+                              {tr("Pharmacy chain", "फार्मेसी चेन")}
                             </span>
                           )}
                         </div>
@@ -471,7 +475,7 @@ export function MedicinesPage() {
                                 med.savings_comparison.dava_india.savings_amount,
                                 med.savings_comparison.dava_india.savings_percentage,
                               )
-                            : "No alternative listed"}
+                            : tr("No alternative listed", "कोई विकल्प सूचीबद्ध नहीं")}
                         </span>
                       </div>
                     </div>
@@ -479,7 +483,10 @@ export function MedicinesPage() {
                     {/* Card Actions */}
                     <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
                       <p className="text-[11.5px] text-slate-400">
-                        Indicative catalogue prices. Consult your doctor or pharmacist before changing formulations.
+                        {tr(
+                          "Indicative catalogue prices. Consult your doctor or pharmacist before changing formulations.",
+                          "कैटलॉग में अनुमानित कीमतें। दवा बदलने से पहले डॉक्टर या फार्मासिस्ट से परामर्श अवश्य लें।"
+                        )}
                       </p>
 
                       <div className="flex items-center gap-2">
@@ -487,7 +494,7 @@ export function MedicinesPage() {
                           to={`/medicines/${med.id}`}
                           className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-navy transition hover:border-brand hover:text-brand"
                         >
-                          <span>Compare breakdown</span>
+                          <span>{tr("Compare breakdown", "मूल्य विवरण देखें")}</span>
                           <ArrowRight className="h-3.5 w-3.5" />
                         </Link>
                         <button
@@ -502,12 +509,12 @@ export function MedicinesPage() {
                           {isAdded ? (
                             <>
                               <Check className="h-3.5 w-3.5" />
-                              <span>Added to enquiry!</span>
+                              <span>{tr("Added to enquiry!", "सूची में जोड़ा गया!")}</span>
                             </>
                           ) : (
                             <>
                               <ShoppingCart className="h-3.5 w-3.5" />
-                              <span>Add to enquiry list</span>
+                              <span>{tr("Add to enquiry list", "पूछताछ सूची में जोड़ें")}</span>
                             </>
                           )}
                         </button>

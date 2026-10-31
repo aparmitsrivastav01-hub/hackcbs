@@ -18,6 +18,7 @@ import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import { createEnquiry, formatInr } from "../api/client";
 import { useCart } from "../context/CartContext";
+import { useLanguage } from "../i18n/LanguageContext";
 import type { Pharmacy } from "../types";
 
 // Curated reference pharmacy network directory
@@ -89,6 +90,7 @@ const DEMO_PHARMACIES: Pharmacy[] = [
 
 export function StoresPage() {
   const navigate = useNavigate();
+  const { tr } = useLanguage();
   const { items, itemCount, subtotal } = useCart();
 
   const [pharmacies] = useState<Pharmacy[]>(DEMO_PHARMACIES);
@@ -209,10 +211,13 @@ export function StoresPage() {
   return (
     <>
       <Helmet>
-        <title>Nearby Pharmacies & Enquiry Handoff — MedEasy</title>
+        <title>{tr("Nearby Pharmacies & Enquiry Handoff — MedEasy", "नज़दीकी मेडिकल स्टोर व पूछताछ — MedEasy")}</title>
         <meta
           name="description"
-          content="Locate nearby Jan Aushadhi Kendras, Dava India outlets, and local licensed pharmacies. Prepare structured enquiries and connect via WhatsApp."
+          content={tr(
+            "Locate nearby Jan Aushadhi Kendras, Dava India outlets, and local licensed pharmacies. Prepare structured enquiries and connect via WhatsApp.",
+            "नज़दीकी जन औषधि केंद्र और मेडिकल स्टोर खोजें। दवा उपलब्धता के लिए व्हाट्सएप संदेश तैयार करें।"
+          )}
         />
       </Helmet>
     <div className="min-h-screen bg-[#f7faff] pb-24 pt-8">
@@ -221,26 +226,30 @@ export function StoresPage() {
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 rounded-full bg-[#eef5ff] px-3.5 py-1 text-xs font-bold text-brand">
             <Store className="h-3.5 w-3.5" />
-            <span>Nearby Pharmacy Directory & Enquiry Handoff</span>
+            <span>{tr("Nearby Pharmacy Directory & Enquiry Handoff", "नज़दीकी फार्मेसी डायरेक्टरी व पूछताछ")}</span>
           </div>
           <h1 className="mt-3 text-3xl font-extrabold text-navy sm:text-4xl">
-            Find Nearby Pharmacies & Send Enquiries
+            {tr("Find Nearby Pharmacies & Send Enquiries", "नज़दीकी मेडिकल स्टोर खोजें व पूछताछ भेजें")}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            Locate Jan Aushadhi Kendras, Dava India outlets, and local licensed chemists.
-            Prepare a structured inquiry with your requested medicines to check live stock, prices, and batch details.
+            {tr(
+              "Locate Jan Aushadhi Kendras, Dava India outlets, and local licensed chemists. Prepare a structured inquiry with your requested medicines to check live stock, prices, and batch details.",
+              "जन औषधि केंद्र, दवा इंडिया स्टोर और स्थानीय मेडिकल स्टोर खोजें। दवाओं की उपलब्धता, वर्तमान दाम और बैच विवरण पूछने के लिए व्हाट्सएप संदेश तैयार करें।"
+            )}
           </p>
         </div>
 
-        {/* Mandatory Stock Caveat Notice (as per mvp_screens.md Screen 7) */}
+        {/* Mandatory Stock Caveat Notice */}
         <div className="mb-6 rounded-2xl border border-amber-200/90 bg-amber-50/70 p-4 text-xs text-amber-900">
           <div className="flex items-start gap-2.5">
             <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
             <div>
-              <span className="font-bold">Important Pharmacy & Stock Verification Notice:</span>
+              <span className="font-bold">{tr("Important Pharmacy & Stock Verification Notice:", "महत्वपूर्ण मेडिकल स्टोर व स्टॉक सत्यापन सूचना:")}</span>
               <p className="mt-0.5 leading-relaxed text-amber-800">
-                Directory listings do not confirm real-time medicine inventory. Always contact the pharmacy directly to verify
-                availability, quoted price, manufacturer, and batch expiry before traveling or placing an order.
+                {tr(
+                  "Directory listings do not confirm real-time medicine inventory. Always contact the pharmacy directly to verify availability, quoted price, manufacturer, and batch expiry before traveling or placing an order.",
+                  "मैप लिस्टिंग से वास्तविक समय में स्टॉक की पुष्टि नहीं होती। जाने या ऑर्डर देने से पहले उपलब्धता, मूल्य और एक्सपायरी तिथि की पुष्टि स्टोर से सीधे करें।"
+                )}
               </p>
             </div>
           </div>
@@ -256,7 +265,10 @@ export function StoresPage() {
                 type="text"
                 value={searchLocality}
                 onChange={(e) => setSearchLocality(e.target.value)}
-                placeholder="Search by locality, area, or PIN (e.g. Connaught Place, Rohini, 110001)..."
+                placeholder={tr(
+                  "Search by locality, area, or PIN (e.g. Connaught Place, Rohini, 110001)...",
+                  "क्षेत्र, इलाका या पिनकोड खोजें (उदा. रोहिणी, कनाट प्लेस, 110001)..."
+                )}
                 className="h-11 w-full rounded-2xl border border-slate-200 bg-[#f8fbff] pl-10 pr-4 text-sm font-medium text-navy placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none"
               />
             </div>
@@ -268,7 +280,7 @@ export function StoresPage() {
               className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-xs font-bold text-navy transition hover:border-brand hover:text-brand"
             >
               <Navigation className="h-3.5 w-3.5 text-brand" />
-              <span>Use my location</span>
+              <span>{tr("Use my location", "मेरी लोकेशन खोजें")}</span>
             </button>
 
             {/* Generic filter toggle */}
@@ -282,7 +294,7 @@ export function StoresPage() {
               }`}
             >
               <Pill className="h-3.5 w-3.5" />
-              <span>Generic Kendras only</span>
+              <span>{tr("Generic Kendras only", "केवल जेनेरिक केंद्र")}</span>
             </button>
           </div>
 
@@ -297,14 +309,14 @@ export function StoresPage() {
             <div className="flex items-center gap-2 text-brand">
               <ShoppingCart className="h-4 w-4" />
               <span className="font-bold">
-                {items.length} medicine(s) in your enquiry list ({itemCount} units · Indicative {formatInr(subtotal)})
+                {items.length} {tr("medicine(s) in your enquiry list", "दवाइयां आपकी सूची में")} ({itemCount} {tr("units", "इकाइयां")} · {tr("Indicative", "अनुमानित")} {formatInr(subtotal)})
               </span>
             </div>
             <Link
               to="/cart"
               className="font-bold text-brand hover:underline"
             >
-              Review or edit list →
+              {tr("Review or edit list →", "सूची की समीक्षा या संपादन करें →")}
             </Link>
           </div>
         )}
@@ -313,10 +325,10 @@ export function StoresPage() {
         <div className="mt-8 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-navy">
-              Available Pharmacies ({displayedPharmacies.length})
+              {tr("Available Pharmacies", "उपलब्ध मेडिकल स्टोर")} ({displayedPharmacies.length})
             </h2>
             <span className="text-xs text-slate-400">
-              Source: Curated PMBJP/Dava India Directory & Google Places
+              {tr("Source: Curated PMBJP/Dava India Directory & Google Places", "स्रोत: जन औषधि, दवा इंडिया व गूगल मैप्स")}
             </span>
           </div>
 
@@ -332,15 +344,15 @@ export function StoresPage() {
                       <div className="flex flex-wrap items-center gap-1.5">
                         {pharmacy.is_generic_store ? (
                           <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                            {pharmacy.generic_network ?? "Generic Kendra"}
+                            {pharmacy.generic_network ?? tr("Generic Kendra", "जेनेरिक केंद्र")}
                           </span>
                         ) : (
                           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                            Retail Pharmacy
+                            {tr("Retail Pharmacy", "दवा की दुकान")}
                           </span>
                         )}
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                          {pharmacy.distance} away
+                          {pharmacy.distance} {tr("away", "दूर")}
                         </span>
                       </div>
                       <h3 className="mt-2 text-lg font-bold text-navy">{pharmacy.name}</h3>
@@ -353,7 +365,7 @@ export function StoresPage() {
                           : "bg-slate-100 text-slate-500"
                       }`}
                     >
-                      {pharmacy.open_now ? "Open now" : "Closed"}
+                      {pharmacy.open_now ? tr("Open now", "अभी खुला है") : tr("Closed", "बंद")}
                     </span>
                   </div>
 
@@ -364,13 +376,13 @@ export function StoresPage() {
 
                   {pharmacy.phone && (
                     <p className="mt-1 text-xs font-semibold text-navy">
-                      Phone: <span className="font-mono text-slate-700">{pharmacy.phone}</span>
+                      {tr("Phone:", "फ़ोन:")} <span className="font-mono text-slate-700">{pharmacy.phone}</span>
                     </p>
                   )}
                 </div>
 
                 <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-                  <span className="text-[11px] text-slate-400">Stock not confirmed</span>
+                  <span className="text-[11px] text-slate-400">{tr("Stock not confirmed", "स्टॉक सत्यापित नहीं")}</span>
 
                   <button
                     type="button"
@@ -378,7 +390,7 @@ export function StoresPage() {
                     className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-brand-dark"
                   >
                     <MessageSquare className="h-3.5 w-3.5" />
-                    <span>Prepare enquiry</span>
+                    <span>{tr("Prepare enquiry", "पूछताछ तैयार करें")}</span>
                   </button>
                 </div>
               </div>

@@ -1,8 +1,8 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type Locale = "en" | "hi";
 
-const copy = {
+export const copy = {
   en: {
     brand: "MedEasy",
     navHome: "Home",
@@ -48,6 +48,30 @@ const copy = {
     uploadLink: "Upload Prescription Photo / PDF",
     dragDropAnywhere: "Drag & drop anywhere to scan",
     dropToScan: "Drop prescription to scan",
+
+    // Footer
+    footerDisclaimer:
+      "Price comparisons are informational and based on the loaded catalogue. They are not medical advice or a recommendation to switch treatment.",
+    footerDataSources: "Data Sources",
+    footerHelp: "Help",
+    footerPrivacy: "Privacy Policy",
+    footerTerms: "Terms of Use",
+    footerCopyright: "© 2026 MedEasy. All rights reserved.",
+
+    // Common actions & labels
+    commonSearch: "Search",
+    commonLoading: "Loading...",
+    commonAddToCart: "Add to Enquiry List",
+    commonAdded: "Added to List",
+    commonViewDetails: "View Details",
+    commonJanAushadhi: "Jan Aushadhi",
+    commonDavaIndia: "Dava India",
+    commonPrivateBrand: "Private Brand",
+    commonGenericAlternative: "Generic Alternative",
+    commonSave: "Save",
+    commonReset: "Reset",
+    commonClear: "Clear",
+    commonBack: "Back",
   },
   hi: {
     brand: "MedEasy",
@@ -94,24 +118,80 @@ const copy = {
     uploadLink: "पर्चे की फोटो / PDF अपलोड करें",
     dragDropAnywhere: "स्कैन करने के लिए फ़ाइल यहां छोड़ें",
     dropToScan: "स्कैन के लिए पर्चा ड्रॉप करें",
+
+    // Footer
+    footerDisclaimer:
+      "मूल्य तुलना केवल सूचनात्मक है और उपलब्ध कैटलॉग पर आधारित है। यह कोई चिकित्सीय सलाह या उपचार बदलने की सिफारिश नहीं है।",
+    footerDataSources: "डेटा स्रोत",
+    footerHelp: "सहायता",
+    footerPrivacy: "गोपनीयता नीति",
+    footerTerms: "उपयोग की शर्तें",
+    footerCopyright: "© 2026 MedEasy. सर्वाधिकार सुरक्षित।",
+
+    // Common actions & labels
+    commonSearch: "खोजें",
+    commonLoading: "लोड हो रहा है...",
+    commonAddToCart: "पूछताछ सूची में जोड़ें",
+    commonAdded: "सूची में जोड़ा गया",
+    commonViewDetails: "विवरण देखें",
+    commonJanAushadhi: "जन औषधि",
+    commonDavaIndia: "दवा इंडिया",
+    commonPrivateBrand: "प्राइवेट ब्रांड",
+    commonGenericAlternative: "जेनेरिक विकल्प",
+    commonSave: "बचत",
+    commonReset: "रीसेट",
+    commonClear: "साफ़ करें",
+    commonBack: "वापस",
   },
 };
 
-type LanguageContextType = {
+export type LanguageContextType = {
   locale: Locale;
   setLocale: (l: Locale) => void;
+  isHi: boolean;
+  tr: (en: string, hi: string) => string;
   t: (typeof copy)["en"];
 };
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>("en");
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("medeasy_locale");
+        if (saved === "hi" || saved === "en") return saved;
+      } catch {
+        // Ignore localStorage error
+      }
+    }
+    return "en";
+  });
+
+  const setLocale = (l: Locale) => {
+    setLocaleState(l);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("medeasy_locale", l);
+        document.documentElement.lang = l;
+      } catch {
+        // Ignore localStorage error
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      document.documentElement.lang = locale;
+    }
+  }, [locale]);
 
   const value = useMemo(
     () => ({
       locale,
       setLocale,
+      isHi: locale === "hi",
+      tr: (en: string, hi: string) => (locale === "hi" ? hi : en),
       t: copy[locale],
     }),
     [locale],
