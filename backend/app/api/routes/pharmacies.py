@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from app.models.pharmacy_schemas import (
     EnquiryCreateRequest,
     EnquiryStatusUpdate,
+    EnquiryBatchVerifyRequest,
     NearbyPharmaciesRequest,
     NearbyPharmaciesResponse,
     PharmacyEnquiryRecord,
@@ -39,6 +40,24 @@ def create_enquiry(body: EnquiryCreateRequest, service: PharmacyService = Depend
         raise HTTPException(status_code=404, detail=str(exc).strip("'")) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/enquiry/{enquiry_id}/verify-batch", response_model=PharmacyEnquiryRecord)
+def verify_enquiry_batch(
+    enquiry_id: str,
+    body: EnquiryBatchVerifyRequest,
+    service: PharmacyService = Depends(get_pharmacy_service),
+):
+    try:
+        result = service.verify_enquiry_batch(
+            enquiry_id, body.cart_item_id, body.product_name, body.batch_number,
+            body.manufacturer, body.expiry_date,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc).strip("'")) from exc
+    if result is None:
+        raise HTTPException(status_code=404, detail="Enquiry not found")
+    return result
 
 
 @router.get("/enquiry/{enquiry_id}", response_model=PharmacyEnquiryRecord)

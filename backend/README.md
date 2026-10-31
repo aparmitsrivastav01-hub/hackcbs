@@ -4,6 +4,8 @@ MedEasy's Python backend has two modular stages:
 
 - **Stage 1:** CSV-backed medicine search and price comparison.
 - **Stage 2:** prescription upload, Gemini vision extraction, conservative catalogue matching, and structured price comparisons.
+- **Stage 3:** cart, nearby pharmacy discovery, and WhatsApp stock enquiry.
+- **Stage 12:** CDSCO NSQ alert lookup and pharmacy batch verification.
 
 The catalogue is loaded with Pandas on startup. Prescription images/PDFs are validated and processed in memory; uploaded files are not retained. Scan results use temporary in-memory storage and are lost when the server restarts or when a different worker receives a later request.
 
@@ -27,6 +29,8 @@ Swagger UI: `http://localhost:8000/docs`.
 - `MEDEASY_CORS_ORIGINS` — comma-separated allowed browser origins; defaults to localhost ports 5173.
 - `TINYFISH_API_KEY` — required for live pharmacy discovery; stored in ignored `backend/.env`.
 - `PHARMACY_CACHE_TTL_SECONDS` — pharmacy discovery cache lifetime; defaults to 3600 seconds.
+- `CDSCO_ALERTS_CSV_PATH` — optional path to the supplied CDSCO extraction; defaults to `app/data/MedEasy_CDSCO_extraction_updated.csv`.
+- `CDSCO_REVIEW_API_KEY` — key required by the manual alert review endpoint. Keep it secret and configure it before verifying extracted records.
 
 The Gemini provider implements a small extraction interface and can be replaced with another OCR/VLM adapter. Prescription content is sent to the configured provider for extraction. Do not log file contents or patient details.
 
@@ -78,8 +82,28 @@ Pharmacy and enquiry endpoints:
 - `POST /api/pharmacies/enquiry/create` with a discovered `store_id` and `cart_session_id`.
 - `GET /api/pharmacies/enquiry/{enquiry_id}`
 - `PATCH /api/pharmacies/enquiry/{enquiry_id}/status`
+- `POST /api/pharmacies/enquiry/{enquiry_id}/verify-batch` (pharmacy supplied product, manufacturer, batch, expiry)
 
 Nearby results include source URLs and the time TinyFish data was last verified. Missing coordinates yield a null distance; only valid coordinates are used for distance calculation. WhatsApp is marked verified only when the listing extraction returns a WhatsApp URL that matches the normalized listed number. Enquiries only prepare a click-to-chat URL; a person must confirm and send it. `user_opened_whatsapp` records only that the user opened the link, not that a message was sent. Pharmacy discovery, carts, and enquiries are temporary in-memory data.
+
+## Stage 12: CDSCO NSQ batch safety
+
+The supplied CSV is bundled at `app/data/MedEasy_CDSCO_extraction_updated.csv` and loaded with Pandas during startup. The API keeps incomplete rows and their `source_pdf`, `notice_month`, and `review_status` values for traceability. The supplied extraction currently contains 260 rows; its latest notice month is June 2025. Extraction records are review-pending by default. A matching row is therefore `NEEDS_REVIEW` until a reviewer verifies it against an official CDSCO notice. Reviewer verification is held in memory and is lost on restart; production should persist the audit and review overlay in a database.
+
+Endpoints:
+
+- `GET /api/batch-safety/dataset-status` — loaded filename, source record count, review-pending count, and verified count.
+- `GET /api/batch-safety/alerts`
+- `GET /api/batch-safety/check-batch?product_name=...&batch_number=...&manufacturer=...`
+- `GET /api/safety/check-batch?product_name=...&batch_number=...&manufacturer=...`
+- `GET /api/safety/check-medicine?medicine_name=...` — medicine-level candidates only; never confirms a batch.
+- `GET /api/safety/alerts`
+- `GET /api/safety/alerts/{alert_id}`
+- `PATCH /api/safety/alerts/{alert_id}/review` — requires `X-CDSCO-Review-Key` matching `CDSCO_REVIEW_API_KEY`, an official HTTPS CDSCO URL, and verification notes.
+
+Batch IDs match exactly after case and punctuation normalization; no fuzzy batch matching is used. A same-medicine/different-batch result does not flag the queried batch. Exact batch records with conflicting or incomplete identity data require review. `CLEAR` means only that no match was found in the loaded CSV; it is not a safety certification and does not establish current regulatory status. Check the original [CDSCO public NSQ portal](https://cdscoonline.gov.in/CDSCO/viewPublicNSQDrug) notice.
+
+Cart requests that include a batch which is flagged or requires review are rejected with HTTP 409. A cart item without a physical batch can be added as a planning item, but pharmacy enquiries remain order-blocked until each requested cart line has a separately checked pharmacy batch. Marking stock available does not lift that block. The WhatsApp message asks the pharmacy to share the exact brand, manufacturer, batch, and expiry and to offer a different batch if needed. Enquiry batch checks are provisional, in-memory workflow records, not proof that the pharmacy physically checked a batch or sent a WhatsApp message.
 
 Example requests:
 

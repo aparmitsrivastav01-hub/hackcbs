@@ -14,6 +14,8 @@ from typing import Any
 from app.models.pharmacy_schemas import NearbyPharmaciesRequest
 from app.services.cart_service import CartService
 from app.services.tinyfish_service import TinyFishError, TinyFishNotConfigured, TinyFishService
+from app.services.cdsco_safety_service import CDSCOSafetyService
+from app.services.search_service import normalize
 
 PROVIDER_NAMES = {"jan_aushadhi": "Jan Aushadhi Kendra", "dava_india": "Dava India pharmacy"}
 EARTH_RADIUS_KM = 6371.0088
@@ -72,9 +74,11 @@ class PharmacyService:
         cart_service: CartService,
         tinyfish: TinyFishService | None = None,
         cache_ttl_seconds: int | None = None,
+        safety_service: CDSCOSafetyService | None = None,
     ):
         self.cart_service = cart_service
         self.tinyfish = tinyfish or TinyFishService()
+        self.safety_service = safety_service
         self.cache_ttl_seconds = cache_ttl_seconds or int(os.getenv("PHARMACY_CACHE_TTL_SECONDS", "3600"))
         self._cache: dict[tuple[Any, ...], tuple[float, list[dict[str, Any]]]] = {}
         self._stores: dict[str, dict[str, Any]] = {}
@@ -176,20 +180,66 @@ class PharmacyService:
             "status": "ready_to_send",
             "user_confirmation_required": True,
             "created_at": now,
+            "batch_checks": [],
+            "batch_verification_required": True,
+            "order_blocked": True,
+            "_cart_item_ids": [item["item_id"] for item in cart],
+            "_cart_session_id": cart_session_id,
+            "_cart_items": [dict(item) for item in cart],
         }
         self._enquiries[enquiry_id] = dict(result)
         return dict(result)
 
     def get_enquiry(self, enquiry_id: str) -> dict[str, Any] | None:
         enquiry = self._enquiries.get(enquiry_id)
-        return dict(enquiry) if enquiry else None
+        if not enquiry:
+            return None
+        return {key: value for key, value in enquiry.items() if not key.startswith("_")}
+
+    def verify_enquiry_batch(
+        self, enquiry_id: str, cart_item_id: str, product_name: str,
+        batch_number: str, manufacturer: str | None, expiry_date: Any = None,
+    ) -> dict[str, Any] | None:
+        enquiry = self._enquiries.get(enquiry_id)
+        if enquiry is None:
+            return None
+        if cart_item_id not in enquiry.get("_cart_item_ids", []):
+            raise KeyError("Cart item is not part of this pharmacy enquiry")
+        if self.safety_service is None:
+            raise RuntimeError("CDSCO safety dataset is not configured")
+        safety = self.safety_service.check_batch(product_name, batch_number, manufacturer)
+        # The pharmacy's returned product must still correspond to the requested cart line.
+        cart_item = next((item for item in enquiry.get("_cart_items", []) if item["item_id"] == cart_item_id), None)
+        if cart_item is not None:
+            requested_names = [normalize(cart_item.get("medicine_name") or ""), normalize(cart_item.get("active_salt") or "")]
+            received = normalize(product_name)
+            if not any(name and received and (name == received or name in received or received in name) for name in requested_names):
+                safety = {**safety, "safety_status": "NEEDS_REVIEW", "can_be_sold": False, "can_be_dispensed": False,
+                          "action_required": "PHARMACY_PRODUCT_DOES_NOT_MATCH_REQUESTED_MEDICINE", "batch_match_confirmed": False}
+        check = {
+            "cart_item_id": cart_item_id,
+            "product_name": product_name,
+            "batch_number": batch_number,
+            "manufacturer": manufacturer,
+            "expiry_date": expiry_date,
+            "checked_at": datetime.now(timezone.utc),
+            "safety_check": safety,
+        }
+        checks = [item for item in enquiry["batch_checks"] if item["cart_item_id"] != cart_item_id]
+        checks.append(check)
+        enquiry["batch_checks"] = checks
+        clear_ids = {item["cart_item_id"] for item in checks if item["safety_check"]["safety_status"] == "CLEAR"}
+        all_clear = set(enquiry.get("_cart_item_ids", [])) == clear_ids
+        enquiry["batch_verification_required"] = not all_clear
+        enquiry["order_blocked"] = not all_clear
+        return self.get_enquiry(enquiry_id)
 
     def update_enquiry_status(self, enquiry_id: str, status: str) -> dict[str, Any] | None:
         enquiry = self._enquiries.get(enquiry_id)
         if enquiry is None:
             return None
         enquiry["status"] = status
-        return dict(enquiry)
+        return self.get_enquiry(enquiry_id)
 
     @staticmethod
     def _location_description(request: NearbyPharmaciesRequest) -> str:
@@ -309,6 +359,16 @@ class PharmacyService:
             "3. Is home delivery available at my location?",
             "4. What are the delivery charges?",
             "5. What is the estimated delivery time?",
+            "", "IMPORTANT BATCH SAFETY CHECK:",
+            "Before supplying any medicine, please verify its manufacturer and batch number against the CDSCO NSQ alert list.",
+            "If you have a batch matching any flagged record, DO NOT SELL OR DISPENSE THAT SPECIFIC BATCH.",
+            "Please share for each medicine:",
+            "1. Medicine brand name.",
+            "2. Manufacturer.",
+            "3. Batch number.",
+            "4. Expiry date.",
+            "If the available batch is flagged, please do not supply it. Kindly confirm whether an alternative unflagged batch is available.",
+            "This check is mandatory before order confirmation.",
             "", "Please share the availability and pricing details.", "", "Thank you!", "MedEasy Customer",
         ])
         return "\n".join(lines)
