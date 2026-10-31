@@ -2,6 +2,8 @@ from datetime import datetime
 from math import isfinite
 from typing import Literal
 from pydantic import BaseModel, Field, model_validator
+from datetime import date
+from app.models.safety_schemas import SafetyCheckResponse
 
 PharmacyProvider = Literal["jan_aushadhi", "dava_india"]
 DeliveryAvailability = Literal["yes", "no", "unknown"]
@@ -69,6 +71,24 @@ class EnquiryStatusUpdate(BaseModel):
     status: EnquiryStatus
 
 
+class EnquiryBatchVerifyRequest(BaseModel):
+    cart_item_id: str = Field(min_length=1, max_length=100)
+    product_name: str = Field(min_length=1, max_length=300)
+    batch_number: str = Field(min_length=1, max_length=120)
+    manufacturer: str | None = Field(default=None, max_length=500)
+    expiry_date: date | None = None
+
+
+class EnquiryBatchCheck(BaseModel):
+    cart_item_id: str
+    product_name: str
+    batch_number: str
+    manufacturer: str | None
+    expiry_date: date | None
+    checked_at: datetime
+    safety_check: SafetyCheckResponse
+
+
 class PharmacyEnquiryResponse(BaseModel):
     success: bool
     enquiry_id: str
@@ -80,6 +100,9 @@ class PharmacyEnquiryResponse(BaseModel):
     status: EnquiryStatus
     user_confirmation_required: bool
     created_at: datetime
+    batch_checks: list[EnquiryBatchCheck] = Field(default_factory=list)
+    batch_verification_required: bool = True
+    order_blocked: bool = True
 
 
 class PharmacyEnquiryRecord(PharmacyEnquiryResponse):
