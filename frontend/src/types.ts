@@ -262,3 +262,56 @@ export type DatasetStatus = {
   last_modified: string | null;
   note: string;
 };
+
+// -------------------------------------------------------------
+// Phase 2: User Account, Patient Profile, & Privacy Consent Types
+// -------------------------------------------------------------
+
+export type UserPublic = {
+  id: string;
+  email: string;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type PatientProfile = {
+  id: string;
+  user_id: string;
+  display_label: string | null;
+  preferred_language: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AuthResponse = {
+  success: boolean;
+  access_token: string;
+  token_type: string;
+  user: UserPublic;
+  profile: PatientProfile;
+};
+
+export type PrivacyConsent = {
+  purpose: string;
+  policy_version: string;
+  granted: boolean;
+  granted_at: string | null;
+  withdrawn_at: string | null;
+};
+
+export type MekoContextItem = {
+  memory_id: string;
+  text: string;
+  source?: string;
+  recorded_at?: string;
+  review_status?: string;
+};
+
+export type MekoContextResponse = {
+  meko_enabled: boolean;
+  operation: "recall" | "propose" | "save" | "forget" | "status";
+  status: "success" | "empty" | "disabled" | "error";
+  context_items: MekoContextItem[];
+  message?: string;
+};
+

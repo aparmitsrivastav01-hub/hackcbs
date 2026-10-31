@@ -11,7 +11,11 @@ from app.api.routes.pharmacies import router as pharmacies_router
 from app.api.routes.safety import router as safety_router, batch_safety_router
 from app.api.routes.ai import router as ai_router
 from app.api.routes.elevenlabs import router as elevenlabs_router
+from app.api.routes.auth import router as auth_router
+from app.api.routes.profile import router as profile_router
+from app.api.routes.privacy import router as privacy_router
 from app.core.config import DEFAULT_CSV_PATH, get_cors_origins
+from app.db.base import check_database_health, get_async_engine
 from app.services.medicine_service import MedicineService
 from app.services.prescription.prescription_service import PrescriptionService
 from app.services.cart_service import CartService
@@ -44,16 +48,26 @@ async def lifespan(app: FastAPI):
         raise
     app.state.cart_service = CartService(medicine_service, app.state.safety_service)
     app.state.pharmacy_service = PharmacyService(app.state.cart_service, safety_service=app.state.safety_service)
+
+    # Check and log YugabyteDB / Database connectivity status
+    db_health = await check_database_health()
+    if db_health.get("connected"):
+        logger.info("YugabyteDB / Accounts database connection verified: %s", db_health.get("status"))
+    else:
+        logger.warning("YugabyteDB connection warning: %s", db_health.get("error"))
+
     try:
         yield
     finally:
         await app.state.gemini_service.close()
+        engine = get_async_engine()
+        await engine.dispose()
 
 
 app = FastAPI(
     title="MedEasy Backend API",
-    description="Medicine search, prescription extraction, MedSaathi Gemini chat, ElevenLabs speech, cart, pharmacy discovery, enquiries, and CDSCO NSQ batch checks.",
-    version="1.0.0",
+    description="Medicine search, prescription extraction, MedSaathi Gemini chat, ElevenLabs speech, cart, pharmacy discovery, enquiries, CDSCO NSQ batch checks, and patient identity/consent management.",
+    version="2.0.0",
     lifespan=lifespan,
 )
 app.add_middleware(
@@ -72,3 +86,6 @@ app.include_router(safety_router)
 app.include_router(batch_safety_router)
 app.include_router(ai_router)
 app.include_router(elevenlabs_router)
+app.include_router(auth_router)
+app.include_router(profile_router)
+app.include_router(privacy_router)

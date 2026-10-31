@@ -1,4 +1,5 @@
 import type {
+  AuthResponse,
   BatchAlertRecord,
   BatchCheckResult,
   CategoriesResponse,
@@ -9,12 +10,25 @@ import type {
   HealthResponse,
   MaximumSavingsResponse,
   MedicineResponse,
+  PatientProfile,
   PharmacyEnquiry,
   PriceOption,
+  PrivacyConsent,
   SearchResponse,
+  UserPublic,
 } from "../types";
 
 const API = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://127.0.0.1:8000";
+
+let inMemoryAccessToken: string | null = null;
+
+export function setAccessToken(token: string | null) {
+  inMemoryAccessToken = token;
+}
+
+export function getAccessToken(): string | null {
+  return inMemoryAccessToken;
+}
 
 async function request<T>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
   const controller = new AbortController();
@@ -25,9 +39,16 @@ async function request<T>(path: string, init?: RequestInit & { timeoutMs?: numbe
     ? composeSignals(init.signal, controller.signal)
     : controller.signal;
 
+  const headers = new Headers(init?.headers);
+  if (inMemoryAccessToken && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${inMemoryAccessToken}`);
+  }
+
   try {
     const response = await fetch(`${API}${path}`, {
       ...init,
+      headers,
+      credentials: init?.credentials ?? "include",
       signal,
     });
     clearTimeout(timer);
@@ -604,3 +625,109 @@ function getSyntheticExtraction(fileName: string): ExtractionResponse {
     },
   };
 }
+
+// -------------------------------------------------------------
+// Phase 2: Authentication & Patient Privacy API Endpoints
+// -------------------------------------------------------------
+
+export async function signupUser(payload: {
+  email: string;
+  password: string;
+  confirm_password?: string;
+  display_label?: string;
+  preferred_language?: string;
+}): Promise<AuthResponse> {
+  const res = await request<AuthResponse>("/api/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  setAccessToken(res.access_token);
+  return res;
+}
+
+export async function loginUser(payload: {
+  email: string;
+  password: string;
+}): Promise<AuthResponse> {
+  const res = await request<AuthResponse>("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  setAccessToken(res.access_token);
+  return res;
+}
+
+export async function refreshAuthToken(): Promise<string | null> {
+  try {
+    const res = await request<{ success: boolean; access_token: string }>("/api/auth/refresh", {
+      method: "POST",
+    });
+    if (res.access_token) {
+      setAccessToken(res.access_token);
+      return res.access_token;
+    }
+    return null;
+  } catch {
+    setAccessToken(null);
+    return null;
+  }
+}
+
+export async function logoutUser(): Promise<void> {
+  try {
+    await request("/api/auth/logout", { method: "POST" });
+  } finally {
+    setAccessToken(null);
+  }
+}
+
+export async function getCurrentUser(): Promise<{
+  user: UserPublic;
+  profile: PatientProfile | null;
+  consent: { meko_memory_granted: boolean };
+}> {
+  return request("/api/auth/me");
+}
+
+export async function updatePatientProfile(payload: {
+  display_label?: string;
+  preferred_language?: string;
+}): Promise<PatientProfile> {
+  return request<PatientProfile>("/api/profile", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getPrivacyConsentStatus(): Promise<PrivacyConsent> {
+  return request<PrivacyConsent>("/api/privacy/consent");
+}
+
+export async function updatePrivacyConsent(payload: {
+  granted: boolean;
+  policy_version?: string;
+}): Promise<PrivacyConsent> {
+  return request<PrivacyConsent>("/api/privacy/consent/meko-memory", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      granted: payload.granted,
+      policy_version: payload.policy_version ?? "2026-10-v1",
+    }),
+  });
+}
+
+export async function withdrawPrivacyConsent(): Promise<{
+  success: boolean;
+  granted: boolean;
+  meko_cleanup_status: string;
+  message: string;
+}> {
+  return request("/api/privacy/consent/meko-memory", {
+    method: "DELETE",
+  });
+}
+

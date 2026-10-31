@@ -1,6 +1,7 @@
-import { Menu, Plus, ShoppingCart, X } from "lucide-react";
+import { Menu, Plus, ShoppingCart, User, X } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useLanguage } from "../../i18n/LanguageContext";
 
@@ -16,6 +17,7 @@ const links = [
 export function Navbar() {
   const { t, locale, setLocale } = useLanguage();
   const { itemCount } = useCart();
+  const { isAuthenticated, profile } = useAuth();
   const [open, setOpen] = useState(false);
 
   return (
@@ -99,6 +101,27 @@ export function Navbar() {
             </button>
           </div>
 
+          {/* User Account / Sign In Pill */}
+          {isAuthenticated ? (
+            <Link
+              to="/account"
+              title="Patient Account & Privacy"
+              className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-[#f8fbff] px-3 py-1.5 text-xs font-bold text-navy transition hover:border-brand hover:text-brand"
+            >
+              <User className="h-3.5 w-3.5 text-brand" />
+              <span className="hidden sm:inline max-w-[100px] truncate">
+                {profile?.display_label || "Account"}
+              </span>
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="rounded-full bg-brand px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-600 active:scale-98"
+            >
+              {locale === "hi" ? "साइन इन" : "Sign In"}
+            </Link>
+          )}
+
           {/* Mobile Menu Button */}
           <button
             type="button"
@@ -136,6 +159,15 @@ export function Navbar() {
             <span className="rounded-full bg-brand px-2 py-0.5 text-xs text-white">
               {itemCount} units
             </span>
+          </NavLink>
+
+          <NavLink
+            to={isAuthenticated ? "/account" : "/login"}
+            onClick={() => setOpen(false)}
+            className="mt-2 flex items-center justify-between rounded-lg bg-slate-100 px-3 py-2.5 text-sm font-bold text-navy"
+          >
+            <span>{isAuthenticated ? (profile?.display_label || "Account") : "Sign In"}</span>
+            <User className="h-4 w-4 text-brand" />
           </NavLink>
         </div>
       ) : null}
