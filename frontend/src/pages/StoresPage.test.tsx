@@ -144,7 +144,7 @@ describe("StoresPage — Google Maps Embed & On-Demand TinyFish WhatsApp Discove
 
     // Success state shown
     await waitFor(() => {
-      expect(screen.getByText(/\+919811234567/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/\+919811234567/i).length).toBeGreaterThan(0);
     });
 
     // Valid wa.me URL opened with encoded message

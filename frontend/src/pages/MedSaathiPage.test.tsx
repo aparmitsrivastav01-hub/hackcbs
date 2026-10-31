@@ -139,7 +139,7 @@ describe("MedSaathiPage — ElevenLabs TTS Integration", () => {
   });
 
   it("6. API failure shows fallback error banner", async () => {
-    mockFetch.mockImplementation(async (url) => {
+    mockFetch.mockImplementation(async (url: any) => {
       if (String(url) === "/api/voice/elevenlabs/speak") {
         return new Response(JSON.stringify({ detail: "Voice synthesis service unavailable" }), {
           status: 503,

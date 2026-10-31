@@ -275,9 +275,13 @@ export type ShopWhatsAppContactRequest = {
 
 export type ShopWhatsAppContactResponse = {
   shop_name: string;
+  address?: string | null;
+  mobile_number?: string | null;
   phone_number?: string | null;
   whatsapp_number?: string | null;
   source_url?: string | null;
+  run_url?: string | null;
+  embed_url?: string | null;
   verification_status: "verified" | "verified_whatsapp" | "phone_only" | "not_found" | "ambiguous";
   confidence?: "high" | "medium" | "low" | "none" | null;
   message: string;

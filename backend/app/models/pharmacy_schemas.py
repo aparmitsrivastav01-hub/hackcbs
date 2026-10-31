@@ -126,9 +126,13 @@ class ShopWhatsAppContactRequest(BaseModel):
 
 class ShopWhatsAppContactResponse(BaseModel):
     shop_name: str
+    address: str | None = None
+    mobile_number: str | None = None
     phone_number: str | None = None
     whatsapp_number: str | None = None
     source_url: str | None = None
+    run_url: str | None = None
+    embed_url: str | None = None
     verification_status: Literal["verified", "verified_whatsapp", "phone_only", "not_found", "ambiguous"]
     confidence: Literal["high", "medium", "low", "none"] | None = None
     message: str

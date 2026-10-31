@@ -24,7 +24,6 @@ const mockSampleMedicines: MedicineResponse[] = [
     savings_comparison: {
       maximum_savings: {
         provider: "jan_aushadhi",
-        price: 12,
         amount: 20,
         percentage: 62.5,
       },
@@ -44,7 +43,6 @@ const mockSampleMedicines: MedicineResponse[] = [
     savings_comparison: {
       maximum_savings: {
         provider: "jan_aushadhi",
-        price: 9,
         amount: 16,
         percentage: 64,
       },
@@ -104,7 +102,6 @@ function renderMedicinesPage(initialQuery = "") {
 }
 
 describe("MedicinesPage — Voice Search & ElevenLabs TTS Integration", () => {
-  let mockSearchMedicines: ReturnType<typeof vi.spyOn>;
   let mockFetch: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -112,23 +109,21 @@ describe("MedicinesPage — Voice Search & ElevenLabs TTS Integration", () => {
     vi.stubGlobal("Audio", MockAudio);
     vi.stubGlobal("SpeechRecognition", MockSpeechRecognition);
 
-    mockSearchMedicines = vi.spyOn(apiClient, "searchMedicines").mockResolvedValue({
+    vi.spyOn(apiClient, "searchMedicines").mockResolvedValue({
       success: true,
       query: "Dolo",
       total_results: 2,
       results: mockSampleMedicines,
     });
     vi.spyOn(apiClient, "getCategories").mockResolvedValue({
-      count: 1,
       categories: ["Analgesic"],
     });
     vi.spyOn(apiClient, "getMaximumSavings").mockResolvedValue({
-      count: 2,
       provider: "all",
       medicines: mockSampleMedicines,
     });
 
-    mockFetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+    mockFetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (url: any) => {
       if (url === "/api/voice/elevenlabs/speak") {
         return new Response(new Blob(["mock-mp3"], { type: "audio/mpeg" }), {
           status: 200,
@@ -222,7 +217,7 @@ describe("MedicinesPage — Voice Search & ElevenLabs TTS Integration", () => {
   });
 
   it("10. TTS failure displays notice without breaking medicine search or catalogue results", async () => {
-    mockFetch.mockImplementation(async (url) => {
+    mockFetch.mockImplementation(async (url: any) => {
       if (url === "/api/voice/elevenlabs/speak") {
         return new Response(JSON.stringify({ detail: "ElevenLabs API offline" }), {
           status: 502,

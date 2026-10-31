@@ -237,12 +237,20 @@ class TinyFishService:
             raise TinyFishError("TinyFish contact extraction request failed") from exc
 
         status = result_body.get("status") if isinstance(result_body, dict) else None
-        logger.info("TinyFish task response status: %s (run_id=%s)", status, result_body.get("run_id") if isinstance(result_body, dict) else None)
+        run_id = result_body.get("run_id") if isinstance(result_body, dict) else None
+        run_url = result_body.get("run_url") or result_body.get("report_url")
+        if not run_url and run_id:
+            run_url = f"https://agent.tinyfish.ai/runs/{run_id}"
+        embed_url = result_body.get("embed_url")
+        logger.info("TinyFish task response status: %s (run_id=%s)", status, run_id)
         if not isinstance(result_body, dict) or status != "COMPLETED":
             raise TinyFishError("TinyFish contact extraction did not complete")
         extracted = result_body.get("result")
         if isinstance(extracted, dict) and isinstance(extracted.get("result"), dict):
             extracted = extracted["result"]
+        if isinstance(extracted, dict):
+            extracted["_run_url"] = run_url
+            extracted["_embed_url"] = embed_url
         return extracted if isinstance(extracted, dict) else {}
 
     async def discover_whatsapp_contact(
@@ -304,6 +312,8 @@ class TinyFishService:
         phone_source_url: str | None = None
         has_ambiguous_candidate = False
         errors: list[Exception] = []
+        discovered_run_url: str | None = None
+        discovered_embed_url: str | None = None
 
         for candidate_url in candidate_urls:
             try:
@@ -316,6 +326,11 @@ class TinyFishService:
             except (TinyFishError, TinyFishTimeout) as exc:
                 errors.append(exc)
                 continue
+
+            if extracted.get("_run_url"):
+                discovered_run_url = extracted.get("_run_url")
+            if extracted.get("_embed_url"):
+                discovered_embed_url = extracted.get("_embed_url")
 
             matched = bool(extracted.get("matched_exact_shop"))
             notes = str(extracted.get("notes") or "").lower()
@@ -343,9 +358,13 @@ class TinyFishService:
                 if is_wa and verified_num:
                     result = {
                         "shop_name": shop_name,
+                        "address": shop_address,
+                        "mobile_number": norm_phone or verified_num,
                         "phone_number": norm_phone or verified_num,
                         "whatsapp_number": verified_num,
                         "source_url": candidate_url,
+                        "run_url": discovered_run_url,
+                        "embed_url": discovered_embed_url,
                         "verification_status": "verified_whatsapp",
                         "confidence": "high",
                         "message": "Verified WhatsApp number found.",
@@ -356,9 +375,13 @@ class TinyFishService:
             if is_explicit_wa and norm_wa:
                 result = {
                     "shop_name": shop_name,
+                    "address": shop_address,
+                    "mobile_number": norm_phone or norm_wa,
                     "phone_number": norm_phone or norm_wa,
                     "whatsapp_number": norm_wa,
                     "source_url": candidate_url,
+                    "run_url": discovered_run_url,
+                    "embed_url": discovered_embed_url,
                     "verification_status": "verified_whatsapp",
                     "confidence": "high",
                     "message": "Verified WhatsApp number found.",
@@ -379,9 +402,13 @@ class TinyFishService:
         if found_phone:
             result = {
                 "shop_name": shop_name,
+                "address": shop_address,
+                "mobile_number": found_phone,
                 "phone_number": found_phone,
                 "whatsapp_number": None,
                 "source_url": phone_source_url,
+                "run_url": discovered_run_url,
+                "embed_url": discovered_embed_url,
                 "verification_status": "phone_only",
                 "confidence": "medium",
                 "message": "Public phone number found, but WhatsApp could not be verified for this shop.",
@@ -392,9 +419,13 @@ class TinyFishService:
         if has_ambiguous_candidate:
             result = {
                 "shop_name": shop_name,
+                "address": shop_address,
+                "mobile_number": None,
                 "phone_number": None,
                 "whatsapp_number": None,
                 "source_url": candidate_urls[0] if candidate_urls else None,
+                "run_url": discovered_run_url,
+                "embed_url": discovered_embed_url,
                 "verification_status": "ambiguous",
                 "confidence": "low",
                 "message": "Multiple or ambiguous shop matches found. Please specify the exact branch or street address.",
@@ -404,9 +435,13 @@ class TinyFishService:
 
         result = {
             "shop_name": shop_name,
+            "address": shop_address,
+            "mobile_number": None,
             "phone_number": None,
             "whatsapp_number": None,
             "source_url": candidate_urls[0] if candidate_urls else None,
+            "run_url": discovered_run_url,
+            "embed_url": discovered_embed_url,
             "verification_status": "not_found",
             "confidence": "none",
             "message": "WhatsApp number could not be verified for this shop.",

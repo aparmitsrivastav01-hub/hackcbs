@@ -44,7 +44,8 @@ export function getMedicineSpeechText(med: MedicineResponse, locale: "en" | "hi"
     }
     const maxSaving = med.savings_comparison?.maximum_savings;
     if (maxSaving && maxSaving.amount > 0) {
-      text += ` आप अधिकतम ₹${Math.round(maxSaving.amount)} यानी ${Math.round(maxSaving.percentage)}% तक बचा सकते हैं।`;
+      const pct = maxSaving.percentage != null ? Math.round(maxSaving.percentage) : 0;
+      text += ` आप अधिकतम ₹${Math.round(maxSaving.amount)} यानी ${pct}% तक बचा सकते हैं।`;
     }
     return text;
   }
@@ -60,7 +61,8 @@ export function getMedicineSpeechText(med: MedicineResponse, locale: "en" | "hi"
   }
   const maxSaving = med.savings_comparison?.maximum_savings;
   if (maxSaving && maxSaving.amount > 0) {
-    text += ` Maximum savings up to ₹${Math.round(maxSaving.amount)} or ${Math.round(maxSaving.percentage)}%.`;
+    const pct = maxSaving.percentage != null ? Math.round(maxSaving.percentage) : 0;
+    text += ` Maximum savings up to ₹${Math.round(maxSaving.amount)} or ${pct}%.`;
   }
   return text;
 }

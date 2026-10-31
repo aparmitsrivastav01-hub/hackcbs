@@ -87,10 +87,45 @@ const REFERENCE_PHARMACIES: Pharmacy[] = [
 type DiscoveryState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "verified"; whatsappNumber: string; sourceUrl?: string | null; message: string }
-  | { status: "phone_only"; phoneNumber: string; sourceUrl?: string | null; message: string }
-  | { status: "not_found"; message: string }
-  | { status: "ambiguous"; message: string }
+  | {
+      status: "verified";
+      whatsappNumber: string;
+      phoneNumber?: string | null;
+      shopName?: string;
+      address?: string | null;
+      sourceUrl?: string | null;
+      embedUrl?: string | null;
+      runUrl?: string | null;
+      message: string;
+    }
+  | {
+      status: "phone_only";
+      phoneNumber: string;
+      shopName?: string;
+      address?: string | null;
+      sourceUrl?: string | null;
+      embedUrl?: string | null;
+      runUrl?: string | null;
+      message: string;
+    }
+  | {
+      status: "not_found";
+      shopName?: string;
+      address?: string | null;
+      sourceUrl?: string | null;
+      embedUrl?: string | null;
+      runUrl?: string | null;
+      message: string;
+    }
+  | {
+      status: "ambiguous";
+      shopName?: string;
+      address?: string | null;
+      sourceUrl?: string | null;
+      embedUrl?: string | null;
+      runUrl?: string | null;
+      message: string;
+    }
   | { status: "error"; error: string; isTimeout?: boolean; isUnavailable?: boolean };
 
 export function StoresPage() {
@@ -305,28 +340,43 @@ export function StoresPage() {
         setDiscoveryState({
           status: "verified",
           whatsappNumber: contactRes.whatsapp_number,
+          phoneNumber: contactRes.phone_number || contactRes.mobile_number || null,
+          shopName: contactRes.shop_name,
+          address: contactRes.address || selectedPharmacy.address,
           sourceUrl: contactRes.source_url,
+          embedUrl: contactRes.embed_url,
+          runUrl: contactRes.run_url,
           message: contactRes.message,
         });
         const cleanPhone = contactRes.whatsapp_number.replace(/[^0-9]/g, "");
         const message = generateEnquiryMessage(selectedPharmacy);
         const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
         window.open(waUrl, "_blank", "noopener,noreferrer");
-      } else if (contactRes.verification_status === "phone_only" && contactRes.phone_number) {
+      } else if (contactRes.verification_status === "phone_only" && (contactRes.phone_number || contactRes.mobile_number)) {
         setDiscoveryState({
           status: "phone_only",
-          phoneNumber: contactRes.phone_number,
+          phoneNumber: (contactRes.phone_number || contactRes.mobile_number) as string,
+          shopName: contactRes.shop_name,
+          address: contactRes.address || selectedPharmacy.address,
           sourceUrl: contactRes.source_url,
+          embedUrl: contactRes.embed_url,
+          runUrl: contactRes.run_url,
           message: contactRes.message,
         });
       } else if (contactRes.verification_status === "ambiguous") {
         setDiscoveryState({
           status: "ambiguous",
+          shopName: contactRes.shop_name,
+          address: contactRes.address || selectedPharmacy.address,
+          sourceUrl: contactRes.source_url,
           message: contactRes.message || "Multiple shops match this name. Please verify the exact shop address.",
         });
       } else {
         setDiscoveryState({
           status: "not_found",
+          shopName: contactRes.shop_name,
+          address: contactRes.address || selectedPharmacy.address,
+          sourceUrl: contactRes.source_url,
           message: contactRes.message || "WhatsApp number could not be verified for this shop.",
         });
       }
@@ -889,17 +939,112 @@ export function StoresPage() {
                   </div>
                 )}
 
+                {/* Normalized Shop Information Discovery Card (TinyFish) */}
+                {discoveryState.status !== "idle" && discoveryState.status !== "loading" && discoveryState.status !== "error" && (
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-[#f8fbff] p-4 text-xs">
+                    <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <Store className="h-4 w-4 text-brand" />
+                        <span className="font-bold text-navy">
+                          {tr("Discovered Public Shop Details (TinyFish)", "खोजा गया सार्वजनिक स्टोर विवरण (TinyFish)")}
+                        </span>
+                      </div>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                          discoveryState.status === "verified"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : discoveryState.status === "phone_only"
+                            ? "bg-amber-100 text-amber-800"
+                            : discoveryState.status === "ambiguous"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-slate-200 text-slate-700"
+                        }`}
+                      >
+                        {discoveryState.status === "verified"
+                          ? tr("Verified WhatsApp", "सत्यापित WhatsApp")
+                          : discoveryState.status === "phone_only"
+                          ? tr("Phone Only (WhatsApp Unverified)", "केवल फोन (WhatsApp असत्यापित)")
+                          : discoveryState.status === "ambiguous"
+                          ? tr("Ambiguous Matches", "अस्पष्ट मिलान")
+                          : tr("Contact Not Found", "संपर्क नहीं मिला")}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 text-slate-700">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400">{tr("Shop Name", "दुकान का नाम")}</span>
+                        <p className="font-semibold text-navy">{discoveryState.shopName || selectedPharmacy.name}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400">{tr("Address", "पता")}</span>
+                        <p className="font-medium">{discoveryState.address || selectedPharmacy.address}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400">{tr("Phone / Mobile", "फ़ोन / मोबाइल")}</span>
+                        <p className="font-mono font-medium">
+                          {discoveryState.status === "phone_only"
+                            ? discoveryState.phoneNumber
+                            : discoveryState.status === "verified"
+                            ? discoveryState.phoneNumber || discoveryState.whatsappNumber
+                            : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400">{tr("WhatsApp Contact", "WhatsApp संपर्क")}</span>
+                        <p className="font-mono font-medium">
+                          {discoveryState.status === "verified" ? discoveryState.whatsappNumber : tr("Not verified", "असत्यापित")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {discoveryState.sourceUrl && (
+                      <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500">{tr("Source page:", "स्रोत पृष्ठ:")}</span>
+                        <a
+                          href={discoveryState.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 font-medium text-brand hover:underline max-w-[280px] sm:max-w-[360px] truncate"
+                        >
+                          <span className="truncate">{discoveryState.sourceUrl}</span>
+                          <ExternalLink className="h-3 w-3 shrink-0" />
+                        </a>
+                      </div>
+                    )}
+
+                    {discoveryState.embedUrl && (
+                      <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
+                        <iframe
+                          src={discoveryState.embedUrl}
+                          className="h-56 w-full border-0"
+                          title="TinyFish Verification Embed"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+
+                    {discoveryState.runUrl && !discoveryState.embedUrl && (
+                      <div className="mt-2 text-right">
+                        <a
+                          href={discoveryState.runUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-brand"
+                        >
+                          <span>{tr("View TinyFish run log", "TinyFish रन लॉग देखें")}</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {discoveryState.status === "verified" && (
-                  <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 text-xs text-emerald-900">
+                  <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-xs text-emerald-900">
                     <div className="flex items-center gap-2 font-bold text-emerald-700">
                       <Check className="h-4 w-4 text-emerald-600" />
-                      <span>{tr("Verified WhatsApp Contact:", "सत्यापित WhatsApp संपर्क:")} <span className="font-mono">{discoveryState.whatsappNumber}</span></span>
+                      <span>{tr("Verified WhatsApp Contact Ready:", "सत्यापित WhatsApp संपर्क तैयार:")} <span className="font-mono">{discoveryState.whatsappNumber}</span></span>
                     </div>
-                    {discoveryState.sourceUrl && (
-                      <p className="mt-1 text-[11px] text-emerald-700">
-                        {tr("Source:", "स्रोत:")} <span className="font-mono break-all">{discoveryState.sourceUrl}</span>
-                      </p>
-                    )}
                     <p className="mt-1 leading-relaxed text-emerald-800">
                       {tr(
                         "WhatsApp opened in a new tab. Please review the prefilled message and press Send in WhatsApp manually.",
@@ -910,7 +1055,7 @@ export function StoresPage() {
                 )}
 
                 {discoveryState.status === "phone_only" && (
-                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900">
+                  <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-900">
                     <div className="flex items-center gap-2 font-bold text-amber-800">
                       <AlertCircle className="h-4 w-4 text-amber-600" />
                       <span>{tr("WhatsApp number could not be verified for this shop.", "इस दुकान के लिए WhatsApp नंबर सत्यापित नहीं हो सका।")}</span>
@@ -943,7 +1088,7 @@ export function StoresPage() {
                 )}
 
                 {discoveryState.status === "not_found" && (
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700">
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-700">
                     <div className="flex items-center gap-2 font-bold text-slate-800">
                       <AlertCircle className="h-4 w-4 text-slate-500" />
                       <span>{tr("WhatsApp number could not be verified for this shop.", "इस दुकान के लिए WhatsApp नंबर सत्यापित नहीं हो सका।")}</span>
@@ -969,7 +1114,7 @@ export function StoresPage() {
                 )}
 
                 {discoveryState.status === "ambiguous" && (
-                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900">
+                  <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-900">
                     <div className="flex items-center gap-2 font-bold text-amber-800">
                       <AlertCircle className="h-4 w-4 text-amber-600" />
                       <span>{tr("Multiple matching pharmacy locations found.", "फार्मेसी के कई स्थान मिले।")}</span>

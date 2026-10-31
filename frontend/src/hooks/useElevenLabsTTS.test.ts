@@ -23,15 +23,13 @@ class MockAudio {
 
 describe("useElevenLabsTTS hook", () => {
   let mockFetch: ReturnType<typeof vi.spyOn>;
-  let mockCreateObjectURL: ReturnType<typeof vi.spyOn>;
-  let mockRevokeObjectURL: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.stubGlobal("Audio", MockAudio);
-    mockCreateObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock-audio-url");
-    mockRevokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock-audio-url");
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
 
-    mockFetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+    mockFetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (url: any) => {
       if (url === "/api/voice/elevenlabs/speak") {
         return new Response(new Blob(["mock-mp3-bytes"], { type: "audio/mpeg" }), {
           status: 200,
