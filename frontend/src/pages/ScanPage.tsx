@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { extractPrescription, formatInr, searchConfirmed } from "../api/client";
 import samplePrescriptionImg from "../assets/sample-prescription.jpg";
@@ -478,6 +479,14 @@ export function ScanPage() {
   }
 
   return (
+    <>
+      <Helmet>
+        <title>Scan Prescription — MedEasy</title>
+        <meta
+          name="description"
+          content="Upload your prescription for AI-assisted medicine extraction and price comparison across Jan Aushadhi and generic options."
+        />
+      </Helmet>
     <div className="min-h-[calc(100vh-76px)] bg-[linear-gradient(180deg,#ffffff_0%,#f4f8fe_45%,#edf5ff_100%)]">
       <div className="mx-auto max-w-[1240px] px-5 py-6 md:px-8">
         {/* Hero Section */}
@@ -1018,5 +1027,6 @@ export function ScanPage() {
         ) : null}
       </div>
     </div>
+    </>
   );
 }

@@ -5,15 +5,16 @@ import {
   ChevronRight,
   Info,
   MapPin,
-  Pill,
   ShieldAlert,
   ShieldCheck,
   ShoppingCart,
   TrendingDown,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useParams } from "react-router-dom";
 import { formatInr, formatSavingsText, getMedicine } from "../api/client";
+import { Skeleton } from "../components/ui/Skeleton";
 import { useCart } from "../context/CartContext";
 import type { MedicineResponse } from "../types";
 
@@ -84,13 +85,83 @@ export function MedicineDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f7faff] px-4 py-16 text-center">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-xs animate-bounce">
-          <Pill className="h-6 w-6 text-brand" />
+      <>
+        <Helmet>
+          <title>Loading Medicine Details — MedEasy</title>
+        </Helmet>
+        <div className="min-h-screen bg-[#f7faff] pb-24 pt-8">
+          <div className="mx-auto max-w-[1080px] px-4 sm:px-6 lg:px-8">
+            {/* Breadcrumb Skeleton */}
+            <div className="mb-6 flex items-center gap-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+
+            {/* Hero Card Skeleton */}
+            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm md:p-8">
+              <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="h-9 w-64 rounded-xl" />
+                  <Skeleton className="h-5 w-80" />
+                </div>
+                <Skeleton className="h-24 w-48 rounded-2xl" />
+              </div>
+
+              {/* 3 Price Cards Skeleton */}
+              <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-5">
+                  <Skeleton className="h-5 w-28" />
+                  <Skeleton className="mt-3 h-8 w-24" />
+                  <Skeleton className="mt-2 h-4 w-36" />
+                  <div className="mt-6 space-y-2 border-t border-slate-100 pt-4">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border-2 border-emerald-100 bg-emerald-50/20 p-5">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="mt-3 h-8 w-24" />
+                  <Skeleton className="mt-2 h-4 w-36" />
+                  <div className="mt-6 space-y-2 border-t border-emerald-100 pt-4">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border-2 border-blue-100 bg-blue-50/20 p-5">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-5 w-28" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="mt-3 h-8 w-24" />
+                  <Skeleton className="mt-2 h-4 w-36" />
+                  <div className="mt-6 space-y-2 border-t border-blue-100 pt-4">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Bar Skeleton */}
+              <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-slate-100 pt-6 sm:flex-row">
+                <Skeleton className="h-6 w-56" />
+                <Skeleton className="h-12 w-48 rounded-2xl" />
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="mt-4 font-bold text-navy">Loading medicine comparison...</p>
-        <p className="text-xs text-muted">Retrieving verified catalogue prices</p>
-      </div>
+      </>
     );
   }
 
@@ -132,6 +203,14 @@ export function MedicineDetailPage() {
   };
 
   return (
+    <>
+      <Helmet>
+        <title>{medicine.brand_name} Price Comparison — MedEasy</title>
+        <meta
+          name="description"
+          content={`Compare ${medicine.brand_name} prices across Jan Aushadhi, Dava India, and private brands. Find the most affordable option for ${medicine.active_salt ?? medicine.brand_name}.`}
+        />
+      </Helmet>
     <div className="min-h-screen bg-[#f7faff] pb-24 pt-8">
       <div className="mx-auto max-w-[1080px] px-4 sm:px-6 lg:px-8">
         {/* Navigation Breadcrumb */}
@@ -381,5 +460,6 @@ export function MedicineDetailPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
