@@ -26,3 +26,4 @@ Configure the backend API URL by creating a `.env.local` file:
 VITE_API_BASE_URL=http://localhost:8000
 ```
 *(Defaults to `http://127.0.0.1:8000` if omitted).*
+
