@@ -1,9 +1,7 @@
 import {
   ArrowRight,
   Bot,
-  Headphones,
   Languages,
-  Lock,
   MapPin,
   Mic,
   Pause,
@@ -539,69 +537,6 @@ export function MedSaathiPage() {
                   </button>
                 </form>
               </div>
-            </div>
-          </div>
-
-          {/* 4 FEATURE CARDS FOR NON-TECH USERS */}
-          <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef5ff] text-brand">
-                <Mic className="h-6 w-6" />
-              </div>
-              <h3 className="mt-4 text-base font-bold text-navy">
-                {tr("Natural Voice Navigation", "सहज आवाज़ से नेविगेशन")}
-              </h3>
-              <p className="mt-1.5 text-xs leading-relaxed text-muted">
-                {tr(
-                  "No need to find complex menus or forms. Just say where you want to go, and MedSaathi directly opens the page for you.",
-                  "जटिल मेनू या फॉर्म ढूंढने की ज़रूरत नहीं। बस बोलें कि आप क्या करना चाहते हैं, और मेडसाथी सीधे वह पृष्ठ खोल देगा।"
-                )}
-              </p>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ecfdf5] text-emerald-600">
-                <Languages className="h-6 w-6" />
-              </div>
-              <h3 className="mt-4 text-base font-bold text-navy">
-                {tr("Hindi & English Fluency", "हिंदी व अंग्रेजी दोनों में दक्ष")}
-              </h3>
-              <p className="mt-1.5 text-xs leading-relaxed text-muted">
-                {tr(
-                  "Supports pure Hindi, English, and natural conversational Hinglish so patients from all backgrounds feel at home.",
-                  "शुद्ध हिंदी, अंग्रेजी और आम बोलचाल की भाषा समझता है ताकि सभी मरीज़ बिना किसी हिचकिचाहट के बात कर सकें।"
-                )}
-              </p>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef2ff] text-indigo-600">
-                <Headphones className="h-6 w-6" />
-              </div>
-              <h3 className="mt-4 text-base font-bold text-navy">
-                {tr("Lifelike ElevenLabs Voice", "स्पष्ट व स्वाभाविक आवाज़")}
-              </h3>
-              <p className="mt-1.5 text-xs leading-relaxed text-muted">
-                {tr(
-                  "Listen to clear audio explanations at a comfortable pace designed specifically for elderly patients and caretakers.",
-                  "बुजुर्ग मरीज़ों और देखभाल करने वालों के लिए विशेष रूप से स्पष्ट और धीमी गति में ऑडियो मार्गदर्शन।"
-                )}
-              </p>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fef2f2] text-red-600">
-                <Lock className="h-6 w-6" />
-              </div>
-              <h3 className="mt-4 text-base font-bold text-navy">
-                {tr("Safe & Private Session", "सुरक्षित व निजी सत्र")}
-              </h3>
-              <p className="mt-1.5 text-xs leading-relaxed text-muted">
-                {tr(
-                  "Zero data storage or registration required. All voice queries are processed ephemerally in your browser session.",
-                  "कोई पंजीकरण या डेटा संग्रहण नहीं। सभी वॉइस प्रश्न आपके ब्राउज़र सत्र में सुरक्षित रूप से संसाधित होते हैं।"
-                )}
-              </p>
             </div>
           </div>
         </div>
