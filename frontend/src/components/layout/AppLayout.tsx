@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { VoiceAssistant } from "../assistant/VoiceAssistant";
 import { Footer } from "./Footer";
 import { Navbar } from "./Navbar";
 
@@ -10,6 +11,7 @@ export function AppLayout() {
         <Outlet />
       </main>
       <Footer />
+      <VoiceAssistant />
     </div>
   );
 }

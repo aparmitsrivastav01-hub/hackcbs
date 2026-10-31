@@ -1,17 +1,17 @@
 import { HelmetProvider } from "react-helmet-async";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { CartProvider } from "./context/CartContext";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import { AboutPage } from "./pages/AboutPage";
 import { BatchSafetyPage } from "./pages/BatchSafetyPage";
 import { CartPage } from "./pages/CartPage";
-import { DataSourcesPage } from "./pages/DataSourcesPage";
 import { HelpPage } from "./pages/HelpPage";
 import { HomePage } from "./pages/HomePage";
 import { HowItWorksPage } from "./pages/HowItWorksPage";
 import { MedicineDetailPage } from "./pages/MedicineDetailPage";
 import { MedicinesPage } from "./pages/MedicinesPage";
+import { MedSaathiPage } from "./pages/MedSaathiPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
 import { ScanPage } from "./pages/ScanPage";
@@ -33,7 +33,8 @@ export default function App() {
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/stores" element={<StoresPage />} />
                 <Route path="/batch-safety" element={<BatchSafetyPage />} />
-                <Route path="/data-sources" element={<DataSourcesPage />} />
+                <Route path="/med-saathi" element={<MedSaathiPage />} />
+                <Route path="/data-sources" element={<Navigate to="/med-saathi" replace />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/how-it-works" element={<HowItWorksPage />} />
                 <Route path="/help" element={<HelpPage />} />

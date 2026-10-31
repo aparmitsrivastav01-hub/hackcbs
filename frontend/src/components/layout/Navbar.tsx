@@ -10,7 +10,7 @@ const links = [
   { to: "/medicines", key: "navMedicines" as const },
   { to: "/stores", key: "navStores" as const },
   { to: "/batch-safety", key: "navBatchSafety" as const },
-  { to: "/data-sources", key: "navData" as const },
+  { to: "/med-saathi", key: "navMedSaathi" as const },
 ];
 
 export function Navbar() {

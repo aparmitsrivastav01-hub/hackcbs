@@ -22,7 +22,7 @@ import { useLanguage } from "../../i18n/LanguageContext";
 
 export function LandingGuide() {
   const navigate = useNavigate();
-  const { tr, locale } = useLanguage();
+  const { tr } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 

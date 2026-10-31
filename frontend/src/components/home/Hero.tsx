@@ -82,7 +82,7 @@ export function Hero() {
     { icon: FileText, title: t.feat1Title, body: t.feat1Body, to: "/scan" },
     { icon: Tag, title: t.feat2Title, body: t.feat2Body, to: "/medicines" },
     { icon: MapPin, title: t.feat3Title, body: t.feat3Body, to: "/stores" },
-    { icon: ShieldCheck, title: t.feat4Title, body: t.feat4Body, to: "/data-sources" },
+    { icon: ShieldCheck, title: t.feat4Title, body: t.feat4Body, to: "/batch-safety" },
   ];
 
   return (

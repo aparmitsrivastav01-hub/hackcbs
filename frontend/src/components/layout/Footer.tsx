@@ -21,7 +21,7 @@ export function Footer() {
           {t.footerDisclaimer}
         </p>
         <div className="flex flex-wrap gap-5 text-sm font-medium text-slate-500">
-          <Link to="/data-sources" className="hover:text-navy">{t.footerDataSources}</Link>
+          <Link to="/med-saathi" className="font-semibold text-brand hover:text-brand-dark">{t.navMedSaathi}</Link>
           <Link to="/help" className="hover:text-navy">{t.footerHelp}</Link>
           <Link to="/privacy" className="hover:text-navy">{t.footerPrivacy}</Link>
           <Link to="/terms" className="hover:text-navy">{t.footerTerms}</Link>
