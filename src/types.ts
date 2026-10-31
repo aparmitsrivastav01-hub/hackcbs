@@ -1,12 +1,97 @@
+// Medicine catalogue and pricing types matching FRONTEND_INTEGRATION.md
+export type Prices = {
+  private_brand: number | null;
+  jan_aushadhi: number | null;
+  dava_india: number | null;
+};
+
+export type ProviderSavings = {
+  savings_amount: number | null;
+  savings_percentage: number | null;
+};
+
+export type MaximumSavings = {
+  provider: string | string[];
+  amount: number;
+  percentage: number | null;
+  private_brand_price: number;
+  alternative_price: number;
+};
+
+export type SavingsComparison = {
+  jan_aushadhi: ProviderSavings;
+  dava_india: ProviderSavings;
+  maximum_savings: MaximumSavings | null;
+};
+
+export type SavingsOpportunity = {
+  medicine_id: number;
+  medicine_name: string;
+  private_brand_price: number;
+  alternative_provider: string;
+  alternative_price: number;
+  savings_amount: number;
+  savings_percentage: number;
+};
+
+export type MaximumSavingsResponse = {
+  success: boolean;
+  provider: string | null;
+  highest_savings_amount: SavingsOpportunity | null;
+  highest_savings_percentage: SavingsOpportunity | null;
+  top_savings: SavingsOpportunity[];
+};
+
+export type MedicineResponse = {
+  id: number;
+  brand_name: string;
+  active_salt: string;
+  dosage_form: string;
+  category: string;
+  prices: Prices;
+  cheapest_provider: string | null;
+  cheapest_price: number | null;
+  savings: number | null;
+  savings_percentage: number | null;
+  savings_comparison: SavingsComparison;
+  private_brand_price?: number | null;
+  jan_aushadhi_price?: number | null;
+  dava_india_price?: number | null;
+};
+
+export type SearchResponse = {
+  success: boolean;
+  query: string;
+  total_results: number;
+  results: MedicineResponse[];
+};
+
+export type CategoriesResponse = {
+  categories: string[];
+  total_categories: number;
+};
+
+export type HealthResponse = {
+  status: string;
+  catalogue_records: number;
+};
+
+// Base medicine item type supporting both legacy views and full catalogue responses
 export type Medicine = {
   id: number;
   brand_name: string;
   active_salt: string;
   dosage_form: string;
-  private_brand_price: number | null;
-  jan_aushadhi_price: number | null;
-  dava_india_price: number | null;
   category: string;
+  prices?: Prices;
+  private_brand_price?: number | null;
+  jan_aushadhi_price?: number | null;
+  dava_india_price?: number | null;
+  cheapest_provider?: string | null;
+  cheapest_price?: number | null;
+  savings?: number | null;
+  savings_percentage?: number | null;
+  savings_comparison?: SavingsComparison;
 };
 
 export type PriceOption = {
@@ -41,13 +126,14 @@ export type CatalogueStats = {
   };
 };
 
+// OCR extraction types
 export type ExtractedItem = {
   raw_text: string;
   medicine_name: string | null;
   strength: string | null;
   dosage_form: string | null;
   instructions: string | null;
-  confidence: string;
+  confidence: "High" | "Medium" | "Low" | string;
   uncertain_parts: string[];
   needs_user_confirmation: boolean;
 };
@@ -81,6 +167,35 @@ export type ConfirmedSearchResult = {
   }>;
 };
 
+// Cart / Enquiry Item
+export type CartItem = {
+  id: string; // unique item id in cart
+  medicine_id?: number | null;
+  brand_name: string;
+  active_salt?: string;
+  dosage_form?: string;
+  selected_provider: "jan_aushadhi" | "dava_india" | "private_brand" | "unspecified";
+  selected_price: number | null;
+  private_brand_price: number | null;
+  quantity: number;
+  pack_info?: string;
+};
+
+// Pharmacy & Enquiries
+export type Pharmacy = {
+  id: string;
+  name: string;
+  address: string;
+  phone?: string;
+  distance?: string;
+  open_now?: boolean;
+  rating?: number;
+  review_count?: number;
+  is_generic_store?: boolean;
+  generic_network?: "Jan Aushadhi" | "Dava India" | "Independent";
+  source: "places" | "demo";
+};
+
 export type PharmacyEnquiry = {
   id: string;
   created_at: string;
@@ -98,10 +213,46 @@ export type PharmacyEnquiry = {
     dosage_form?: string | null;
     quantity: string;
     catalogue_medicine_id?: number | null;
+    quoted_price?: number | null;
   }>;
   customer_message: string | null;
-  status: string;
-  shopkeeper_response: unknown;
+  status: "draft" | "enquiry_prepared" | "awaiting_pharmacy" | "responded" | "closed";
+  shopkeeper_response?: {
+    availability: "available" | "partial" | "unavailable";
+    quoted_price?: number | null;
+    manufacturer?: string;
+    batch_number?: string;
+    expiry_date?: string;
+    home_delivery?: boolean;
+    delivery_fee?: number | null;
+    estimated_delivery?: string;
+    notes?: string;
+    is_simulated?: boolean;
+  } | null;
+};
+
+// Batch Alert Safety types
+export type BatchAlertRecord = {
+  product_name: string;
+  manufacturer: string;
+  batch_number: string;
+  alert_type: string;
+  notice_date: string;
+  source_name: string;
+  source_url?: string;
+  notes: string;
+};
+
+export type BatchCheckResult = {
+  status: "alert_match" | "no_match" | "manual_review" | "unavailable";
+  product_name: string;
+  manufacturer?: string;
+  batch_number: string;
+  matches: BatchAlertRecord[];
+  dataset_records: number;
+  last_updated?: string;
+  message: string;
+  safety_note: string;
 };
 
 export type DatasetStatus = {
