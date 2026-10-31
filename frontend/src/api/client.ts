@@ -32,8 +32,14 @@ export function getAccessToken(): string | null {
 
 async function request<T>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
   const controller = new AbortController();
-  const timeoutMs = init?.timeoutMs ?? 6000;
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutMs = init?.timeoutMs ?? 15000;
+  const timer = setTimeout(() => {
+    try {
+      controller.abort(new Error(`Request timed out after ${timeoutMs}ms`));
+    } catch {
+      controller.abort();
+    }
+  }, timeoutMs);
 
   const signal = init?.signal
     ? composeSignals(init.signal, controller.signal)
@@ -67,8 +73,17 @@ async function request<T>(path: string, init?: RequestInit & { timeoutMs?: numbe
       throw new Error(detail);
     }
     return (await response.json()) as T;
-  } catch (err) {
+  } catch (err: unknown) {
     clearTimeout(timer);
+    if (err instanceof Error) {
+      if (
+        err.name === "AbortError" ||
+        err.message.toLowerCase().includes("abort") ||
+        err.message.toLowerCase().includes("timed out")
+      ) {
+        throw new Error("Request timed out. Please check your network connection and try again.");
+      }
+    }
     throw err;
   }
 }
@@ -77,7 +92,13 @@ function composeSignals(s1: AbortSignal, s2: AbortSignal): AbortSignal {
   if (s1.aborted) return s1;
   if (s2.aborted) return s2;
   const controller = new AbortController();
-  const onAbort = () => controller.abort();
+  const onAbort = () => {
+    try {
+      controller.abort();
+    } catch {
+      /* ignore */
+    }
+  };
   s1.addEventListener("abort", onAbort, { once: true });
   s2.addEventListener("abort", onAbort, { once: true });
   return controller.signal;
@@ -223,8 +244,16 @@ export async function compareMedicine(id: number, signal?: AbortSignal): Promise
 export async function extractPrescription(file: File): Promise<ExtractionResponse> {
   const form = new FormData();
   form.append("file", file);
+
+  // Call the real Gemini Vision + OCR extraction endpoint
   try {
-    // 1. Try backend /api/prescriptions/scan (teammate's live route)
+    return await request<ExtractionResponse>("/api/prescriptions/extract", {
+      method: "POST",
+      body: form,
+      timeoutMs: 35000,
+    });
+  } catch (err: unknown) {
+    // If /extract fails, try /scan as fallback
     try {
       const scanRes = await request<{
         success: boolean;
@@ -237,50 +266,52 @@ export async function extractPrescription(file: File): Promise<ExtractionRespons
           dosage_form?: string | null;
           dosage_instructions?: string | null;
           extraction_confidence?: number | null;
+          raw_text?: string | null;
+          uncertain_parts?: string[];
+          needs_review?: boolean;
         }>;
       }>("/api/prescriptions/scan", {
         method: "POST",
         body: form,
-        timeoutMs: 15000,
+        timeoutMs: 35000,
       });
 
-      if (scanRes && Array.isArray(scanRes.medicines) && scanRes.medicines.length > 0) {
+      if (scanRes && Array.isArray(scanRes.medicines)) {
         return {
           status: "success",
           message: `${scanRes.total_medicines_detected ?? scanRes.medicines.length} medicines extracted from prescription for review`,
-          search_performed: true,
-          model: "Gemini",
+          search_performed: false,
+          model: "Gemini Vision",
           file_name: file.name,
           extraction: {
             document_language: "English",
-            items: scanRes.medicines.map((m) => ({
-              medicine_name: m.prescribed_name || m.normalized_name || "",
-              strength: m.strength || "",
-              dosage_form: m.dosage_form || "",
-              instructions: m.dosage_instructions || null,
-              raw_text: m.prescribed_name || m.normalized_name || "",
-              confidence: m.extraction_confidence != null ? `${Math.round(m.extraction_confidence * 100)}%` : "high",
-              uncertain_parts: [],
-              needs_user_confirmation: true,
-            })),
+            items: scanRes.medicines.map((m) => {
+              const conf = m.extraction_confidence != null ? m.extraction_confidence : 0.6;
+              const confStr = conf >= 0.85 ? "High" : conf >= 0.60 ? "Medium" : "Low";
+              return {
+                medicine_name: m.prescribed_name || m.normalized_name || "",
+                strength: m.strength || "",
+                dosage_form: m.dosage_form || "",
+                instructions: m.dosage_instructions || null,
+                raw_text: m.raw_text || m.prescribed_name || m.normalized_name || "",
+                confidence: confStr,
+                uncertain_parts: m.uncertain_parts || [],
+                needs_user_confirmation: true,
+              };
+            }),
             other_text: [],
-            warnings: [],
+            warnings: [
+              "Please verify medicine names and dosages with your doctor or licensed pharmacist.",
+            ],
           },
         };
       }
     } catch {
-      /* Fall through to legacy /extract attempt */
+      // Ignore secondary fallback error
     }
 
-    // 2. Try legacy /api/prescriptions/extract if supported
-    return await request<ExtractionResponse>("/api/prescriptions/extract", {
-      method: "POST",
-      body: form,
-      timeoutMs: 12000,
-    });
-  } catch {
-    // Graceful fallback to client-side extraction preview if backend OCR is unavailable or unconfigured
-    return getSyntheticExtraction(file.name);
+    const message = err instanceof Error ? err.message : "Failed to extract prescription from document.";
+    throw new Error(message);
   }
 }
 
@@ -296,6 +327,7 @@ export async function searchConfirmed(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ items }),
+      timeoutMs: 25000,
     });
   } catch {
     // If backend confirmed-search endpoint is still in development by teammate,
@@ -344,7 +376,6 @@ export async function searchConfirmed(
 // Pharmacy Enquiries & Stores
 // -------------------------------------------------------------
 
-// Local storage session store for offline/demo resilience
 const LOCAL_ENQUIRIES_KEY = "medeasy_saved_enquiries";
 
 function getLocalEnquiries(): PharmacyEnquiry[] {
@@ -386,12 +417,12 @@ export async function createEnquiry(payload: {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        timeoutMs: 15000,
       },
     );
     saveLocalEnquiry(res.enquiry);
     return res;
   } catch {
-    // Fallback: create enquiry in local session state
     const localEnquiry: PharmacyEnquiry = {
       id: `ENQ-${Date.now().toString().slice(-6)}`,
       created_at: new Date().toISOString(),
@@ -441,7 +472,6 @@ export function getDatasetStatus(): Promise<DatasetStatus> {
   }));
 }
 
-// Curated verified CDSCO test records for offline verification and testing
 const CDSCO_VERIFIED_ALERTS: BatchAlertRecord[] = [
   {
     product_name: "Pantoprazole Gastro-resistant Tablets IP",
@@ -485,9 +515,9 @@ export async function checkBatchSafety(payload: {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      timeoutMs: 15000,
     });
   } catch {
-    // Client-side fallback against CDSCO verified dataset
     const cleanBatch = payload.batch_number.trim().toUpperCase();
     const cleanProd = payload.product_name.trim().toLowerCase();
 
@@ -552,80 +582,6 @@ export function formatSavingsText(amount: number | null | undefined, percentage:
   return `Save ${formatInr(amount)}`;
 }
 
-// Synthetic extraction fallback
-function getSyntheticExtraction(fileName: string): ExtractionResponse {
-  return {
-    status: "success",
-    message: "5 medicines extracted from prescription for review",
-    search_performed: false,
-    model: "gemini-1.5-flash-prescription",
-    file_name: fileName,
-    extraction: {
-      document_language: "en",
-      items: [
-        {
-          raw_text: "T. Paracetamol 500mg (1-0-1)",
-          medicine_name: "Paracetamol",
-          strength: "500 mg",
-          dosage_form: "Tablet",
-          instructions: "1 tablet morning and night after food",
-          confidence: "High",
-          uncertain_parts: [],
-          needs_user_confirmation: false,
-        },
-        {
-          raw_text: "T. Azithromycin 500mg (1-0-0)",
-          medicine_name: "Azithromycin",
-          strength: "500 mg",
-          dosage_form: "Tablet",
-          instructions: "1 tablet daily before meal for 3 days",
-          confidence: "High",
-          uncertain_parts: [],
-          needs_user_confirmation: false,
-        },
-        {
-          raw_text: "Cap. Pantoprazole 40mg (1-0-0)",
-          medicine_name: "Pantoprazole",
-          strength: "40 mg",
-          dosage_form: "Capsule",
-          instructions: "1 capsule empty stomach in morning",
-          confidence: "High",
-          uncertain_parts: [],
-          needs_user_confirmation: false,
-        },
-        {
-          raw_text: "T. Cetirizine 10mg (0-0-1)",
-          medicine_name: "Cetirizine",
-          strength: "10 mg",
-          dosage_form: "Tablet",
-          instructions: "1 tablet at bedtime",
-          confidence: "Medium",
-          uncertain_parts: ["Handwritten strength partially smudged"],
-          needs_user_confirmation: true,
-        },
-        {
-          raw_text: "T. Multivitamin with Zinc (0-1-0)",
-          medicine_name: "Multivitamin",
-          strength: "Standard",
-          dosage_form: "Tablet",
-          instructions: "1 tablet afternoon after lunch",
-          confidence: "Medium",
-          uncertain_parts: [],
-          needs_user_confirmation: true,
-        },
-      ],
-      other_text: [
-        "Patient: Shailendra, Age: 45 / Male",
-        "Doctor: Dr. M. Tripathi (M.B.B.S., D.Ortho)",
-        "Chief Complaints: Joint pain and seasonal fever",
-      ],
-      warnings: [
-        "AI-assisted transcription draft. Always review and verify each item before searching catalogue.",
-      ],
-    },
-  };
-}
-
 // -------------------------------------------------------------
 // Phase 2: Authentication & Patient Privacy API Endpoints
 // -------------------------------------------------------------
@@ -641,6 +597,7 @@ export async function signupUser(payload: {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+    timeoutMs: 30000,
   });
   setAccessToken(res.access_token);
   return res;
@@ -654,6 +611,7 @@ export async function loginUser(payload: {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+    timeoutMs: 30000,
   });
   setAccessToken(res.access_token);
   return res;
@@ -663,6 +621,7 @@ export async function refreshAuthToken(): Promise<string | null> {
   try {
     const res = await request<{ success: boolean; access_token: string }>("/api/auth/refresh", {
       method: "POST",
+      timeoutMs: 20000,
     });
     if (res.access_token) {
       setAccessToken(res.access_token);
@@ -677,7 +636,10 @@ export async function refreshAuthToken(): Promise<string | null> {
 
 export async function logoutUser(): Promise<void> {
   try {
-    await request("/api/auth/logout", { method: "POST" });
+    await request("/api/auth/logout", {
+      method: "POST",
+      timeoutMs: 15000,
+    });
   } finally {
     setAccessToken(null);
   }
@@ -688,7 +650,7 @@ export async function getCurrentUser(): Promise<{
   profile: PatientProfile | null;
   consent: { meko_memory_granted: boolean };
 }> {
-  return request("/api/auth/me");
+  return request("/api/auth/me", { timeoutMs: 15000 });
 }
 
 export async function updatePatientProfile(payload: {
@@ -699,11 +661,12 @@ export async function updatePatientProfile(payload: {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+    timeoutMs: 15000,
   });
 }
 
 export async function getPrivacyConsentStatus(): Promise<PrivacyConsent> {
-  return request<PrivacyConsent>("/api/privacy/consent");
+  return request<PrivacyConsent>("/api/privacy/consent", { timeoutMs: 15000 });
 }
 
 export async function updatePrivacyConsent(payload: {
@@ -717,6 +680,7 @@ export async function updatePrivacyConsent(payload: {
       granted: payload.granted,
       policy_version: payload.policy_version ?? "2026-10-v1",
     }),
+    timeoutMs: 15000,
   });
 }
 
@@ -728,6 +692,6 @@ export async function withdrawPrivacyConsent(): Promise<{
 }> {
   return request("/api/privacy/consent/meko-memory", {
     method: "DELETE",
+    timeoutMs: 15000,
   });
 }
-

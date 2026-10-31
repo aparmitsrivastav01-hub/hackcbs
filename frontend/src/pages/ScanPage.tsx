@@ -26,231 +26,6 @@ type EditableItem = {
   confidence: string;
 };
 
-// Fallback high-fidelity sample data based on the prescription in the reference screenshot
-const SAMPLE_EXTRACTION: ExtractionResponse = {
-  status: "success",
-  message: "5 medicines extracted from prescription for review",
-  search_performed: false,
-  model: "prescription-vision-v2",
-  file_name: "prescription_vijay_hospital.jpg",
-  extraction: {
-    document_language: "en",
-    items: [
-      {
-        raw_text: "T. ETOLASSE - P (1 M)",
-        medicine_name: "Etolasse-P",
-        strength: "Etodolac 400mg + Paracetamol 325mg",
-        dosage_form: "Tablet",
-        instructions: "1 tablet in morning after food",
-        confidence: "High",
-        uncertain_parts: [],
-        needs_user_confirmation: false,
-      },
-      {
-        raw_text: "T. REVENER D (1 M 1 M)",
-        medicine_name: "Revener D",
-        strength: "Rabeprazole 20mg + Domperidone 30mg",
-        dosage_form: "Capsule",
-        instructions: "1 capsule twice daily before meals",
-        confidence: "High",
-        uncertain_parts: [],
-        needs_user_confirmation: false,
-      },
-      {
-        raw_text: "T. BBRIGHT D3 (1 M/w)",
-        medicine_name: "BBright D3",
-        strength: "Cholecalciferol 60,000 IU",
-        dosage_form: "Tablet",
-        instructions: "1 tablet once a week",
-        confidence: "High",
-        uncertain_parts: [],
-        needs_user_confirmation: false,
-      },
-      {
-        raw_text: "T. PREMAKEN-M (1-0-1)",
-        medicine_name: "Premaken-M",
-        strength: "Pregabalin 75mg + Methylcobalamin 750mcg",
-        dosage_form: "Capsule",
-        instructions: "1 capsule morning and evening",
-        confidence: "High",
-        uncertain_parts: [],
-        needs_user_confirmation: false,
-      },
-      {
-        raw_text: "T. Gepan d (p.v)",
-        medicine_name: "Gepan D",
-        strength: "Pantoprazole 40mg + Domperidone 10mg",
-        dosage_form: "Tablet",
-        instructions: "As directed",
-        confidence: "Medium",
-        uncertain_parts: [],
-        needs_user_confirmation: true,
-      },
-    ],
-    other_text: [
-      "Hospital: Vijay Super Speciality Hospital, Azamgarh",
-      "Patient: Shailendra, Age: 45 / Male",
-      "Doctor: Dr. Manish Tripathi (M.B.B.S., D.Ortho)",
-      "Vitals: BP 120/80 mmHg, Pulse 83/min, SpO2 97%",
-      "Chief Complaints: Radiating pain (Lt) knee",
-    ],
-    warnings: [
-      "Please verify medicine names and dosages with your doctor or licensed pharmacist.",
-    ],
-  },
-};
-
-const SAMPLE_CONFIRMED_RESULTS: ConfirmedSearchResult = {
-  status: "success",
-  note: "Price comparisons matching loaded public generic catalogue and online retailers.",
-  results: [
-    {
-      confirmed_input: {
-        medicine_name: "Etolasse-P",
-        strength: "Etodolac 400mg + Paracetamol 325mg",
-        dosage_form: "Tablet",
-      },
-      match_count: 2,
-      review_note: "Direct active generic substitutes available in PMBJP catalogue.",
-      matches: [
-        {
-          medicine: {
-            id: 17,
-            brand_name: "Etodolac + Paracetamol",
-            active_salt: "Etodolac (400mg) + Paracetamol (325mg)",
-            dosage_form: "Tablet",
-            category: "Pain Relief / NSAID",
-            private_brand_price: 185,
-            jan_aushadhi_price: 42,
-            dava_india_price: 48,
-          },
-          price_options: [
-            {
-              provider: "Jan Aushadhi",
-              price: 42,
-              available: true,
-              is_cheapest: true,
-              savings_vs_private: 143,
-              savings_percent: 77,
-            },
-            {
-              provider: "Private Brand",
-              price: 185,
-              available: true,
-              is_cheapest: false,
-              savings_vs_private: null,
-              savings_percent: null,
-            },
-          ],
-          recommended_option: {
-            provider: "Jan Aushadhi",
-            price: 42,
-            savings: 143,
-            savings_percent: 77,
-          },
-          comparison_note: "Save up to 77% with Jan Aushadhi generic alternative.",
-        },
-      ],
-    },
-    {
-      confirmed_input: {
-        medicine_name: "Revener D",
-        strength: "Rabeprazole 20mg + Domperidone 30mg",
-        dosage_form: "Capsule",
-      },
-      match_count: 1,
-      review_note: "Equivalent antacid combination available.",
-      matches: [
-        {
-          medicine: {
-            id: 36,
-            brand_name: "Rabeprazole + Domperidone SR",
-            active_salt: "Rabeprazole (20mg) + Domperidone (30mg)",
-            dosage_form: "Capsule",
-            category: "Antacid / Gastro",
-            private_brand_price: 220,
-            jan_aushadhi_price: 54,
-            dava_india_price: 60,
-          },
-          price_options: [
-            {
-              provider: "Jan Aushadhi",
-              price: 54,
-              available: true,
-              is_cheapest: true,
-              savings_vs_private: 166,
-              savings_percent: 75,
-            },
-            {
-              provider: "Private Brand",
-              price: 220,
-              available: true,
-              is_cheapest: false,
-              savings_vs_private: null,
-              savings_percent: null,
-            },
-          ],
-          recommended_option: {
-            provider: "Jan Aushadhi",
-            price: 54,
-            savings: 166,
-            savings_percent: 75,
-          },
-          comparison_note: "Generic available at listed Jan Aushadhi Kendra.",
-        },
-      ],
-    },
-    {
-      confirmed_input: {
-        medicine_name: "BBright D3",
-        strength: "Cholecalciferol 60,000 IU",
-        dosage_form: "Tablet",
-      },
-      match_count: 1,
-      review_note: "Vitamin D3 weekly supplement.",
-      matches: [
-        {
-          medicine: {
-            id: 255,
-            brand_name: "Cholecalciferol 60K",
-            active_salt: "Vitamin D3 (60,000 IU)",
-            dosage_form: "Chewable Tablet",
-            category: "Vitamins / Supplements",
-            private_brand_price: 160,
-            jan_aushadhi_price: 24,
-            dava_india_price: 30,
-          },
-          price_options: [
-            {
-              provider: "Jan Aushadhi",
-              price: 24,
-              available: true,
-              is_cheapest: true,
-              savings_vs_private: 136,
-              savings_percent: 85,
-            },
-            {
-              provider: "Private Brand",
-              price: 160,
-              available: true,
-              is_cheapest: false,
-              savings_vs_private: null,
-              savings_percent: null,
-            },
-          ],
-          recommended_option: {
-            provider: "Jan Aushadhi",
-            price: 24,
-            savings: 136,
-            savings_percent: 85,
-          },
-          comparison_note: "Save 85% with public generic stores.",
-        },
-      ],
-    },
-  ],
-};
-
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const SUPPORTED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
 
@@ -381,46 +156,36 @@ export function ScanPage() {
     setResults(null);
 
     try {
-      if (file && !file.name.includes("vijay_hospital")) {
-        // Real user uploaded file: try backend API
-        const data = await extractPrescription(file);
-        setExtraction(data);
-        setItems(
-          data.extraction.items.map((item: ExtractedItem) => ({
-            medicine_name: item.medicine_name ?? "",
-            strength: item.strength ?? "",
-            dosage_form: item.dosage_form ?? "",
-            raw_text: item.raw_text,
-            confidence: item.confidence,
-          })),
-        );
-      } else {
-        // Sample prescription mode: simulate realistic scan delay
-        await new Promise((r) => setTimeout(r, 600));
-        setExtraction(SAMPLE_EXTRACTION);
-        setItems(
-          SAMPLE_EXTRACTION.extraction.items.map((item) => ({
-            medicine_name: item.medicine_name ?? "",
-            strength: item.strength ?? "",
-            dosage_form: item.dosage_form ?? "",
-            raw_text: item.raw_text,
-            confidence: item.confidence,
-          })),
-        );
+      let uploadFile = file;
+      if (!uploadFile && previewUrl) {
+        const res = await fetch(previewUrl);
+        const blob = await res.blob();
+        uploadFile = new File([blob], "prescription.jpg", { type: blob.type || "image/jpeg" });
       }
-    } catch {
-      // Backend not running / connection refused: use realistic mock extraction data
-      await new Promise((r) => setTimeout(r, 400));
-      setExtraction(SAMPLE_EXTRACTION);
-      setItems(
-        SAMPLE_EXTRACTION.extraction.items.map((item) => ({
-          medicine_name: item.medicine_name ?? "",
-          strength: item.strength ?? "",
-          dosage_form: item.dosage_form ?? "",
-          raw_text: item.raw_text,
-          confidence: item.confidence,
-        })),
-      );
+
+      if (!uploadFile) {
+        throw new Error("No prescription file available to scan.");
+      }
+
+      // Real Gemini Vision + OCR extraction API call
+      const data = await extractPrescription(uploadFile);
+      setExtraction(data);
+      const extractedList = (data.extraction?.items || []).map((item: ExtractedItem) => ({
+        medicine_name: item.medicine_name ?? "",
+        strength: item.strength ?? "",
+        dosage_form: item.dosage_form ?? "",
+        raw_text: item.raw_text,
+        confidence: item.confidence,
+      }));
+      setItems(extractedList);
+      if (extractedList.length === 0) {
+        setError("No medicines could be clearly identified in this prescription. You can manually add medicines below.");
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Prescription scanning failed. Please try again or check connection.";
+      setError(message);
+      setExtraction(null);
+      setItems([]);
     } finally {
       setBusy(false);
       setTimeout(() => {
@@ -451,9 +216,10 @@ export function ScanPage() {
     try {
       const searchRes = await searchConfirmed(payload);
       setResults(searchRes);
-    } catch {
-      // Fallback catalogue search results for offline mode
-      setResults(SAMPLE_CONFIRMED_RESULTS);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Catalogue search failed. Please try again.";
+      setError(message);
+      setResults(null);
     } finally {
       setBusy(false);
       setTimeout(() => {

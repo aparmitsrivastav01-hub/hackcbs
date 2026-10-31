@@ -73,7 +73,7 @@ async def signup(
             detail="An account with this email address already exists",
         )
 
-    user, profile = await create_user_with_profile(
+    user, profile, raw_refresh = await create_user_with_profile(
         session=session,
         email=body.email,
         password=body.password,
@@ -82,7 +82,6 @@ async def signup(
     )
 
     access_token = create_access_token(user.id, user.email)
-    raw_refresh, _ = await create_refresh_session(session, user.id)
     _set_refresh_cookie(response, raw_refresh)
 
     return AuthResponse(
