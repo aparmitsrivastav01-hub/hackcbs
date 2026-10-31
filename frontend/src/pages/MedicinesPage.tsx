@@ -12,6 +12,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   formatInr,
@@ -21,6 +22,7 @@ import {
   searchMedicines,
 } from "../api/client";
 import { useCart } from "../context/CartContext";
+import { Skeleton } from "../components/ui/Skeleton";
 import type { MaximumSavingsResponse, MedicineResponse } from "../types";
 
 export function MedicinesPage() {
@@ -181,6 +183,14 @@ export function MedicinesPage() {
     : results;
 
   return (
+    <>
+      <Helmet>
+        <title>Explore Medicines & Compare Prices — MedEasy</title>
+        <meta
+          name="description"
+          content="Search and compare medicine prices across Jan Aushadhi, Dava India, and private brands. Find generic alternatives and maximise your savings."
+        />
+      </Helmet>
     <div className="min-h-screen bg-[#f7faff] pb-20 pt-8">
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -302,7 +312,42 @@ export function MedicinesPage() {
         {/* RESULTS SECTION */}
         {activeQuery ? (
           <div className="mt-6 space-y-4">
-            {filteredResults.map((med) => {
+            {loading && (
+              <>
+                {[1, 2, 3].map((n) => (
+                  <div
+                    key={n}
+                    className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs md:p-6"
+                  >
+                    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex gap-2">
+                          <Skeleton className="h-5 w-20 rounded-full" />
+                          <Skeleton className="h-5 w-16 rounded-full" />
+                        </div>
+                        <Skeleton className="h-7 w-48 rounded-lg" />
+                        <Skeleton className="h-4 w-72" />
+                      </div>
+                      <Skeleton className="h-14 w-40 rounded-xl" />
+                    </div>
+                    <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <Skeleton className="h-24 rounded-xl" />
+                      <Skeleton className="h-24 rounded-xl" />
+                      <Skeleton className="h-24 rounded-xl" />
+                    </div>
+                    <div className="mt-5 flex justify-between border-t border-slate-100 pt-4">
+                      <Skeleton className="h-4 w-32" />
+                      <div className="flex gap-2">
+                        <Skeleton className="h-9 w-24 rounded-full" />
+                        <Skeleton className="h-9 w-32 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {!loading && filteredResults.map((med) => {
               const maxSaving = med.savings_comparison?.maximum_savings;
               const hasJa = med.prices.jan_aushadhi != null;
               const hasDi = med.prices.dava_india != null;
@@ -632,7 +677,30 @@ export function MedicinesPage() {
               </div>
 
               <div className="divide-y divide-slate-100">
-                {maxSavings?.top_savings?.map((item, idx) => (
+                {savingsLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-7 w-7 rounded-lg" />
+                        <div className="space-y-1.5">
+                          <Skeleton className="h-4 w-44" />
+                          <Skeleton className="h-3 w-60" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="space-y-1">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-3 w-14" />
+                        </div>
+                        <Skeleton className="h-8 w-20 rounded-xl" />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  maxSavings?.top_savings?.map((item, idx) => (
                   <div
                     key={`${item.medicine_id}_${idx}`}
                     className="flex flex-col justify-between gap-3 p-4 transition hover:bg-[#f8fbff] sm:flex-row sm:items-center"
@@ -672,12 +740,13 @@ export function MedicinesPage() {
                       </Link>
                     </div>
                   </div>
-                ))}
+                )))}
               </div>
             </div>
           </div>
         )}
       </div>
     </div>
+    </>
   );
 }

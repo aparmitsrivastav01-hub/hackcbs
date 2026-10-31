@@ -6,13 +6,16 @@ import {
   Store,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { getCategories, getDatasetStatus, getHealth } from "../api/client";
+import { Skeleton } from "../components/ui/Skeleton";
 import type { DatasetStatus, HealthResponse } from "../types";
 
 export function DataSourcesPage() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [dataset, setDataset] = useState<DatasetStatus | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,10 +31,21 @@ export function DataSourcesPage() {
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "Could not load data sources");
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }, []);
 
   return (
+    <>
+      <Helmet>
+        <title>Data Sources, Provenance & Verification — MedEasy</title>
+        <meta
+          name="description"
+          content="Learn about MedEasy's data sources, including PMBJP (Jan Aushadhi), Dava India, and CDSCO drug safety alerts. Transparent catalogue provenance and limits."
+        />
+      </Helmet>
     <div className="min-h-screen bg-[#f7faff] pb-24 pt-8">
       <div className="mx-auto max-w-[1080px] px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
@@ -60,9 +74,13 @@ export function DataSourcesPage() {
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Medicines in Catalogue
             </span>
-            <p className="mt-2 text-3xl font-black text-navy">
-              {health?.catalogue_records ?? 500}
-            </p>
+            {loading ? (
+              <Skeleton className="mt-2 h-9 w-24 rounded-lg" />
+            ) : (
+              <p className="mt-2 text-3xl font-black text-navy">
+                {health?.catalogue_records ?? 500}
+              </p>
+            )}
             <p className="mt-1 text-xs text-emerald-600 font-semibold flex items-center gap-1">
               <CheckCircle2 className="h-3.5 w-3.5" />
               Runtime verified by FastAPI
@@ -73,9 +91,13 @@ export function DataSourcesPage() {
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Therapeutic Categories
             </span>
-            <p className="mt-2 text-3xl font-black text-navy">
-              {categories.length > 0 ? categories.length : 24}
-            </p>
+            {loading ? (
+              <Skeleton className="mt-2 h-9 w-20 rounded-lg" />
+            ) : (
+              <p className="mt-2 text-3xl font-black text-navy">
+                {categories.length > 0 ? categories.length : 24}
+              </p>
+            )}
             <p className="mt-1 text-xs text-slate-400">
               Analgesics, Antibiotics, Gastro, Cardiac...
             </p>
@@ -85,9 +107,13 @@ export function DataSourcesPage() {
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               CDSCO Quality Alerts Indexed
             </span>
-            <p className="mt-2 text-3xl font-black text-navy">
-              {dataset?.records_loaded ?? 342}
-            </p>
+            {loading ? (
+              <Skeleton className="mt-2 h-9 w-20 rounded-lg" />
+            ) : (
+              <p className="mt-2 text-3xl font-black text-navy">
+                {dataset?.records_loaded ?? 342}
+              </p>
+            )}
             <p className="mt-1 text-xs text-slate-400">
               Substandard & spurious batch notices
             </p>
@@ -192,5 +218,6 @@ export function DataSourcesPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
