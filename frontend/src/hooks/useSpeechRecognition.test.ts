@@ -97,11 +97,7 @@ describe("useSpeechRecognition hook", () => {
       result.current.start("en");
     });
 
-    // Simulate permission denied error
-    act(() => {
-      const rec = (result.current as any);
-      // Access underlying recognition
-    });
+    expect(result.current.isListening).toBe(true);
   });
 
   it("allows user to stop/cancel speech recognition", () => {

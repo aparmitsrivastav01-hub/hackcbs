@@ -263,7 +263,6 @@ export type DatasetStatus = {
   note: string;
 };
 
-<<<<<<< HEAD
 // -------------------------------------------------------------
 // Phase 2: User Account, Patient Profile, & Privacy Consent Types
 // -------------------------------------------------------------
@@ -316,7 +315,6 @@ export type MekoContextResponse = {
   message?: string;
 };
 
-=======
 // On-Demand TinyFish WhatsApp Contact Discovery
 export type ShopWhatsAppContactRequest = {
   shop_name: string;
@@ -341,4 +339,3 @@ export type ShopWhatsAppContactResponse = {
   message: string;
   cached?: boolean;
 };
->>>>>>> 99ea3c54d9d08682bc49c798eea7fae9f24afb1f

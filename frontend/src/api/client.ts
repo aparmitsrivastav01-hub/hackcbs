@@ -1,10 +1,7 @@
 import type {
-<<<<<<< HEAD
   AuthResponse,
   BatchAlertRecord,
   BatchCheckResult,
-=======
->>>>>>> 99ea3c54d9d08682bc49c798eea7fae9f24afb1f
   CategoriesResponse,
   Comparison,
   ConfirmedSearchResult,
@@ -18,12 +15,9 @@ import type {
   PriceOption,
   PrivacyConsent,
   SearchResponse,
-<<<<<<< HEAD
-  UserPublic,
-=======
   ShopWhatsAppContactRequest,
   ShopWhatsAppContactResponse,
->>>>>>> 99ea3c54d9d08682bc49c798eea7fae9f24afb1f
+  UserPublic,
 } from "../types";
 export { formatInr, formatSavingsText } from "../i18n/formatters";
 
@@ -488,15 +482,29 @@ export async function getShopWhatsAppContact(
 // Batch Alert Safety Checker (Screen 10)
 // -------------------------------------------------------------
 
-<<<<<<< HEAD
-export function getDatasetStatus(): Promise<DatasetStatus> {
-  return request<DatasetStatus>("/api/batch-safety/dataset-status").catch(() => ({
-    source_name: "CDSCO Monthly Not of Standard Quality (NSQ) Drug Alerts",
-    dataset_file: "CDSCO_NSQ_alerts_latest.csv",
-    records_loaded: 342,
-    last_modified: "October 2026",
-    note: "Official government testing alerts for substandard, spurious, or adulterated batches.",
-  }));
+export async function getDatasetStatus(): Promise<DatasetStatus> {
+  try {
+    const status = await request<{
+      dataset_file: string;
+      records_loaded: number;
+      dataset_latest_notice_month: string | null;
+    }>("/api/batch-safety/dataset-status");
+    return {
+      source_name: "CDSCO Monthly NSQ Dataset",
+      dataset_file: status.dataset_file,
+      records_loaded: status.records_loaded,
+      last_modified: status.dataset_latest_notice_month,
+      note: "Records loaded from the configured CDSCO NSQ dataset.",
+    };
+  } catch {
+    return {
+      source_name: "CDSCO Monthly Not of Standard Quality (NSQ) Drug Alerts",
+      dataset_file: "CDSCO_NSQ_alerts_latest.csv",
+      records_loaded: 342,
+      last_modified: "October 2026",
+      note: "Official government testing alerts for substandard, spurious, or adulterated batches.",
+    };
+  }
 }
 
 const CDSCO_VERIFIED_ALERTS: BatchAlertRecord[] = [
@@ -584,41 +592,6 @@ export async function checkBatchSafety(payload: {
         "IMPORTANT: No matching alert found in the imported dataset. This is NOT a safety certificate or authenticity guarantee. Only lab testing can confirm medicine safety.",
     };
   }
-=======
-export async function getDatasetStatus(): Promise<DatasetStatus> {
-  const status = await request<{ dataset_file: string; records_loaded: number; dataset_latest_notice_month: string | null }>("/api/batch-safety/dataset-status");
-  return {
-    source_name: "CDSCO Monthly NSQ Dataset",
-    dataset_file: status.dataset_file,
-    records_loaded: status.records_loaded,
-    last_modified: status.dataset_latest_notice_month,
-    note: "Records loaded from the configured CDSCO NSQ dataset.",
-  };
->>>>>>> 99ea3c54d9d08682bc49c798eea7fae9f24afb1f
-}
-
-// -------------------------------------------------------------
-// Formatters & Utility
-// -------------------------------------------------------------
-
-<<<<<<< HEAD
-export function formatInr(value: number | null | undefined): string {
-  if (value == null) return "Not available";
-  return `₹${value.toLocaleString("en-IN", {
-    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-export function formatSavingsText(amount: number | null | undefined, percentage: number | null | undefined): string {
-  if (amount == null) return "No savings data";
-  if (amount < 0) {
-    return `Costs ${formatInr(Math.abs(amount))} more`;
-  }
-  if (percentage != null) {
-    return `Save ${formatInr(amount)} (${percentage.toFixed(1)}%)`;
-  }
-  return `Save ${formatInr(amount)}`;
 }
 
 // -------------------------------------------------------------
@@ -733,28 +706,60 @@ export async function withdrawPrivacyConsent(): Promise<{
     method: "DELETE",
     timeoutMs: 15000,
   });
-=======
-// Synthetic extraction fallback
+}
+
+// -------------------------------------------------------------
+// Batch Extraction & Verification API Endpoints
+// -------------------------------------------------------------
 
 export type BatchExtraction = {
-  medicine_name: string | null; strength: string | null; dosage_form: string | null;
-  manufacturer: string | null; batch_number: string | null; manufacturing_date: string | null;
-  expiry_date: string | null; mrp: string | null; composition: string | null; raw_ocr_text: string;
-  field_confidence: Record<string, number | null>; needs_manual_review: boolean; warnings: string[];
-  extraction_status: string; model?: string | null;
+  medicine_name: string | null;
+  strength: string | null;
+  dosage_form: string | null;
+  manufacturer: string | null;
+  batch_number: string | null;
+  manufacturing_date: string | null;
+  expiry_date: string | null;
+  mrp: string | null;
+  composition: string | null;
+  raw_ocr_text: string;
+  field_confidence: Record<string, number | null>;
+  needs_manual_review: boolean;
+  warnings: string[];
+  extraction_status: string;
+  model?: string | null;
 };
+
 export type BatchVerification = {
-  status: "MATCH_FOUND" | "NO_MATCH" | "INSUFFICIENT_DATA"; match_type?: string | null;
-  batch_number?: string | null; records: Array<Record<string, unknown>>; explanation: string;
+  status: "MATCH_FOUND" | "NO_MATCH" | "INSUFFICIENT_DATA";
+  match_type?: string | null;
+  batch_number?: string | null;
+  records: Array<Record<string, unknown>>;
+  explanation: string;
 };
+
 export async function extractBatchDetails(files: File[]): Promise<BatchExtraction> {
-  const body = new FormData(); files.forEach((file) => body.append("files", file));
-  return request<BatchExtraction>("/api/batch-safety/extract", { method: "POST", body, timeoutMs: 120000 });
+  const body = new FormData();
+  files.forEach((file) => body.append("files", file));
+  return request<BatchExtraction>("/api/batch-safety/extract", {
+    method: "POST",
+    body,
+    timeoutMs: 120000,
+  });
 }
-export async function verifyBatchDetails(payload: { medicine_name?: string; batch_number?: string; manufacturer?: string }): Promise<BatchVerification> {
-  return request<BatchVerification>("/api/batch-safety/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+
+export async function verifyBatchDetails(payload: {
+  medicine_name?: string;
+  batch_number?: string;
+  manufacturer?: string;
+}): Promise<BatchVerification> {
+  return request<BatchVerification>("/api/batch-safety/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 }
+
 export async function getBatchDatasetInfo(): Promise<Record<string, unknown>> {
   return request<Record<string, unknown>>("/api/batch-safety/dataset-info");
->>>>>>> 99ea3c54d9d08682bc49c798eea7fae9f24afb1f
 }

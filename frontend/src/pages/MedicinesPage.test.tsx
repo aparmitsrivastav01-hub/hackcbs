@@ -16,16 +16,24 @@ const mockSampleMedicines: MedicineResponse[] = [
     active_salt: "Paracetamol 650mg",
     dosage_form: "Tablet",
     category: "Analgesic",
+    cheapest_provider: "jan_aushadhi",
+    cheapest_price: 12,
+    savings: 20,
+    savings_percentage: 62.5,
     prices: {
       private_brand: 32,
       jan_aushadhi: 12,
       dava_india: 14,
     },
     savings_comparison: {
+      jan_aushadhi: { savings_amount: 20, savings_percentage: 62.5 },
+      dava_india: { savings_amount: 18, savings_percentage: 56.25 },
       maximum_savings: {
         provider: "jan_aushadhi",
         amount: 20,
         percentage: 62.5,
+        private_brand_price: 32,
+        alternative_price: 12,
       },
     },
   },
@@ -35,16 +43,24 @@ const mockSampleMedicines: MedicineResponse[] = [
     active_salt: "Paracetamol 500mg",
     dosage_form: "Tablet",
     category: "Analgesic",
+    cheapest_provider: "jan_aushadhi",
+    cheapest_price: 9,
+    savings: 16,
+    savings_percentage: 64,
     prices: {
       private_brand: 25,
       jan_aushadhi: 9,
       dava_india: 10,
     },
     savings_comparison: {
+      jan_aushadhi: { savings_amount: 16, savings_percentage: 64 },
+      dava_india: { savings_amount: 15, savings_percentage: 60 },
       maximum_savings: {
         provider: "jan_aushadhi",
         amount: 16,
         percentage: 64,
+        private_brand_price: 25,
+        alternative_price: 9,
       },
     },
   },
@@ -117,10 +133,14 @@ describe("MedicinesPage — Voice Search & ElevenLabs TTS Integration", () => {
     });
     vi.spyOn(apiClient, "getCategories").mockResolvedValue({
       categories: ["Analgesic"],
+      total_categories: 1,
     });
     vi.spyOn(apiClient, "getMaximumSavings").mockResolvedValue({
+      success: true,
       provider: "all",
-      medicines: mockSampleMedicines,
+      highest_savings_amount: null,
+      highest_savings_percentage: null,
+      top_savings: [],
     });
 
     mockFetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (url: any) => {
