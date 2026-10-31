@@ -1,0 +1,501 @@
+id,brand_name,active_salt,dosage_form,private_brand_price,jan_aushadhi_price,dava_india_price,category
+1,Zerodol-P,Aceclofenac + Paracetamol (100 mg + 325 mg),Tablet,68.5,5.7,14.5,Analgesics
+2,Zerodol 100,Aceclofenac 100 mg,Tablet,54.0,3.84,10.5,Analgesics
+3,Ultracet,Acetaminophen + Tramadol Hydrochloride (325 mg + 37.5 mg),Tablet,142.0,5.6,18.0,Analgesics
+4,Ecosprin 150,ASPIRIN 150 mg,Tablet,9.8,1.9,3.2,Analgesics
+5,Myospaz Forte,DICLOFENAC 50 mg+ PARACETAMOL 325 mg+ CHLORZOXAZONE 500 mg,Tablet,92.0,12.4,22.0,Analgesics
+6,Voveran Emulgel 15g,Diclofenac ( Diclofenec Diethylamine 1.16 % w/w) BP 15 g,Gel,65.0,8.22,16.5,Analgesics
+7,Emanzen-D,Diclofenac Sodium + Serratiopeptidase (50mg + 10mg) Tab,Tablet,88.0,7.02,16.0,Analgesic and antipyretic /Muscle relaxant
+8,Voveran SR 100,Diclofenac Sodium (SR) 100 mg,Tablet,96.5,6.12,14.5,Analgesics
+9,Voveran Injection 3ml,Diclofenac Sodium 25mg per ml Inj. 3 ml,Injection,27.5,3.16,6.5,Analgesics
+10,Voveran 50,Diclofenac Sodium 50 mg Tab,Tablet,36.0,2.3,5.5,Analgesics
+11,Nucoxia 120,Etoricoxilb 120mg Tab,Tablet,195.0,33.96,48.0,Analgesics
+12,Nucoxia 90,Etoricoxilb 90mg Tab,Tablet,168.0,25.99,38.0,Analgesics
+13,Brufen 200,Ibuprofen 200mg,Tablet,11.5,1.75,3.5,Analgesic and antipyretic /Muscle relaxant
+14,Nise 100,Nimesulide 100 mg Tab,Tablet,52.0,2.52,6.5,Analgesics
+15,Combiflam Plus / Diclogesic,Paracetamol + Diclofenac Sodium (325 mg + 50 mg) Tab,Tablet,42.0,4.34,9.5,Analgesics
+16,Calpol 120 Paediatric,Paracetamol 125 mg / 5 ml 60 ml bottles,Syrup,39.5,10.6,15.0,Analgesics
+17,Crocin Advance 500,Paracetamol 500mg Tab,Tablet,10.1,4.51,5.8,Analgesics
+18,Bidanzen 10,Serratiopeptidase 10 mg,Tablet,62.0,5.97,12.0,Analgesics
+19,Contramal 100mg/2ml Inj,Tramadol Hydrochloride 50mg/ml Inj. 2ml,Injection,24.5,3.15,7.5,Analgesics
+20,Contramal 50mg/1ml Inj,Tramadol Hydrochloride 50mg/ml Inj. 1ml,Injection,18.5,3.37,6.5,Analgesics
+21,Ultracet / Contramal 50,Tramadol Hydrochloride 50 mg Tab,Tablet,48.0,4.38,10.5,Analgesics
+22,Mikacin 100mg/2ml Inj,Amikacin Sulphate 50mg/ml inj. 2ml Vial,Injection,34.0,7.76,12.5,Antiinfective
+23,Mikacin 250mg/2ml Inj,Amikacin 250mg inj. 2ml Vial,Injection,48.5,11.35,18.0,Antiinfective
+24,Augmentin 1.2g IV,Amoxycillin + Clavulanic acid (1000 mg + 200mg) for Vial with 10 ml WFI,Injection,156.0,50.63,68.0,Antiinfective
+25,Augmentin Duo Oral Suspension,Amoxycillin + Clavulanic acid (200 mg+28.5 mg /5ml) for 30 ml bottles,Suspension,67.2,25.79,35.0,Antiinfective
+26,Augmentin 300mg IV,Amoxycillin + Clavulanic acid (250 mg + 50 mg) for Vial with 10 ml WFI,Injection,64.0,20.02,28.0,Antiinfective
+27,Augmentin 625 Duo,Amoxycillin + Clavulanic acid (500 mg + 125 mg),Tablet,204.5,52.24,78.0,Antiinfective
+28,Novaclox LB / Megapen,AMOXYCILLIN 250 mg+ CLOXACILLIN 250 mg,Capsule,84.0,34.64,46.0,Antiinfective
+29,Mox Kid 125 DT,Amoxycillin 125 mg Kid Tabs,Tablet,32.5,8.68,14.0,Antiinfective
+30,Mox Dry Syrup 60ml,Amoxycillin 125mg/ 5ml for 60 ml bottles,Suspension,46.0,14.84,22.0,Antiinfective
+31,Mox 250,Amoxycillin 250 mg Caps,Capsule,48.0,14.99,22.5,Antiinfective
+32,Mox 500,Amoxycillin 500 mg Caps,Capsule,108.0,26.25,38.0,Antiinfective
+33,Roscillin 500mg Inj,Ampicillin Injections I.P. 500mg Vial & WFI,Injection,26.5,7.2,12.0,Antiinfective Drugs
+34,Azee 100 Liquid 15ml,Azithromycin (100mg/ 5ml) 15 ml bottles,Suspension,44.5,13.0,19.5,Antiinfective
+35,Azithral 250,Azithromycin 250 mg,Tablet,126.0,39.06,52.0,Antiinfective
+36,Azithral 500,Azithromycin 500 mg,Tablet,238.0,86.6,110.0,Antiinfective
+37,Odoxil 250,Cefadroxil 250mg,Tablet,42.0,12.42,18.5,Antiinfective Drugs
+38,Taxim-O Dry Syrup 30ml,Cefixime Oral 50 mg/5 ml 30 ml bottle,Suspension,52.8,14.56,22.0,Antiinfective
+39,Taxim-O 100,Cefixime 100mg,Tablet,82.5,25.65,36.0,Antiinfective
+40,Zifi 200 / Taxim-O 200,Cefixime 200mg,Tablet,109.5,44.63,58.0,Antiinfective
+41,Magnex Forte 2g Inj,Cefoperazone + Sulbactam ( 1g + 1g) Inj. Vial & wfi,Injection,445.0,52.68,85.0,Antiinfective
+42,Magnex 1g Inj,Cefoperazone + Sulbactam (500 mg + 500 mg) Inj. Vial & wfi,Injection,248.0,31.61,52.0,Antiinfective
+43,Cefobid 1g Inj,Cefoperazone 1 gm Inj. Vial,Injection,165.0,31.2,48.0,Antiinfective
+44,Taxim 1g Inj,Cefotaxime Sodium Injections 1000mg Vial & WFI,Injection,43.5,15.93,24.0,Antiinfective Drugs
+45,Taxim 250mg Inj,Cefotaxime Sodium Injections 250 mg Vial & WFI,Injection,21.0,7.88,12.0,Antiinfective Drugs
+46,Monocef-O 100,Cefpodoxime 100 mg,Tablet,118.0,35.9,48.0,Antiinfective
+47,Monocef-O 200,Cefpodoxime 200 mg,Tablet,185.0,69.12,88.0,Antiinfective
+48,Fortum 1g Inj,Ceftazadime 1000 mg Injections Vial & WFI,Injection,268.0,66.83,95.0,Antiinfective Drugs
+49,Fortum 500mg Inj,Ceftazadime 500 mg Injections Vial & WFI,Injection,142.0,44.33,62.0,Antiinfective Drugs
+50,Monocef-SB 1.5g Inj,Ceftriaxone + Sulbactam (1000 mg + 500 mg) Inj. Vial & wfi,Injection,168.0,38.89,58.0,Antiinfective
+51,Montaz 1.125g Inj,Ceftriaxone + Tazobactum 1000 mg + 125 mg Inj. Vial & wfi,Injection,185.0,44.46,64.0,Antiinfective
+52,Monocef-SB 375mg Inj,Ceftriaxone +Sulbactam (250 mg + 125 mg) Vial & wfi,Injection,58.0,15.82,24.0,Antiinfective
+53,Monocef-SB 750mg Inj,Ceftriaxone +Sulbactam (500 mg + 250 mg) Injections 10ml Vial & WFI,Injection,98.0,29.66,42.0,Antiinfective Drugs
+54,Monocef 1g Inj,Ceftriaxone Injections 1 g 5ml Vial & WFI,Injection,66.8,23.98,34.0,Antiinfective Drugs
+55,Monocef 250mg Inj,Ceftriaxone 250 mg Inj. Vial & wfi,Injection,31.5,11.8,18.0,Antiinfective
+56,Ceftum 250,Cefuroxime Axetil 250 mg,Tablet,215.0,66.37,88.0,Antiinfective
+57,Ceftum 500,Cefuroxi me Axetil 500mg,Tablet,412.0,128.86,165.0,Antiinfective
+58,Phexin Kid 125 DT,Cephalexin 125 mg DT,Tablet,54.0,12.04,19.0,Antiinfective
+59,Phexin 250,Cephalexin 250 mg Caps,Capsule,98.0,24.09,36.0,Antiinfective
+60,Phexin 500,Cephalexin 500 mg Caps,Capsule,192.0,51.34,72.0,Antiinfective
+61,Ciplox-TZ H,CIPROFLOXACIN 250 MG+ TINIDAZOLE 300 MG,Tablet,72.0,22.12,32.0,Antiinfective
+62,Ciplox-TZ,Ciprofloxacin + Tinidazole (500 mg + 600 mg),Tablet,118.0,36.77,52.0,Antiinfective
+63,Ciplox 250,Ciprofloxacin 250 mg,Tablet,26.5,14.0,18.0,Antiinfective
+64,Ciplox 500,Ciprofloxacin 500 mg,Tablet,47.5,22.0,29.0,Antiinfective
+65,Candid Cream / Ointment 15g,Clotrimazole 1% w/w 0int. 15 g tubes,Ointment,52.0,9.0,15.0,Antiinfective
+66,Levoflox 250,Levofloxacin 250 mg,Tablet,54.0,19.08,26.0,Antiinfective
+67,Meronem 1g Inj,Meropenem 1gm Inj. Vial & wfi,Injection,1150.0,255.41,360.0,Antiinfective
+68,Norflox-TZ,NORFLOXACIN 400 mg + TINIDAZOLE 600 mg,Tablet,98.0,32.35,45.0,Antiinfective
+69,Zanocin-OZ / O2,Ofloxacin + Ornidazole (200 mg + 500 mg),Tablet,158.0,22.55,36.0,Antiinfective
+70,Zanocin 200,Ofloxacin 200 mg,Tablet,68.0,14.8,22.0,Antiinfective
+71,Zanocin 400,Ofloxacin 400 mg,Tablet,124.0,26.2,38.0,Antiinfective
+72,Roxid Paediatric Liquid 30ml,Roxithromycin strength 50 mg/ 5ml 30 ml bottles,Suspension,64.0,15.28,24.0,Antiinfective
+73,Roxid 150,Roxithromycin 150 mg,Tablet,128.0,25.2,38.0,Antiinfective
+74,Roxid 300,Roxithromycin I.P. strength 300 mg 10s,Tablet,215.0,48.05,68.0,Antiinfective
+75,Tiniba 300,Tinidazole 300 mg 10s,Tablet,36.0,9.45,15.0,Antiinfective Drugs
+76,Tiniba 500,Tinidazole 500 mg,Tablet,58.0,12.19,19.5,Antiinfective
+77,Vancocin-CP 500mg Inj,VANCOMYCIN INTRAVENOUS 500 mg Vial &WFI,Infusion,345.0,90.82,135.0,Antiinfective
+78,Adaferin / Deriva 0.1% Gel 15g,Adapalene 0.1 % w/v 15 g tubes,Ointment,165.0,21.38,38.0,Antiinfective
+79,Candid-B Plus / Quadriderm 15g,BECLOMETHASONE 0.025% w/w+ CLOTRIMAZOLE 1% w/w+ GENTAMYCIN 0.1% w/w 15 GM,Cream,78.0,10.95,18.5,Antiinfective
+80,Lacto Calamine / Caladryl 100ml,Calamine lotion 100 ml 100ml bottle,Solution,115.0,19.52,32.0,Antiinfective
+81,Hexidine Mouthwash 100ml,CHLORHEXIDINE MOUTHWASH 0.2 % w/v 100 ml,Solution,85.0,16.35,26.0,Antiinfective
+82,Forcan 150 / Zocon 150,Fluconazole 150 mg,Tablet,132.0,23.175,35.0,Antiinfective
+83,Fucidin Cream 10g,Fusidic Acid I.P. strength 2 % w/v 10 g tubes,Cream,98.0,21.15,34.0,Antiinfective
+84,Betadine Ointment 250g,Povidone Iodine 5% w/w USP 250 gm tubes/Jar,Ointment,445.0,90.0,135.0,Antiinfective
+85,Betadine Ointment 15g,Povidone Iodine 5%w/w USP 15 gm tubes,Ointment,68.0,10.72,18.0,Antiinfective
+86,Betadine 10% Solution 500ml,Povidone Iodine 10 % 500 ml bottles,Solution,525.0,127.2,175.0,Antiinfective
+87,Betadine 5% Solution 500ml,Povidone Iodine 5 % 500 ml bottles,Solution,310.0,78.5,110.0,Antiinfective
+88,Betadine 7.5% Scrub 500ml,Povidone Iodine 7.5% 500 ml bottles,Solution,460.0,105.44,148.0,Antiinfective
+89,Savlon Antiseptic Liquid 100ml,Ravlon (Chlorhexidine + Cetramide ) (1.5 % w/v + 3% w/v) 100 ml bottles,Solution,56.0,19.16,28.0,Antiinfective
+90,Daonil 2.5,Glibenclamide 2.5 mg Tabs,Tablet,12.5,2.6,4.5,Antidiabetic
+91,Daonil 5,Glibenclamide 5 mg Tabs,Tablet,18.2,4.05,6.8,Antidiabetic
+92,Reclimet / Diamicron 40,Gliclazide 40 mg Tabs,Tablet,54.0,11.93,18.5,Antidiabetic
+93,Diamicron 80,Gliclazide 80 mg Tabs,Tablet,88.0,20.25,30.0,Antidiabetic
+94,Amaryl 1mg,Glimeperide 1mg Tab,Tablet,46.5,3.8,7.5,Antidiabetic
+95,Amaryl 2mg,Glimeperide 2mg Tabs,Tablet,74.0,5.05,10.5,Antidiabetic
+96,Glynase 5,Glipizide 5 mg,Tablet,11.2,2.5,4.5,Antidiabetic
+97,Huminsulin R 40IU/ml 10ml,INSULIN 40 IU/ml (Insulin Human Recombinant) 10 ml Vial,Injection,178.0,118.61,138.0,Antidiabetic
+98,Glycomet-GP / Glycomet SR 1000,METFORMIN HYDROCHLORIDE SUSTAIN RELEASE 1000 MG,Tablet,44.5,11.05,18.0,Antidiabetic
+99,Glycomet 500,Metformin Hydrochloride 500mg Tabs,Tablet,18.5,5.15,8.5,Antidiabetic
+100,Pioz 15,Pioglitazone 15 mg Tabs,Tablet,52.0,6.75,12.0,Antidiabetic
+101,Pioz 30,Pioglitazone I.P. strength 30 mg 10s,Tablet,84.0,10.69,18.0,Antidiabetic
+102,Pioz-MF 15/500,Metformin (SR) 500mg + Pioglitazone 15 mg 10s,Tablet,78.0,13.97,22.0,Antidiabetic
+103,Cytoplatin 10mg Inj,CISPLATIN 10 MG VIAL & WFI,Injection,115.0,84.41,96.0,Anticancer
+104,Adrim 10mg Inj,Doxorubicin 10 mg Inj. Vial,Injection,185.0,76.49,98.0,Anticancer
+105,Adrim 50mg Inj,Doxorubicin 50 mg Inj. Vial,Injection,740.0,250.47,320.0,Anticancer
+106,Gemzar / Cytogem 1000mg Inj,Gemcitabine 1000 mg Inj. Vial,Injection,2450.0,631.21,850.0,Anticancer
+107,Gemzar / Cytogem 200mg Inj,Gemcitabine 200 mg Inj. Vial,Injection,620.0,154.49,210.0,Anticancer
+108,Nolvadex 10,Tamoxifen Citrate I.P. strength 10 mg 10s,Tablet,29.5,9.56,15.0,Anticancer
+109,Nolvadex 20,Tamoxifen Citrate I.P. strength 20 mg 10s,Tablet,42.0,13.5,21.0,Anticancer
+110,Ciplox IV 100ml,CIPROFLOXACIN 2MG/ML 100 ml,Injection,68.0,18.34,28.0,Antiinfective
+111,Tavanic / Levoflox IV 100ml,Levofloxacin I.P. strength 500 mg 100 ml bottles,Infusion,125.0,25.72,42.0,Antiinfective
+112,Osmitrol / Mannitol 20% 100ml,MANNITOL 20% w/v 100 ml,Injection,85.0,37.93,48.0,Urology
+113,Flagyl IV 100ml,Metronidazole 5 mg / ml 100ml,Infusion,24.5,7.5,12.5,Antiinfective Drugs
+114,Bandy-Plus,ALBENDAZOLE 400 mg + IVERMECTIN 6 mg,Tablet,28.0,4.09,8.5,Antiinfective
+115,Zentel 400 (10s),Albendazole 400mg Tabs,Tablet,98.0,18.0,26.0,Antiinfective
+116,Dulcoflex 5mg,Bisacodyl 5mg,Tablet,14.5,4.02,6.8,GIT
+117,Cypon Syrup 200ml,TRICHOLINE CITRATE 275 mg+ CYPROHEPTADINE HCl 2 mg/5ml 200 ml,Syrup,118.0,27.15,42.0,GIT
+118,Meftal-Spas / Cyclopam 10,Dicyclomine 10 mg Tabs,Tablet,18.0,2.28,4.5,Analgesics
+119,Cyclopam,Dicyclomine HCL + Paracetamol (20mg + 325 mg),Tablet,48.0,5.36,10.5,GIT
+120,Domstal 10,Domperidone 10 mg,Tablet,34.0,3.62,6.8,GIT
+121,Domstal Paediatric Syrup 30ml,Domperidone 5 mg. / 5 ml 30 ml bottles,Syrup,42.0,8.94,14.5,GIT
+122,Digene Tablet,ANTACID [DRIED Al(OH)3 + Mg(OH)2 + SIMETHICONE (250mg + 250mg + 50mg),Tablet,21.0,3.8,6.5,GIT
+123,Famocid 20,FAMOTIDINE 20 MG,Tablet,8.5,3.42,5.2,GIT
+124,Famocid 40,FAMOTIDINE 40 MG,Tablet,14.2,5.5,8.5,GIT
+125,Sat Isabgol 200g,Ispagula Husk 200gm pack,Powder,220.0,84.0,115.0,GIT
+126,Sporlac DS,LACTOBACILLUS SPOROGENES 60 MILLION SPORES,Tablet,48.0,3.49,8.5,PROBIOTIC
+127,Duphalac 100ml,Lactulose 10 gm/ 15 ml 100 ml bottle,Syrup,168.0,91.5,115.0,GIT
+128,Gelusil / Digene Gel 170ml,Aluminium Hydroxide + Magnesium Hydroxide (250+250mg / 5ml) 170 ml,Suspension,112.0,22.32,36.0,GIT
+129,Perinorm 10,Metoclopramide 10 mg Tabs,Tablet,14.8,3.25,5.8,GIT
+130,Perinorm 2ml Inj,Metoclopramide Injections 5mg/ml 2 ml,Injection,11.5,2.25,4.5,GIT
+131,Flagyl 200,Metronidazole 200mg,Tablet,9.5,2.0,3.8,Antiinfective Drugs
+132,Flagyl 400,Metronidazole 400mg,Tablet,16.8,3.75,6.5,Antiinfective Drugs
+133,Misoprost 200,Misoprostol 200 mcg,Tablet,68.0,4.13,12.0,Gynaecology
+134,Omez-D,Omeprazole + Domperidone (20 mg + 10 mg) Caps,Capsule,115.0,8.49,16.5,GIT
+135,Omez 20,Omeprazole 20 mg capsuls,Capsule,64.0,6.82,12.5,GIT
+136,Emset 2ml Inj,ONDENSETRON 2 mg/ml 2 ML,Injection,26.5,3.08,6.5,GIT
+137,Emset 4,Ondansetron 4 mg Tabs,Tablet,52.0,2.84,6.8,GIT
+138,Ornof / Dazolic 500,Ornidazole 500 mg,Tablet,112.0,14.9,24.0,Antiinfective
+139,Pan IV 40mg Inj,Pantoprazole 40mg Inj. vial,Injection,56.0,10.93,18.5,GIT
+140,Razo-D,Rabeprazole + Domperidone SR (20 mg + 30 mg)caps.,Capsule,198.0,10.71,22.0,GIT
+141,Razo 20,Rabeprazole 20 mg,Tablet,118.0,7.16,14.5,GIT
+142,Aciloc 2ml Inj,RANITIDINE 50 MG/ 2ML 2 ML,Injection,7.5,2.66,4.5,GIT
+143,Aciloc 150 / Rantac 150,Ranitidine HCl. 150 mg,Tablet,18.5,6.39,9.5,GIT
+144,Aciloc 300 / Rantac 300,RANITIDINE 300 mg,Tablet,32.0,7.1,12.0,GIT
+145,Shelcal 500,Calcium carbonate 1250mg + Vitamin D3 250iu 10s,Tablet,118.0,3.74,12.5,VITAMIN & SUPPLE
+146,Doxinate Plus,PYRIDOXINE HCl 10 mg+ DOXYLAMINE 10 mg + FOLIC ACID 2.5 mg,Tablet,86.0,22.89,34.0,VITAMIN & SUPPLE
+147,Orofer XT Tonic 200ml,IRON HYDROXIDE POLYMALTOSE COMPLEX EQ TO ELEMENTAL IRON 50 MG+ FOLIC ACID 0.5 MG /5 ML 200 ML,Syrup,185.0,34.5,54.0,VITAMIN & SUPPLE
+148,Dexorange / Ferium Syrup 200ml,Iron(eq. to elemental iron 50mg) + Folic Acid(0.5mg) /15ml 200 ml bottles,Syrup,145.0,21.37,36.0,VITAMIN & SUPPLE
+149,Becosules / Supradyn,Polyvitamin (Prophylactic) NFI,Tablet,42.0,4.72,9.5,VITAMIN & SUPPLE
+150,Livogen / Dexorange 100ml,"Haematinic of Iron , acid and Vitamin B12 100ml 100ml bottle",Syrup,88.0,16.3,26.0,VITAMIN & SUPPLE
+151,Cobadex CZS / Becosules Z,"VITAMIN B COMPLEX (B1,B2,B6,B12) & VIT. C WITH ZINC 22.5 MG",Capsule,48.0,6.78,12.5,VITAMIN & SUPPLE
+152,Neurobion Forte,"VITAMIN B1 10MG, B2 10 MG, NIACINAMIDE 45 MG, CALCIUM PANTOTHENATE 50 MG, B6 3 MG AND B12 15 MCG",Tablet,38.5,8.11,14.0,VITAMIN & SUPPLE
+153,Polybion SF 200ml,VITAMIN B-VOMPLEX NFI 200 ML,Syrup,115.0,24.08,38.0,VITAMIN & SUPPLE
+154,Cetzine Syrup 60ml,Cetrizine (5 mg/ 5 ml) 60 ml bottles,Syrup,44.0,10.32,16.5,RESPIRATORY
+155,Cetzine 10 / Okacet,Cetrizine 10mg,Tablet,21.0,1.84,4.5,RESPIRATORY
+156,Benadryl Cough Formula 110ml,COUGH [DIPHEN.14 mg. + AMMONIUM CHL.135 mg. + SOD.CIT.57 mg. + MENTHOL 0.9 mg/5ml] 110 ml,Syrup,98.0,12.6,24.0,RESPIRATORY
+157,Deriphyllin 2ml Inj,Theophylline 25.3 mg+ Etophylline 84.7mg /2ml Injections 2ml,Injection,8.5,1.83,3.8,Respiratory
+158,Deriphyllin 100,Etophyllin +Theophylline (77 mg + 23 mg) Tabs,Tablet,12.5,1.83,4.2,Respiratory
+159,Allegra 120,Fexofenadine 120 mg,Tablet,218.0,19.81,34.0,RESPIRATORY
+160,Allegra 180,Fexofenadine 180 mg,Tablet,254.0,27.54,45.0,RESPIRATORY
+161,Xyzal 5 / Levocet,Levocetrizine 5 mg,Tablet,68.0,2.3,6.5,RESPIRATORY
+162,Montair 5,Montelukast Sodium 5 mg Tab,Tablet,115.0,9.04,16.5,RESPIRATORY
+163,Montair 10,Montelukast Sodium 10 mg Tab,Tablet,168.0,12.73,22.0,RESPIRATORY
+164,Montair-LC,Montelukast Sodium + Levocetrizine (10 mg + 5mg),Tablet,210.0,12.64,24.0,RESPIRATORY
+165,Avil 25,PHENIRAMINE 25 mg,Tablet,11.5,4.64,7.2,RESPIRATORY
+166,Asthalin 2,SALBUTAMOL 2 MG,Tablet,5.8,0.75,1.8,RESPIRATORY
+167,Asthalin Syrup 100ml,Salbutamol 2mg /5ml 100ml Bottle,Syrup,19.5,8.0,12.5,Respiratory
+168,Asthalin 4,Salbutamol 4mg,Tablet,7.2,0.85,2.2,Respiratory
+169,Amlokind-AT / Stamlo Beta,Amlodipine + Atenolol (5 mg + 50 mg),Tablet,58.0,3.54,8.5,CVS
+170,Stamlo 5 / Amlong 5,Amlodipine 5mg,Tablet,34.0,2.68,6.0,CVS
+171,Tenormin 50 / Aten 50,Atenolol 50 mg Tabs,Tablet,26.5,5.02,8.5,CVS
+172,Atorva 10 / Lipitor 10,Atorvastatin 10mg,Tablet,56.0,5.11,10.5,CVS
+173,Atorva 20 / Storvas 20,Atorvastatin 20 mg,Tablet,138.0,9.2,18.0,CVS
+174,Plavix / Clopilet 75,Clopidogrel 75mg Tabs,Tablet,74.0,12.01,21.0,CVS
+175,Dilzem 30,Diltiazem I.P. strength 30 mg 10s,Tablet,42.0,7.8,14.0,CVS
+176,Dobutrex 250mg/20ml Inj,Dobutamine 250 mg/ 20ml Inj. Vial,Injection,245.0,32.71,52.0,CVS
+177,Envas 5,Enalpril I.P. strength 5mg 10s,Tablet,34.0,2.86,6.5,CVS
+178,Clexane 40mg/0.4ml Inj,Enoxaparin 40 mg/0.4 ml Inj. 0.4 ml,Injection,445.0,183.01,240.0,CVS
+179,Clexane 60mg/0.6ml Inj,Enoxaparin 60 mg/0.6 ml Inj. 0.6 ml,Injection,615.0,222.89,295.0,CVS
+180,Lasix 20mg/2ml Inj,FRUSEMIDE (10 MG/ ML) 2 ML,Injection,6.8,1.54,3.2,CVS
+181,Lasix 40,Frusemide 40 mg Tabs,Tablet,8.5,2.3,4.5,CVS
+182,Sorbitrate 10,Isosorbide Dinitrate 10 mg Tabs,Tablet,14.5,3.56,6.5,CVS
+183,Lisoril-AM / Hipril-A,AMLODIPINE 5 MG + LISINOPRIL 5 MG,Tablet,88.0,12.33,21.0,CVS
+184,Lisoril 5,Lisinopril 5mg Tabs,Tablet,48.0,7.16,12.5,CVS
+185,Losar-H,Losartan + H.Ch. Thaizide (50 mg + 12.5mg),Tablet,125.0,9.05,18.0,CVS
+186,Losar 25,Losartan 25mg,Tablet,46.0,5.04,9.5,CVS
+187,Losar 50,Losartan Potassium 50 mg,Tablet,78.0,9.0,16.5,CVS
+188,Betaloc 25 / Metolar 25,Metoprolol 25 mg Tabs,Tablet,38.0,5.04,9.5,CVS
+189,Betaloc 50 / Metolar 50,Metoprolol 50 mg Tabs,Tablet,54.0,4.76,10.5,CVS
+190,Cardace 2.5,Ramipril 2.5 mg Tabs,Tablet,58.0,6.75,12.0,CVS
+191,Cardace 5,Ramipril 5 mg Tabs,Tablet,92.0,9.68,16.5,CVS
+192,Zocor / Simvotin 10,Simvastatin I.P. strength 10 mg 10s,Tablet,74.0,9.99,18.0,CVS
+193,Zocor / Simvotin 20,Simvastatin I.P. strength 20 mg 10s,Tablet,128.0,12.44,24.0,CVS
+194,Telma-H,Telmisartan + Hydrochlorthiazide (40 mg + 12.5 mg ) Tabs,Tablet,165.0,15.3,26.0,CVS
+195,Telma 20,TELMISARTAN 20 mg,Tablet,68.0,6.73,12.5,CVS
+196,Telma 40,Telmisartan 40 mg Tabs,Tablet,118.0,8.7,16.5,CVS
+197,Pause 500 / Trapic 500,Tranexamic Acid 500 mg Tabs,Tablet,185.0,58.22,78.0,CVS
+198,Pause 500mg/5ml Inj,TRANEXAMIC ACID 100 MG/ ML 5 ML,Injection,64.0,17.89,28.0,CVS
+199,E-Mal 150mg/2ml Inj,Arteether 150mg/2ml inj 2ml Vial,Injection,78.0,13.8,24.0,Antiinfective
+200,Lariago 250,Chloroquine Phosphate 250 mg,Tablet,12.5,4.9,7.5,Antiinfective Drugs
+201,Dolo 650,Paracetamol 650 mg Tab,Tablet,30.9,5.8,9.5,Analgesics
+202,Meftal-Spas,Mefenamic Acid 250 mg + Dicyclomine HCl 10 mg Tab,Tablet,50.0,7.5,12.0,Analgesics
+203,Meftal 500,Mefenamic Acid 500 mg Tab,Tablet,35.5,8.2,13.0,Analgesics
+204,Zerodol-SP,Aceclofenac 100 mg + Paracetamol 325 mg + Serratiopeptidase 15 mg Tab,Tablet,118.0,11.5,22.0,Analgesics
+205,Combiflam,Ibuprofen 400 mg + Paracetamol 325 mg Tab,Tablet,24.5,6.2,10.5,Analgesics
+206,Ketorol-DT,Ketorolac Tromethamine 10 mg Dispersible Tab,Tablet,136.0,14.5,25.0,Analgesics
+207,Nucoxia 60,Etoricoxib 60 mg Tab,Tablet,142.0,18.5,29.0,Analgesics
+208,Pirox 20 / Dolonex DT,Piroxicam 20 mg Dispersible Tab,Tablet,76.0,7.8,14.0,Analgesics
+209,Flexon-MR,Ibuprofen 400 mg + Paracetamol 325 mg + Chlorzoxazone 250 mg Tab,Tablet,94.0,11.2,19.5,Analgesics
+210,Naprosyn 500,Naproxen 500 mg Tab,Tablet,82.0,16.4,26.0,Analgesics
+211,Ibugesic Plus Suspension 60ml,Ibuprofen 100 mg + Paracetamol 162.5 mg / 5ml 60 ml,Suspension,44.0,12.5,18.5,Analgesics
+212,Dynapar AQ 75mg/1ml Inj,Diclofenac Sodium 75 mg / ml Aqueous Inj. 1 ml,Injection,32.0,5.4,9.5,Analgesics
+213,Doxy-1 L-DR Forte / Doxt-SL,Doxycycline 100 mg Caps,Capsule,68.0,9.8,16.5,Antiinfective
+214,Taxim-O CV 200,Cefixime 200 mg + Clavulanic Acid 125 mg Tab,Tablet,198.0,68.0,92.0,Antiinfective
+215,Monocef-O CV 200,Cefpodoxime Proxetil 200 mg + Clavulanic Acid 125 mg Tab,Tablet,245.0,84.0,115.0,Antiinfective
+216,Linid 600 / Lizolid 600,Linezolid 600 mg Tab,Tablet,365.0,98.0,145.0,Antiinfective
+217,Zovirax 400 / Acivir 400,Aciclovir 400 mg Tab,Tablet,132.0,26.5,42.0,Antiinfective
+218,Zovirax Cream / Acivir 5% 5g,Aciclovir 5% w/w Cream 5 g tube,Cream,74.0,14.2,22.0,Antiinfective
+219,Candiforce 100 / IT-Mac 100,Itraconazole 100 mg Caps,Capsule,155.0,38.0,58.0,Antiinfective
+220,Candiforce 200 / IT-Mac 200,Itraconazole 200 mg Caps,Capsule,285.0,68.5,98.0,Antiinfective
+221,Sebifin 250 / Terbicip 250,Terbinafine 250 mg Tab,Tablet,168.0,34.0,52.0,Antiinfective
+222,Martifur MR 100 / Niftas 100,Nitrofurantoin 100 mg Sustained Release Tab,Tablet,128.0,24.5,38.0,Antiinfective
+223,Septran DS,Sulphamethoxazole 800 mg + Trimethoprim 160 mg Tab,Tablet,26.5,8.9,14.0,Antiinfective
+224,Zosyn / Tazact 4.5g Inj,Piperacillin 4000 mg + Tazobactam 500 mg Inj. Vial & WFI,Injection,465.0,118.0,175.0,Antiinfective
+225,T-Bact 2% Ointment 5g,Mupirocin 2% w/w Ointment 5 g tube,Ointment,118.0,28.5,44.0,Antiinfective
+226,Soframycin Skin Cream 30g,Framycetin Sulphate 1% w/w Cream 30 g tube,Cream,62.0,18.0,28.0,Antiinfective
+227,Iverkem 12 / Vermact 12,Ivermectin 12 mg Dispersible Tab,Tablet,78.0,14.8,24.0,Antiinfective
+228,Glycomet-GP 1,Glimepiride 1 mg + Metformin HCl SR 500 mg Tab,Tablet,104.0,11.2,19.5,Antidiabetic
+229,Glycomet-GP 2,Glimepiride 2 mg + Metformin HCl SR 500 mg Tab,Tablet,142.0,14.8,25.0,Antidiabetic
+230,Amaryl M Forte 2,Glimepiride 2 mg + Metformin HCl SR 1000 mg Tab,Tablet,178.0,18.5,31.0,Antidiabetic
+231,Galvus 50 / Zomelis 50,Vildagliptin 50 mg Tab,Tablet,135.0,22.0,38.0,Antidiabetic
+232,Galvus Met 50/500,Vildagliptin 50 mg + Metformin HCl 500 mg Tab,Tablet,165.0,28.5,46.0,Antidiabetic
+233,Jalra-M 50/1000,Vildagliptin 50 mg + Metformin HCl 1000 mg Tab,Tablet,185.0,32.0,52.0,Antidiabetic
+234,Ziten 20 / Dynaglipt 20,Teneligliptin 20 mg Tab,Tablet,98.0,16.5,28.0,Antidiabetic
+235,Ziten-M 20/500,Teneligliptin 20 mg + Metformin HCl SR 500 mg Tab,Tablet,128.0,21.0,35.0,Antidiabetic
+236,Januvia 100 / Istavel 100,Sitagliptin Phosphate 100 mg Tab,Tablet,240.0,38.0,62.0,Antidiabetic
+237,Forxiga 10 / Oxra 10,Dapagliflozin 10 mg Tab,Tablet,168.0,26.5,44.0,Antidiabetic
+238,Glucobay 50,Acarbose 50 mg Tab,Tablet,148.0,31.0,48.0,Antidiabetic
+239,Mixtard 30/70 HM 40IU/ml 10ml,Biphasic Isophane Insulin Injection I.P. (30/70) 40 IU/ml 10 ml Vial,Injection,178.0,118.61,138.0,Antidiabetic
+240,Rosuvas 10 / Crestor 10,Rosuvastatin 10 mg Tab,Tablet,158.0,9.8,18.0,CVS
+241,Rosuvas 20 / Crestor 20,Rosuvastatin 20 mg Tab,Tablet,268.0,16.5,28.0,CVS
+242,Atorva 40 / Lipitor 40,Atorvastatin 40 mg Tab,Tablet,215.0,16.8,29.0,CVS
+243,Telma-AM,Telmisartan 40 mg + Amlodipine 5 mg Tab,Tablet,178.0,14.5,25.0,CVS
+244,Concor 5,Bisoprolol Fumarate 5 mg Tab,Tablet,98.0,11.2,19.5,CVS
+245,Concor 2.5,Bisoprolol Fumarate 2.5 mg Tab,Tablet,68.0,7.8,14.0,CVS
+246,Nebicard 5,Nebivolol 5 mg Tab,Tablet,138.0,16.0,26.5,CVS
+247,Cardivas 3.125,Carvedilol 3.125 mg Tab,Tablet,42.0,6.2,11.0,CVS
+248,Cilacar 10,Cilnidipine 10 mg Tab,Tablet,112.0,11.8,20.0,CVS
+249,Dytor 10,Torsemide 10 mg Tab,Tablet,54.0,7.4,13.0,CVS
+250,Aldactone 25,Spironolactone 25 mg Tab,Tablet,36.0,8.5,14.5,CVS
+251,Ecosprin 75,Aspirin Gastro-Resistant 75 mg Tab,Tablet,5.5,1.4,2.5,CVS
+252,Ecosprin-AV 75/10,Atorvastatin 10 mg + Aspirin 75 mg Caps,Capsule,48.0,10.5,18.0,CVS
+253,Deplatt-A 75,Clopidogrel 75 mg + Aspirin 75 mg Caps,Capsule,78.0,14.2,23.0,CVS
+254,Angispan-TR 2.6,Nitroglycerin Controlled Release 2.6 mg Tab,Tablet,168.0,28.0,46.0,CVS
+255,Pan 40 / Pantocid 40,Pantoprazole 40 mg Gastro-Resistant Tab,Tablet,155.0,7.5,14.0,GIT
+256,Pan-D / Pantocid DSR,Pantoprazole 40 mg + Domperidone 30 mg SR Caps,Capsule,199.0,11.2,21.0,GIT
+257,Nexpro 40 / Sompraz 40,Esomeprazole 40 mg Tab,Tablet,152.0,12.4,22.0,GIT
+258,Sompraz-D 40,Esomeprazole 40 mg + Domperidone 30 mg SR Caps,Capsule,195.0,16.8,28.0,GIT
+259,Roko / Eldoper 2mg,Loperamide Hydrochloride 2 mg Tab,Tablet,22.0,3.8,6.8,GIT
+260,Redotil / Zedott 100,Racecadotril 100 mg Caps,Capsule,112.0,24.5,38.0,GIT
+261,Udibon 300 / Udiliv 300,Ursodeoxycholic Acid 300 mg Tab,Tablet,435.0,92.0,148.0,GIT
+262,Sucrafil Suspension 200ml,Sucralfate 1 gm / 10 ml Suspension 200 ml bottle,Suspension,178.0,48.0,72.0,GIT
+263,Mucaine Gel Mint 200ml,Oxetacaine 10 mg + Aluminium Hydroxide 291 mg + Magnesium Hydroxide 98 mg / 5ml 200 ml,Suspension,165.0,42.0,65.0,GIT
+264,Cremaffin / Laxolite 170ml,Liquid Paraffin 3.75 ml + Milk of Magnesia 11.25 ml / 15 ml Suspension 170 ml,Suspension,158.0,38.5,58.0,GIT
+265,Ganaton 50,Itopride Hydrochloride 50 mg Tab,Tablet,118.0,19.5,32.0,GIT
+266,Drotin-DS,Drotaverine Hydrochloride 80 mg Tab,Tablet,124.0,16.8,28.0,GIT
+267,Electral Powder 21.8g,Oral Rehydration Salts (ORS) I.P. Citrate Formula 21.8 g Sachet,Powder,22.0,5.2,8.5,GIT
+268,Buscopan 10,Hyoscine Butylbromide 10 mg Tab,Tablet,44.0,11.5,18.0,GIT
+269,Ascoril LS Syrup 100ml,Ambroxol 30 mg + Levosalbutamol 1 mg + Guaiphenesin 50 mg / 5ml Syrup 100 ml,Syrup,118.0,24.5,38.0,RESPIRATORY
+270,Grilinctus-BM / Ascoril+ 100ml,Terbutaline 1.25 mg + Bromhexine 4 mg + Guaiphenesin 50 mg / 5ml Syrup 100 ml,Syrup,108.0,21.0,34.0,RESPIRATORY
+271,Alex / Grilinctus Syrup 100ml,Dextromethorphan HBr 10 mg + Chlorpheniramine Maleate 2 mg + Phenylephrine 5 mg / 5ml 100 ml,Syrup,125.0,22.8,36.0,RESPIRATORY
+272,Sinarest New,Paracetamol 500 mg + Phenylephrine HCl 10 mg + Chlorpheniramine Maleate 2 mg Tab,Tablet,68.0,8.5,15.0,RESPIRATORY
+273,AB-Flo 100 / Doxolin 400,Doxofylline 400 mg Tab,Tablet,112.0,16.5,28.0,RESPIRATORY
+274,Mucinac 600 Effervescent,Acetylcysteine 600 mg Effervescent Tab,Tablet,235.0,54.0,82.0,RESPIRATORY
+275,Defcort 6 / Omnacortil 5,Deflazacort 6 mg Tab,Tablet,138.0,22.5,38.0,RESPIRATORY
+276,Wysolone 10 / Omnacortil 10,Prednisolone 10 mg Tab,Tablet,14.5,4.2,7.5,RESPIRATORY
+277,Medrol 4,Methylprednisolone 4 mg Tab,Tablet,58.0,12.8,21.0,RESPIRATORY
+278,Otrivin Adult Nasal Drops 10ml,Xylometazoline Hydrochloride 0.1% w/v Nasal Solution 10 ml bottle,Solution,98.0,16.0,28.0,RESPIRATORY
+279,Uprise-D3 60K / Calcirol 60K,"Cholecalciferol (Vitamin D3) 60,000 IU Softgel Caps (4s)",Capsule,132.0,22.0,36.0,VITAMIN & SUPPLE
+280,Methycobal 500 / Nurokind,Methylcobalamin 1500 mcg Tab,Tablet,118.0,14.5,24.0,VITAMIN & SUPPLE
+281,Folvite 5mg,Folic Acid 5 mg Tab,Tablet,18.5,2.8,5.5,VITAMIN & SUPPLE
+282,Limcee 500 / Celin 500,Ascorbic Acid (Vitamin C) 500 mg Chewable Tab,Tablet,24.5,7.2,11.5,VITAMIN & SUPPLE
+283,Evion 400,Tocopheryl Acetate (Vitamin E) 400 mg Softgel Caps,Capsule,38.0,12.5,19.0,VITAMIN & SUPPLE
+284,Gemcal / Shelcal-CT,Calcitriol 0.25 mcg + Calcium Carbonate 500 mg + Zinc 7.5 mg Caps,Capsule,215.0,28.5,48.0,VITAMIN & SUPPLE
+285,Zinconia 20,Zinc Acetate eq. to Elemental Zinc 20 mg Tab,Tablet,42.0,6.8,12.0,VITAMIN & SUPPLE
+286,Autrin / Livogen Captab,Ferrous Fumarate 152 mg + Folic Acid 1.5 mg + Vitamin B12 15 mcg Caps,Capsule,64.0,11.2,18.5,VITAMIN & SUPPLE
+287,Maxepa / Mega-3 Softgel,Omega-3 Fatty Acid (EPA 180 mg + DHA 120 mg) Softgel Caps,Capsule,148.0,26.0,42.0,VITAMIN & SUPPLE
+288,CoQ 100 / Ubidecarenone,Coenzyme Q10 (Ubidecarenone) 100 mg + Lycopene Caps,Capsule,295.0,68.0,105.0,VITAMIN & SUPPLE
+289,Thyronorm 50 / Eltroxin 50,Levothyroxine Sodium 50 mcg Tab (100s bottle),Tablet,142.0,28.0,48.0,Endocrinology
+290,Thyronorm 100 / Eltroxin 100,Levothyroxine Sodium 100 mcg Tab (100s bottle),Tablet,168.0,34.0,56.0,Endocrinology
+291,Zyloric 100,Allopurinol 100 mg Tab,Tablet,24.5,5.8,9.8,Analgesics
+292,Febutaz 40 / Zurig 40,Febuxostat 40 mg Tab,Tablet,118.0,16.5,28.0,Analgesics
+293,Urimax 0.4,Tamsulosin Hydrochloride 0.4 mg Modified Release Caps,Capsule,138.0,14.8,25.0,Urology
+294,Urimax-D,Tamsulosin HCl 0.4 mg + Dutasteride 0.5 mg Caps,Capsule,245.0,28.5,48.0,Urology
+295,Vertin 16,Betahistine Dihydrochloride 16 mg Tab,Tablet,142.0,11.2,19.5,CNS & Neurology
+296,Stugeron 25,Cinnarizine 25 mg Tab,Tablet,54.0,6.4,11.5,CNS & Neurology
+297,Pregabalin 75 + Methylcobalamin,Pregabalin 75 mg + Methylcobalamin 750 mcg Caps,Capsule,168.0,19.8,34.0,CNS & Neurology
+298,Gabapin NT 400/10,Gabapentin 400 mg + Nortriptyline 10 mg Tab,Tablet,215.0,26.5,44.0,CNS & Neurology
+299,Atarax 25,Hydroxyzine Hydrochloride 25 mg Tab,Tablet,46.0,6.8,12.0,RESPIRATORY
+300,Primolut-N,Norethisterone 5 mg Tab,Tablet,62.0,11.5,19.0,Gynaecology
+301,Zerodol-TH 4,Aceclofenac 100 mg + Thiocolchicoside 4 mg Tab,Tablet,198.0,32.0,52.0,Analgesics
+302,Zerodol-TH 8,Aceclofenac 100 mg + Thiocolchicoside 8 mg Tab,Tablet,275.0,48.0,76.0,Analgesics
+303,Myoril 4mg,Thiocolchicoside 4 mg Caps,Capsule,168.0,26.5,42.0,Analgesics
+304,Myoril 8mg,Thiocolchicoside 8 mg Caps,Capsule,240.0,42.0,65.0,Analgesics
+305,Sirdalud 2mg / Tizan 2,Tizanidine 2 mg Tab,Tablet,72.0,9.5,16.0,Analgesics
+306,Lioresal 10 / Riclofen 10,Baclofen 10 mg Tab,Tablet,114.0,14.8,24.0,Analgesics
+307,Etoshine-MR / Nucoxia-MR,Etoricoxib 60 mg + Thiocolchicoside 4 mg Tab,Tablet,235.0,38.0,62.0,Analgesics
+308,Hifenac-P / Zerodol-P,Aceclofenac 100 mg + Paracetamol 325 mg Dispersible Tab,Tablet,74.0,6.2,15.0,Analgesics
+309,Enzoflam,Diclofenac 50 mg + Paracetamol 325 mg + Serratiopeptidase 15 mg Tab,Tablet,142.0,11.8,22.0,Analgesics
+310,Chymoral Forte,"Trypsin-Chymotrypsin (1,00,000 AU) Enteric Coated Tab",Tablet,425.0,58.0,95.0,Analgesics
+311,Sumo / Nicip Plus,Nimesulide 100 mg + Paracetamol 325 mg Tab,Tablet,58.0,5.4,11.0,Analgesics
+312,Calpol 250 Paediatric 60ml,Paracetamol Paediatric Oral Suspension IP 250 mg / 5ml 60 ml,Suspension,45.0,12.8,19.5,Analgesics
+313,Meftal-P Suspension 60ml,Mefenamic Acid 100 mg / 5ml Paediatric Suspension 60 ml,Suspension,42.0,11.5,18.0,Analgesics
+314,Mobic 15 / Muvera 15,Meloxicam 15 mg Tab,Tablet,88.0,9.8,16.5,Analgesics
+315,Indocap 25,Indomethacin 25 mg Caps,Capsule,48.0,6.5,11.5,Analgesics
+316,Cobix 200 / Zycel 200,Celecoxib 200 mg Caps,Capsule,138.0,22.0,36.0,Analgesics
+317,Orcerin GM / Dycerin GM,Diacerein 50 mg + Glucosamine Sulphate 750 mg + MSM 250 mg Tab,Tablet,245.0,36.0,58.0,Analgesics
+318,Goutnil 0.5 / Zycolchin,Colchicine 0.5 mg Tab,Tablet,38.0,6.2,11.0,Analgesics
+319,Febutaz 80 / Zurig 80,Febuxostat 80 mg Tab,Tablet,195.0,26.5,44.0,Analgesics
+320,Zyloric 300,Allopurinol 300 mg Tab,Tablet,68.0,12.8,21.0,Analgesics
+321,HCQS 200,Hydroxychloroquine Sulphate 200 mg Tab,Tablet,66.0,14.5,23.0,Analgesics
+322,Saaz 500,Sulfasalazine Gastro-Resistant 500 mg Tab,Tablet,64.0,16.8,26.0,Analgesics
+323,Clarithro 250 / Claribid 250,Clarithromycin 250 mg Tab,Tablet,168.0,42.0,68.0,Antiinfective
+324,Clarithro 500 / Claribid 500,Clarithromycin 500 mg Tab,Tablet,295.0,76.0,118.0,Antiinfective
+325,Dalacin C 300,Clindamycin 300 mg Caps,Capsule,245.0,54.0,86.0,Antiinfective
+326,Minocycline 100 / Minoz 100,Minocycline Hydrochloride 100 mg Tab,Tablet,198.0,44.0,72.0,Antiinfective
+327,Rifagut 400 / Rcifax 400,Rifaximin 400 mg Tab,Tablet,365.0,78.0,125.0,Antiinfective
+328,Rifagut 550 / Rcifax 550,Rifaximin 550 mg Tab,Tablet,485.0,105.0,165.0,Antiinfective
+329,Fosfocin / Crifos 3g Sachet,Fosfomycin Trometamol 3 gm Oral Powder Sachet,Powder,425.0,115.0,175.0,Antiinfective
+330,Farobact 200 / Duonem 200,Faropenem Sodium 200 mg Tab,Tablet,460.0,118.0,180.0,Antiinfective
+331,Moxiflox 400 / Avelox 400,Moxifloxacin Hydrochloride 400 mg Tab,Tablet,148.0,32.0,52.0,Antiinfective
+332,Levoflox 500 / Tavanic 500,Levofloxacin 500 mg Tab,Tablet,96.0,28.5,42.0,Antiinfective
+333,Levoflox 750 / Glevo 750,Levofloxacin 750 mg Tab,Tablet,138.0,42.0,64.0,Antiinfective
+334,Zifi-O / Taxim-OF,Cefixime 200 mg + Ofloxacin 200 mg Tab,Tablet,168.0,46.0,68.0,Antiinfective
+335,Gudcef-O / Monocef-O Plus,Cefpodoxime Proxetil 200 mg + Ofloxacin 200 mg Tab,Tablet,195.0,58.0,86.0,Antiinfective
+336,Augmentin DDS Suspension 30ml,Amoxycillin 400 mg + Clavulanic Acid 57 mg / 5ml 30 ml,Suspension,132.0,38.0,58.0,Antiinfective
+337,Azee 200 Liquid 15ml,Azithromycin Oral Suspension IP 200 mg / 5ml 15 ml,Suspension,68.0,21.0,32.0,Antiinfective
+338,Taxim-O Forte Dry Syrup 30ml,Cefixime Oral Suspension IP 100 mg / 5ml 30 ml,Suspension,82.0,24.5,38.0,Antiinfective
+339,Monocef-O Dry Syrup 30ml,Cefpodoxime Proxetil Oral Suspension 50 mg / 5ml 30 ml,Suspension,88.0,26.0,40.0,Antiinfective
+340,Flagyl Suspension 60ml,Metronidazole Benzoate Oral Suspension 200 mg / 5ml 60 ml,Suspension,36.0,12.5,18.5,Antiinfective
+341,Zentel Suspension 10ml,Albendazole Oral Suspension IP 200 mg / 5ml 10 ml bottle,Suspension,19.5,6.2,9.8,Antiinfective
+342,Mebex 100,Mebendazole 100 mg Chewable Tab (6s),Tablet,22.0,5.5,9.0,Antiinfective
+343,Hetrazan 100 / Banocide Forte,Diethylcarbamazine Citrate 100 mg Tab,Tablet,28.0,5.8,9.5,Antiinfective
+344,Falcigo / Larinate 60mg Inj,Artesunate for Injection 60 mg Vial & Diluent,Injection,235.0,48.0,78.0,Antiinfective
+345,Lumerax 80/480 / Coartem,Artemether 80 mg + Lumefantrine 480 mg Tab (6s),Tablet,158.0,42.0,65.0,Antiinfective
+346,Valcivir 1000,Valacyclovir 1000 mg Tab,Tablet,385.0,88.0,138.0,Antiinfective
+347,Fluvir 75 / Antiflu 75,Oseltamivir Phosphate 75 mg Caps,Capsule,580.0,125.0,195.0,Antiinfective
+348,Forcan 200 / Zocon 200,Fluconazole 200 mg Tab,Tablet,165.0,28.5,44.0,Antiinfective
+349,Jardiance 10 / Gibtulio 10,Empagliflozin 10 mg Tab,Tablet,185.0,28.0,46.0,Antidiabetic
+350,Jardiance 25 / Gibtulio 25,Empagliflozin 25 mg Tab,Tablet,235.0,34.0,56.0,Antidiabetic
+351,Oxra-M 10/500 / Udapa-M,Dapagliflozin 10 mg + Metformin HCl ER 500 mg Tab,Tablet,195.0,32.0,52.0,Antidiabetic
+352,Oxra-M 10/1000,Dapagliflozin 10 mg + Metformin HCl ER 1000 mg Tab,Tablet,220.0,36.0,58.0,Antidiabetic
+353,Janumet 50/500 / Istamet,Sitagliptin 50 mg + Metformin HCl 500 mg Tab,Tablet,198.0,32.5,52.0,Antidiabetic
+354,Janumet 50/1000,Sitagliptin 50 mg + Metformin HCl 1000 mg Tab,Tablet,225.0,36.8,58.0,Antidiabetic
+355,Trajenta 5,Linagliptin 5 mg Tab,Tablet,215.0,34.0,54.0,Antidiabetic
+356,Jentadueto / Trajenta Duo,Linagliptin 2.5 mg + Metformin HCl 500 mg Tab,Tablet,225.0,36.0,58.0,Antidiabetic
+357,Voglibose 0.2 / Volix 0.2,Voglibose 0.2 mg Dispersible Tab,Tablet,78.0,9.8,16.5,Antidiabetic
+358,Voglibose 0.3 / Volix 0.3,Voglibose 0.3 mg Dispersible Tab,Tablet,104.0,12.5,21.0,Antidiabetic
+359,Glycomet Trio 1,Glimepiride 1 mg + Metformin SR 500 mg + Voglibose 0.2 mg Tab,Tablet,148.0,18.5,31.0,Antidiabetic
+360,Glycomet Trio 2,Glimepiride 2 mg + Metformin SR 500 mg + Voglibose 0.2 mg Tab,Tablet,185.0,22.0,36.0,Antidiabetic
+361,Amaryl 3mg,Glimepiride 3 mg Tab,Tablet,98.0,7.8,14.0,Antidiabetic
+362,Amaryl 4mg,Glimepiride 4 mg Tab,Tablet,122.0,9.8,17.5,Antidiabetic
+363,Reclimet / Diamicron XR 60,Gliclazide Modified Release 60 mg + Metformin ER 500 mg Tab,Tablet,138.0,18.0,29.0,Antidiabetic
+364,Eurepa 1 / Novonorm 1mg,Repaglinide 1 mg Tab,Tablet,94.0,14.5,24.0,Antidiabetic
+365,Eurepa 2 / Novonorm 2mg,Repaglinide 2 mg Tab,Tablet,135.0,19.8,32.0,Antidiabetic
+366,Glycomet 850,Metformin Hydrochloride 850 mg Tab,Tablet,26.5,8.2,13.5,Antidiabetic
+367,Lantus / Basalog 100IU/ml 3ml,Insulin Glargine Injection IP 100 IU/ml 3 ml Cartridge,Injection,545.0,185.0,265.0,Antidiabetic
+368,Actrapid HM 40IU/ml 10ml,Soluble Insulin Injection IP (Human) 40 IU/ml 10 ml Vial,Injection,178.0,118.61,138.0,Antidiabetic
+369,Telma 80,Telmisartan 80 mg Tab,Tablet,168.0,15.5,26.0,CVS
+370,Telma-CT 40/12.5,Telmisartan 40 mg + Chlorthalidone 12.5 mg Tab,Tablet,162.0,16.2,27.0,CVS
+371,Trio-Telma / Telmikind-AMH,Telmisartan 40 mg + Amlodipine 5 mg + Hydrochlorothiazide 12.5 mg Tab,Tablet,185.0,19.5,32.0,CVS
+372,Olmezest 20,Olmesartan Medoxomil 20 mg Tab,Tablet,128.0,14.0,24.0,CVS
+373,Olmezest 40,Olmesartan Medoxomil 40 mg Tab,Tablet,195.0,21.0,35.0,CVS
+374,Olmezest-AM 20,Olmesartan Medoxomil 20 mg + Amlodipine 5 mg Tab,Tablet,158.0,18.0,29.0,CVS
+375,Olmezest-H 20,Olmesartan Medoxomil 20 mg + Hydrochlorothiazide 12.5 mg Tab,Tablet,148.0,16.8,28.0,CVS
+376,Valzaar 80 / Diovan 80,Valsartan 80 mg Tab,Tablet,175.0,24.0,39.0,CVS
+377,Stamlo 2.5,Amlodipine Besylate 2.5 mg Tab,Tablet,22.0,1.8,4.2,CVS
+378,Stamlo 10,Amlodipine Besylate 10 mg Tab,Tablet,58.0,4.8,9.5,CVS
+379,Cilacar 5,Cilnidipine 5 mg Tab,Tablet,68.0,7.8,14.0,CVS
+380,Cilacar 20,Cilnidipine 20 mg Tab,Tablet,158.0,18.5,31.0,CVS
+381,Cilacar-T,Cilnidipine 10 mg + Telmisartan 40 mg Tab,Tablet,168.0,18.0,30.0,CVS
+382,Nicardia Retard 20,Nifedipine Sustained Release 20 mg Tab,Tablet,34.0,6.8,12.0,CVS
+383,Cardivas 6.25,Carvedilol 6.25 mg Tab,Tablet,68.0,8.8,15.0,CVS
+384,Cardivas 12.5,Carvedilol 12.5 mg Tab,Tablet,108.0,14.2,23.0,CVS
+385,Inderal 10 / Ciplar 10,Propranolol Hydrochloride 10 mg Tab,Tablet,14.5,2.5,5.2,CVS
+386,Inderal 40 / Ciplar-LA 40,Propranolol Hydrochloride Sustained Release 40 mg Tab,Tablet,48.0,7.2,12.5,CVS
+387,Arkamin 100mcg,Clonidine Hydrochloride 100 mcg Tab,Tablet,18.5,3.8,6.8,CVS
+388,Minipress XL 2.5,Prazosin Hydrochloride Extended Release 2.5 mg Tab,Tablet,118.0,18.5,31.0,CVS
+389,Minipress XL 5,Prazosin Hydrochloride Extended Release 5 mg Tab,Tablet,185.0,28.0,46.0,CVS
+390,Dytor Plus 10,Torsemide 10 mg + Spironolactone 50 mg Tab,Tablet,98.0,14.5,24.0,CVS
+391,Lasix-L / Fruselac,Furosemide 20 mg + Spironolactone 50 mg Tab,Tablet,46.0,8.8,15.0,CVS
+392,Ctd 6.25,Chlorthalidone 6.25 mg Tab,Tablet,52.0,6.5,11.5,CVS
+393,Ctd 12.5,Chlorthalidone 12.5 mg Tab,Tablet,74.0,8.9,15.0,CVS
+394,Monotrate OD 25 / Imdur 30,Isosorbide-5-Mononitrate Sustained Release 30 mg Tab,Tablet,88.0,12.0,20.0,CVS
+395,Flavedon MR 35,Trimetazidine Hydrochloride Modified Release 35 mg Tab,Tablet,158.0,18.5,31.0,CVS
+396,Ranozex ER 500,Ranolazine Extended Release 500 mg Tab,Tablet,168.0,28.0,46.0,CVS
+397,Ivabrad 5 / Coralan 5,Ivabradine 5 mg Tab,Tablet,215.0,28.5,48.0,CVS
+398,Cordarone 200,Amiodarone Hydrochloride 200 mg Tab,Tablet,138.0,24.0,39.0,CVS
+399,Lanoxin 0.25,Digoxin 0.25 mg Tab,Tablet,12.5,3.2,5.8,CVS
+400,Rosuvas-F 10 / Rozavel-F,Rosuvastatin 10 mg + Fenofibrate 160 mg Tab,Tablet,218.0,26.0,44.0,CVS
+401,Atorva-F 10 / Tonact-TG,Atorvastatin 10 mg + Fenofibrate 160 mg Tab,Tablet,185.0,22.5,38.0,CVS
+402,Lipicard 160,Fenofibrate Micronised 160 mg Tab,Tablet,142.0,19.5,32.0,CVS
+403,Ezedoc 10,Ezetimibe 10 mg Tab,Tablet,135.0,18.0,30.0,CVS
+404,Rosuvas-Gold 10,Rosuvastatin 10 mg + Clopidogrel 75 mg + Aspirin 75 mg Caps,Capsule,188.0,24.5,40.0,CVS
+405,Atorva-Gold 10 / Ecosprin-Gold,Atorvastatin 10 mg + Clopidogrel 75 mg + Aspirin 75 mg Caps,Capsule,145.0,19.8,33.0,CVS
+406,Brilinta 90 / Axcer 90,Ticagrelor 90 mg Tab,Tablet,420.0,68.0,112.0,CVS
+407,Prasita 10,Prasugrel 10 mg Tab,Tablet,215.0,36.0,58.0,CVS
+408,Xarelto 15 / Rivaban 15,Rivaroxaban 15 mg Tab,Tablet,385.0,58.0,95.0,CVS
+409,Eliquis 5 / Apigat 5,Apixaban 5 mg Tab,Tablet,345.0,52.0,86.0,CVS
+410,Acitrom 2mg,Acenocoumarol 2 mg Tab,Tablet,64.0,12.5,21.0,CVS
+411,Pan 20 / Pantocid 20,Pantoprazole 20 mg Gastro-Resistant Tab,Tablet,98.0,5.2,10.5,GIT
+412,Pan-L / Pantocid-L,Pantoprazole 40 mg + Levosulpiride 75 mg SR Caps,Capsule,235.0,24.0,40.0,GIT
+413,Razo-L / Veloz-L,Rabeprazole 20 mg + Levosulpiride 75 mg SR Caps,Capsule,228.0,23.5,39.0,GIT
+414,Sompraz-L,Esomeprazole 40 mg + Levosulpiride 75 mg SR Caps,Capsule,242.0,26.0,42.0,GIT
+415,Pan-IT / Pantocid-IT,Pantoprazole 40 mg + Itopride 150 mg SR Caps,Capsule,225.0,24.5,40.0,GIT
+416,Razo-IT / Hapit,Rabeprazole 20 mg + Itopride 150 mg SR Caps,Capsule,218.0,23.8,39.0,GIT
+417,Lanzol 30,Lansoprazole 30 mg Caps,Capsule,98.0,11.5,19.0,GIT
+418,Emset 8,Ondansetron 8 mg Tab,Tablet,88.0,5.4,11.0,GIT
+419,Emset Syrup 30ml,Ondansetron Oral Solution IP 2 mg / 5ml 30 ml bottle,Syrup,38.5,9.8,16.0,GIT
+420,Avomine 25,Promethazine Theoclate 25 mg Tab,Tablet,52.0,7.2,12.5,GIT
+421,Librax,Chlordiazepoxide 5 mg + Clidinium Bromide 2.5 mg Tab,Tablet,84.0,11.8,19.5,GIT
+422,Colospa 135 / Morease 135,Mebeverine Hydrochloride 135 mg Tab,Tablet,138.0,21.0,35.0,GIT
+423,Normaxin,Clidinium 2.5 mg + Chlordiazepoxide 5 mg + Dicyclomine 10 mg Tab,Tablet,68.0,10.5,18.0,GIT
+424,Looz / Duphalac 200ml,Lactulose Solution USP 10 gm / 15 ml 200 ml bottle,Syrup,268.0,155.0,195.0,GIT
+425,Pegmove / Peglec Sachet,Polyethylene Glycol 3350 + Electrolytes Oral Powder Sachet,Powder,185.0,48.0,76.0,GIT
+426,Gutclear / Cremaffin Plus 170ml,Liquid Paraffin + Milk of Magnesia + Sodium Picosulfate 170 ml,Suspension,172.0,42.0,65.0,GIT
+427,Smuth / LaxolitePico Tab,Sodium Picosulfate 10 mg Tab,Tablet,64.0,9.8,16.5,GIT
+428,Creon 10000,"Pancreatin Minimicrospheres (10,000 Lipase Units) Caps",Capsule,345.0,88.0,138.0,GIT
+429,Aristozyme Liquid 200ml,Fungal Diastase 50 mg + Pepsin 10 mg / 5ml Syrup 200 ml,Syrup,122.0,28.0,45.0,GIT
+430,Unienzyme,Fungal Diastase 100 mg + Papain 60 mg + Activated Charcoal 75 mg Tab,Tablet,68.0,11.5,19.0,GIT
+431,Mesacol 1.2g,Mesalazine Prolonged Release 1200 mg Tab,Tablet,265.0,62.0,98.0,GIT
+432,Hepa-Merz Granules 5g,L-Ornithine L-Aspartate 3 gm Oral Granules Sachet,Powder,148.0,32.0,52.0,GIT
+433,Asthalin Respules 2.5ml (5s),Salbutamol Respirator Solution 2.5 mg / 2.5 ml (5 Respules),Solution,28.0,9.5,15.0,RESPIRATORY
+434,Duolin Respules 2.5ml (5s),Levosalbutamol 1.25 mg + Ipratropium Bromide 500 mcg (5 Respules),Solution,118.0,32.0,50.0,RESPIRATORY
+435,Budecort Respules 0.5mg (5s),Budesonide Nebuliser Suspension BP 0.5 mg / 2 ml (5 Respules),Suspension,125.0,36.0,55.0,RESPIRATORY
+436,Foracort 200 Rotacaps (30s),Formoterol Fumarate 6 mcg + Budesonide 200 mcg Rotacaps (30s),Capsule,185.0,52.0,82.0,RESPIRATORY
+437,Seroflo 250 Rotacaps (30s),Salmeterol 50 mcg + Fluticasone Propionate 250 mcg Rotacaps (30s),Capsule,245.0,68.0,108.0,RESPIRATORY
+438,Tiova Rotacaps 18mcg (15s),Tiotropium Bromide 18 mcg Dry Powder Caps (15s),Capsule,168.0,44.0,70.0,RESPIRATORY
+439,Deriphyllin Retard 150,Etophylline 115 mg + Theophylline 35 mg Prolonged Release Tab,Tablet,18.5,4.2,7.5,RESPIRATORY
+440,Deriphyllin Retard 300,Etophylline 231 mg + Theophylline 69 mg Prolonged Release Tab,Tablet,32.0,7.5,12.5,RESPIRATORY
+441,AB-Flo SR 200,Acebrophylline Sustained Release 200 mg Tab,Tablet,198.0,28.0,46.0,RESPIRATORY
+442,AB-Flo-N,Acebrophylline 100 mg + Acetylcysteine 600 mg Tab,Tablet,245.0,48.0,76.0,RESPIRATORY
+443,Biluma / Bilagra 20,Bilastine 20 mg Tab,Tablet,138.0,18.5,31.0,RESPIRATORY
+444,Bilagra-M,Bilastine 20 mg + Montelukast 10 mg Tab,Tablet,188.0,26.0,42.0,RESPIRATORY
+445,Allegra-M,Fexofenadine 120 mg + Montelukast 10 mg Tab,Tablet,248.0,32.0,52.0,RESPIRATORY
+446,Deslor 5,Desloratadine 5 mg Tab,Tablet,88.0,11.2,19.0,RESPIRATORY
+447,Ebast 10,Ebastine 10 mg Tab,Tablet,104.0,13.5,22.0,RESPIRATORY
+448,Flomist Nasal Spray 10ml,Fluticasone Propionate 50 mcg Aqueous Nasal Spray,Solution,365.0,78.0,125.0,RESPIRATORY
+449,Metaspray / Nasonex Nasal Spray,Mometasone Furoate 50 mcg Aqueous Nasal Spray,Solution,340.0,74.0,118.0,RESPIRATORY
+450,Nasivion Paediatric Drops 10ml,Oxymetazoline Hydrochloride 0.025% w/v Nasal Drops 10 ml,Solution,76.0,14.5,24.0,RESPIRATORY
+451,Nasoclear Saline Nasal Spray 20ml,Sodium Chloride 0.65% w/v Isotonic Nasal Solution 20 ml,Solution,58.0,12.0,19.5,RESPIRATORY
+452,Betnesol 0.5mg,Betamethasone Sodium Phosphate 0.5 mg Tab,Tablet,12.5,3.2,5.8,RESPIRATORY
+453,Eptoin 100,Phenytoin Sodium 100 mg Tab (100s bottle),Tablet,188.0,42.0,68.0,CNS & Neurology
+454,Levifil 500 / Keppra 500,Levetiracetam 500 mg Tab,Tablet,158.0,34.0,55.0,CNS & Neurology
+455,Encorate Chrono 500,Sodium Valproate 333 mg + Valproic Acid 145 mg CR Tab,Tablet,122.0,24.0,39.0,CNS & Neurology
+456,Tegretol 200 / Mazetol 200,Carbamazepine 200 mg Tab,Tablet,26.5,7.8,13.0,CNS & Neurology
+457,Oxetol 300,Oxcarbazepine 300 mg Tab,Tablet,118.0,22.5,36.0,CNS & Neurology
+458,Nexito 10 / Cipralex 10,Escitalopram Oxalate 10 mg Tab,Tablet,112.0,14.5,24.0,CNS & Neurology
+459,Nexito Plus,Escitalopram 10 mg + Clonazepam 0.5 mg Tab,Tablet,138.0,18.0,30.0,CNS & Neurology
+460,Zoloft 50 / Daxid 50,Sertraline Hydrochloride 50 mg Tab,Tablet,98.0,13.5,22.0,CNS & Neurology
+461,Fludac 20 / Prozac 20,Fluoxetine Hydrochloride 20 mg Caps,Capsule,52.0,8.8,15.0,CNS & Neurology
+462,Tryptomer 10 / Sarotena 10,Amitriptyline Hydrochloride 10 mg Tab,Tablet,32.0,4.8,8.5,CNS & Neurology
+463,Tryptomer 25 / Sarotena 25,Amitriptyline Hydrochloride 25 mg Tab,Tablet,64.0,7.8,13.5,CNS & Neurology
+464,Clonotril 0.5 / Zapiz 0.5,Clonazepam 0.5 mg Mouth Dissolving Tab,Tablet,48.0,6.5,11.5,CNS & Neurology
+465,Restyl 0.25 / Alprax 0.25,Alprazolam 0.25 mg Tab,Tablet,28.0,4.2,7.5,CNS & Neurology
+466,Nitrest 10 / Stilnoct 10,Zolpidem Tartrate 10 mg Tab,Tablet,98.0,12.8,21.0,CNS & Neurology
+467,Syndopa Plus,Levodopa 100 mg + Carbidopa 25 mg Tab,Tablet,42.0,11.2,18.5,CNS & Neurology
+468,Aricep 5 / Donep 5,Donepezil Hydrochloride 5 mg Tab,Tablet,128.0,16.5,28.0,CNS & Neurology
+469,Lulican 1% Cream 20g,Luliconazole 1% w/w Cream 20 g tube,Cream,195.0,32.0,52.0,Antiinfective
+470,Ketomac 2% Shampoo 100ml,Ketoconazole 2% w/v Medicated Shampoo 100 ml bottle,Solution,245.0,54.0,88.0,Antiinfective
+471,Permite 5% Cream 30g,Permethrin 5% w/w Scabies Cream 30 g tube,Cream,86.0,18.5,30.0,Antiinfective
+472,Tenovate Cream 30g,Clobetasol Propionate 0.05% w/w Cream 30 g tube,Cream,68.0,14.0,23.0,Antiinfective
+473,Elocon Cream 10g,Mometasone Furoate 0.1% w/w Cream 10 g tube,Cream,168.0,22.0,36.0,Antiinfective
+474,Betnovate-C Cream 20g,Betamethasone Valerate 0.1% + Clioquinol 3% w/w Cream 20 g,Cream,62.0,14.5,24.0,Antiinfective
+475,Betnovate-N Cream 20g,Betamethasone Valerate 0.1% + Neomycin Sulphate 0.5% Cream 20 g,Cream,58.0,13.8,22.0,Antiinfective
+476,Silverex / Burnol 25g,Silver Sulfadiazine 1% w/w + Chlorhexidine 0.2% Burn Cream 25 g,Cream,84.0,18.0,29.0,Antiinfective
+477,Mahaflox / Vigamox Eye Drops 5ml,Moxifloxacin Hydrochloride 0.5% w/v Ophthalmic Solution 5 ml,Solution,125.0,18.5,31.0,Antiinfective
+478,Ciplox Eye/Ear Drops 10ml,Ciprofloxacin 0.3% w/v Eye/Ear Drops 10 ml,Solution,19.5,6.8,11.0,Antiinfective
+479,Tobramycin-D / Tobradex 5ml,Tobramycin 0.3% + Dexamethasone 0.1% Eye Drops 5 ml,Solution,68.0,14.0,23.0,Antiinfective
+480,Refresh Tears / Tear Drops 10ml,Carboxymethylcellulose Sodium 0.5% w/v Lubricating Eye Drops 10 ml,Solution,148.0,24.0,39.0,VITAMIN & SUPPLE
+481,Candid Ear Drops 5ml,Clotrimazole 1% w/v + Lignocaine HCl 2% w/v Ear Drops 5 ml,Solution,78.0,15.5,25.0,Antiinfective
+482,SiloFast 8 / Rapilif 8,Silodosin 8 mg Caps,Capsule,235.0,32.0,52.0,Urology
+483,SiloFast-D 8,Silodosin 8 mg + Dutasteride 0.5 mg Caps,Capsule,315.0,46.0,75.0,Urology
+484,Alfoo 10,Alfuzosin Hydrochloride Prolonged Release 10 mg Tab,Tablet,198.0,24.0,40.0,Urology
+485,Mirago 50,Mirabegron Extended Release 50 mg Tab,Tablet,268.0,48.0,78.0,Urology
+486,Urispas 200,Flavoxate Hydrochloride 200 mg Tab,Tablet,215.0,34.0,55.0,Urology
+487,Citralka Liquid 100ml,Disodium Hydrogen Citrate 1.4 gm / 5ml Urinary Alkalizer 100 ml,Syrup,98.0,22.0,36.0,Urology
+488,Duphaston 10 / Dydroboon,Dydrogesterone 10 mg Tab,Tablet,680.0,145.0,235.0,Gynaecology
+489,Sustanon / Susten 200,Natural Micronised Progesterone 200 mg Softgel Caps,Capsule,335.0,68.0,112.0,Gynaecology
+490,Pause-MF / Trapic-MF,Tranexamic Acid 500 mg + Mefenamic Acid 250 mg Tab,Tablet,225.0,64.0,98.0,Gynaecology
+491,Letroz 2.5 / Femara,Letrozole 2.5 mg Tab (5s),Tablet,195.0,24.0,40.0,Gynaecology
+492,Thyronorm 25 / Eltroxin 25,Levothyroxine Sodium 25 mcg Tab (100s bottle),Tablet,118.0,22.0,38.0,Endocrinology
+493,Thyronorm 75,Levothyroxine Sodium 75 mcg Tab (100s bottle),Tablet,155.0,31.0,52.0,Endocrinology
+494,Neomercazole 10,Carbimazole 10 mg Tab (100s bottle),Tablet,215.0,48.0,78.0,Endocrinology
+495,Cabgolin 0.5,Cabergoline 0.5 mg Tab (4s),Tablet,245.0,44.0,72.0,Endocrinology
+496,Orofer XT Tablet,Ferrous Ascorbate 100 mg + Folic Acid 1.5 mg Tab,Tablet,168.0,18.5,31.0,VITAMIN & SUPPLE
+497,VSL#3 / Darolac Caps,Probiotic Multi-Strain (Lactobacillus + Bifidobacterium) Caps,Capsule,158.0,24.0,40.0,PROBIOTIC
+498,Enterogermina Respules 5ml (5s),Bacillus Clausii Spores Suspension 2 Billion / 5 ml (5 Mini Bottles),Suspension,295.0,65.0,105.0,PROBIOTIC
+499,Evion LC,Levocarnitine 150 mg + Vitamin E 200 mg Tab,Tablet,88.0,18.5,30.0,VITAMIN & SUPPLE
+500,Shelcal HD,Calcium 500 mg + Vitamin D3 500 IU Tab,Tablet,138.0,14.5,24.0,VITAMIN & SUPPLE
