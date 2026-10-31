@@ -1,6 +1,7 @@
 import {
   ArrowRight,
   Bot,
+  Brain,
   Languages,
   MapPin,
   Mic,
@@ -47,8 +48,42 @@ export function MedSaathiPage() {
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState("");
   const [chatError, setChatError] = useState("");
+  const [memoryConsent, setMemoryConsent] = useState(false);
+  const [memoryUpdating, setMemoryUpdating] = useState(false);
   const requestInFlight = useRef(false);
   const voiceQueryPending = useRef(false);
+
+  useEffect(() => {
+    fetch("/api/memory/consent")
+      .then((res) => res.json())
+      .then((data: { consent?: boolean }) => {
+        if (typeof data.consent === "boolean") {
+          setMemoryConsent(data.consent);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  async function handleToggleMemoryConsent() {
+    if (memoryUpdating) return;
+    setMemoryUpdating(true);
+    const nextConsent = !memoryConsent;
+    try {
+      const res = await fetch("/api/memory/consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ consent: nextConsent }),
+      });
+      const data = (await res.json()) as { consent?: boolean };
+      if (typeof data.consent === "boolean") {
+        setMemoryConsent(data.consent);
+      }
+    } catch {
+      // Fail safely
+    } finally {
+      setMemoryUpdating(false);
+    }
+  }
 
   const [messages, setMessages] = useState<AssistantMessage[]>([
     {
@@ -191,6 +226,14 @@ export function MedSaathiPage() {
     setChatError("");
     setSpeechState("idle");
     setTranscriptPreview("");
+
+    // Reset memory in backend (does NOT re-enable consent)
+    void fetch("/api/memory/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    }).catch(() => {});
+
     setMessages([
       {
         id: "reset-welcome",
@@ -320,7 +363,7 @@ export function MedSaathiPage() {
 
                 {/* Live Waveform Visualizer */}
                 <div className="mt-6">
-                  <VoiceVisualizer state={speechState} isHindi={isHi} />
+                  <VoiceVisualizer state={speechState} />
                 </div>
 
                 {/* Central Interactive Glowing Microphone Orb */}
@@ -367,12 +410,10 @@ export function MedSaathiPage() {
                           ? "बोलने के लिए माइक दबाएं"
                           : "Tap microphone to speak"}
                   </p>
-                  {speechState === "speaking" && <div className="mt-3 flex gap-2"><button type="button" onClick={() => { assistantService.pauseSpeaking(); setSpeechState("paused"); }} className="rounded-lg border px-3 py-1 text-xs"><Pause className="mr-1 inline h-3 w-3" />Pause</button><button type="button" onClick={() => { assistantService.stopSpeaking(); setSpeechState("idle"); }} className="rounded-lg border px-3 py-1 text-xs"><Square className="mr-1 inline h-3 w-3" />Stop</button></div>}
-                  {speechState === "paused" && <div className="mt-3 flex gap-2"><button type="button" onClick={() => { void assistantService.resumeSpeaking().then(() => setSpeechState("speaking")).catch(() => setSpeechState("idle")); }} className="rounded-lg border px-3 py-1 text-xs"><Play className="mr-1 inline h-3 w-3" />Resume</button><button type="button" onClick={() => { assistantService.stopSpeaking(); setSpeechState("idle"); }} className="rounded-lg border px-3 py-1 text-xs"><Square className="mr-1 inline h-3 w-3" />Stop</button></div>}
+                  {speechState === "speaking" && <div className="mt-3 flex gap-2"><button type="button" onClick={() => { assistantService.pauseSpeaking(); setSpeechState("paused"); }} className="rounded-lg border px-3 py-1 text-xs"><Pause className="mr-1 inline h-3 w-3" />{tr("Pause", "रोकें")}</button><button type="button" onClick={() => { assistantService.stopSpeaking(); setSpeechState("idle"); }} className="rounded-lg border px-3 py-1 text-xs"><Square className="mr-1 inline h-3 w-3" />{tr("Stop", "बंद करें")}</button></div>}
+                  {speechState === "paused" && <div className="mt-3 flex gap-2"><button type="button" onClick={() => { void assistantService.resumeSpeaking().then(() => setSpeechState("speaking")).catch(() => setSpeechState("idle")); }} className="rounded-lg border px-3 py-1 text-xs"><Play className="mr-1 inline h-3 w-3" />{tr("Resume", "फिर शुरू करें")}</button><button type="button" onClick={() => { assistantService.stopSpeaking(); setSpeechState("idle"); }} className="rounded-lg border px-3 py-1 text-xs"><Square className="mr-1 inline h-3 w-3" />{tr("Stop", "बंद करें")}</button></div>}
                   <p className="mt-1 text-xs text-slate-400">
-                    {isHi
-                      ? "हिंदी या अंग्रेजी में कोई भी सवाल पूछें"
-                      : "Ask any question in English or Hindi"}
+                    {tr("Ask any question in English or Hindi", "हिंदी या अंग्रेजी में कोई भी सवाल पूछें")}
                   </p>
                 </div>
               </div>
@@ -380,17 +421,17 @@ export function MedSaathiPage() {
               {/* Sample Voice Queries to Try */}
               <div className="rounded-2xl border border-slate-100 bg-[#f8fbff] p-4 text-xs">
                 <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">
-                  {isHi ? "बोलकर आज़माएं:" : "Try saying aloud:"}
+                  {tr("Try saying aloud:", "बोलकर आज़माएं:")}
                 </span>
                 <div className="mt-2 space-y-1.5 font-medium text-slate-700">
-                  <p className="cursor-pointer hover:text-brand" onClick={() => handleSendQuery(isHi ? "मेरा पर्चा स्कैन करो" : "Scan my prescription")}>
-                    🎙️ &ldquo;{isHi ? "मेरा पर्चा स्कैन करो" : "Scan my doctor's prescription"}&rdquo;
+                  <p className="cursor-pointer hover:text-brand" onClick={() => handleSendQuery(tr("Scan my prescription", "मेरा पर्चा स्कैन करो"))}>
+                    🎙️ &ldquo;{tr("Scan my doctor's prescription", "मेरा पर्चा स्कैन करो")}&rdquo;
                   </p>
-                  <p className="cursor-pointer hover:text-brand" onClick={() => handleSendQuery(isHi ? "पैरासिटामोल के जेनेरिक दाम बताओ" : "What is the price of Paracetamol?")}>
-                    🎙️ &ldquo;{isHi ? "पैरासिटामोल के जेनेरिक दाम बताओ" : "What is the generic price of Paracetamol?"}&rdquo;
+                  <p className="cursor-pointer hover:text-brand" onClick={() => handleSendQuery(tr("What is the price of Paracetamol?", "पैरासिटामोल के जेनेरिक दाम बताओ"))}>
+                    🎙️ &ldquo;{tr("What is the generic price of Paracetamol?", "पैरासिटामोल के जेनेरिक दाम बताओ")}&rdquo;
                   </p>
-                  <p className="cursor-pointer hover:text-brand" onClick={() => handleSendQuery(isHi ? "पास के जन औषधि केंद्र ढूंढो" : "Find nearby Jan Aushadhi stores")}>
-                    🎙️ &ldquo;{isHi ? "पास के जन औषधि केंद्र ढूंढो" : "Find nearby Jan Aushadhi stores"}&rdquo;
+                  <p className="cursor-pointer hover:text-brand" onClick={() => handleSendQuery(tr("Find nearby Jan Aushadhi stores", "पास के जन औषधि केंद्र ढूंढो"))}>
+                    🎙️ &ldquo;{tr("Find nearby Jan Aushadhi stores", "पास के जन औषधि केंद्र ढूंढो")}&rdquo;
                   </p>
                 </div>
               </div>
@@ -399,23 +440,57 @@ export function MedSaathiPage() {
             {/* RIGHT COLUMN: Interactive Task & Conversation Stream (7 cols) */}
             <div className="flex h-[620px] flex-col justify-between rounded-3xl border border-slate-200/90 bg-white shadow-[0_16px_40px_rgba(15,40,90,0.08)] lg:col-span-7">
               {/* Stream Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 bg-[#fafcff] px-6 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-[#fafcff] px-6 py-4">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
                   <h3 className="font-bold text-navy">
-                    {isHi ? "बातचीत व कार्य प्रवाह" : "Live Task & Conversation Stream"}
+                    {tr("Live Task & Conversation Stream", "बातचीत व कार्य प्रवाह")}
                   </h3>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-navy"
-                  title="Clear conversation"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  <span>{isHi ? "रीसेट" : "Reset"}</span>
-                </button>
+                <div className="flex items-center gap-3">
+                  {/* Memory Consent Toggle */}
+                  <div
+                    className="flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 shadow-xs"
+                    title={tr(
+                      "Meko AI conversational memory stores non-clinical preferences across visits (off by default).",
+                      "मेको AI याददाश्त आपकी गैर-चिकित्सीय प्राथमिकताएं याद रखती है (डिफ़ॉल्ट रूप से बंद)।"
+                    )}
+                  >
+                    <Brain className={`h-3.5 w-3.5 ${memoryConsent ? "text-purple-600" : "text-slate-400"}`} />
+                    <span className="text-[11px] font-bold text-slate-600">
+                      {tr("Memory", "मेमोरी")}:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleToggleMemoryConsent}
+                      disabled={memoryUpdating}
+                      className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                        memoryConsent ? "bg-purple-600" : "bg-slate-300"
+                      }`}
+                      aria-label="Toggle AI memory consent"
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
+                          memoryConsent ? "translate-x-3" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                    <span className={`text-[10px] font-black uppercase tracking-wider ${memoryConsent ? "text-purple-700" : "text-slate-400"}`}>
+                      {memoryConsent ? tr("Active", "चालू") : tr("Off", "बंद")}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-navy"
+                    title={tr("Clear conversation & memory", "बातचीत व मेमोरी साफ़ करें")}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span>{tr("Reset", "रीसेट")}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Message History */}
@@ -435,13 +510,13 @@ export function MedSaathiPage() {
                       }`}
                     >
                       <p>{isHi ? msg.textHi : msg.textEn}</p>
-                      {msg.safetyFlags?.includes("potential_emergency") && <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">Potential emergency detected. Seek urgent local medical care.</p>}
+                      {msg.safetyFlags?.includes("potential_emergency") && <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{tr("Potential emergency detected. Seek urgent local medical care.", "संभावित आपातस्थिति है। तुरंत स्थानीय चिकित्सा सहायता लें।")}</p>}
                       {msg.role === "assistant" && msg.id !== "medsaathi-welcome" && msg.id !== "reset-welcome" && <button type="button" onClick={() => {
                         setChatError("");
                         void assistantService.speakText(isHi ? msg.textHi : msg.textEn, locale,
                           () => setSpeechState("generating"), () => setSpeechState("speaking"), () => setSpeechState("idle")
                         ).catch((error: unknown) => { setSpeechState("idle"); setChatError(error instanceof Error ? error.message : "Voice playback failed."); });
-                      }} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand"><Volume2 className="h-3.5 w-3.5" />{isHi ? "जवाब सुनें" : "Speak response"}</button>}
+                      }} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand"><Volume2 className="h-3.5 w-3.5" />{tr("Speak response", "जवाब सुनें")}</button>}
 
                       {/* Interactive Execution Action */}
                       {msg.action && (

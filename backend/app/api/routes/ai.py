@@ -7,9 +7,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
+from app.ai.memory.meko_memory import HISTORY_QUERY
 from app.models.ai_schemas import AIChatRequest, AIChatResponse
-from app.services.price_service import compare_prices
-from app.services.search_service import search_rows
 from app.services.gemini_service import (
     GeminiConfigurationError,
     GeminiProviderError,
@@ -18,6 +17,9 @@ from app.services.gemini_service import (
     GeminiTimeoutError,
     TemporaryChatSessions,
 )
+from app.services.meko_service import DEFAULT_PATIENT_ID, MekoService, extract_rememberable_preference
+from app.services.price_service import compare_prices
+from app.services.search_service import search_rows
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ai", tags=["AI assistant"])
@@ -34,6 +36,10 @@ def _sessions(request: Request) -> TemporaryChatSessions:
 
 def _gemini(request: Request) -> GeminiService:
     return request.app.state.gemini_service
+
+
+def _meko(request: Request) -> MekoService | None:
+    return getattr(request.app.state, "meko_service", None)
 
 
 def _catalogue_context(message: str, medicine_service: Any) -> str:
@@ -76,19 +82,113 @@ async def chat(request: Request, body: AIChatRequest):
     service = _gemini(request)
     medicine_service = request.app.state.medicine_service
     catalogue_context = _catalogue_context(body.message, medicine_service)
+    meko = _meko(request)
+
+    # 1. Resolve consistent synthetic patient ID
+    pid = body.patient_id or getattr(session, "patient_id", None) or DEFAULT_PATIENT_ID
+    session.patient_id = pid
+
+    # 2. Check explicit consent status
+    is_consented = meko.is_consented(pid) if meko is not None else False
+    logger.info(
+        "Chat turn starting session_id=%s patient_id=%s consent=%s meko_available=%s",
+        session_id, pid, is_consented, getattr(meko, "is_available", False)
+    )
+
+    # 3. Deterministic Meko memory retrieval:
+    # - Zero calls if consent is OFF or Meko is unconfigured/unavailable.
+    # - If consented: ensure conversation_create runs first, then recall.
+    # - Cache retrieved context in session to avoid redundant calls.
+    memory_context = ""
+    if is_consented and meko is not None:
+        if not getattr(session, "meko_conversation_id", None):
+            try:
+                conv_id = await meko.create_conversation(session_id=session_id, patient_id=pid)
+                if conv_id:
+                    session.meko_conversation_id = conv_id
+                    logger.info("Created and retained Meko conversation_id=%s for session=%s", conv_id, session_id)
+            except Exception as exc:
+                logger.warning("Meko create_conversation failed on session start: %s", type(exc).__name__)
+
+        needs_search = (not getattr(session, "memory_searched", False)) or bool(HISTORY_QUERY.search(body.message))
+        if needs_search and getattr(session, "meko_conversation_id", None):
+            try:
+                retrieved = await meko.recall(
+                    body.message.strip(),
+                    conversation_id=session.meko_conversation_id,
+                    patient_id=pid,
+                )
+                session.retrieved_memory_context = retrieved.as_unverified_prompt_context()
+                session.memory_searched = True
+                logger.info("Meko context recall completed for session=%s items_found=%d", session_id, len(retrieved.items))
+            except Exception as exc:
+                logger.warning("Meko memory recall failed (fail-open): %s", type(exc).__name__)
+        memory_context = getattr(session, "retrieved_memory_context", "") or ""
+
+    def _log_turn_background(user_text: str, assistant_text: str) -> asyncio.Task | None:
+        if meko is None or not meko.is_consented(pid):
+            return None
+
+        async def _worker() -> None:
+            try:
+                conv_id = await meko.log_turn(
+                    user_text=user_text,
+                    assistant_text=assistant_text,
+                    session_id=session_id,
+                    conversation_id=getattr(session, "meko_conversation_id", None),
+                    patient_id=pid,
+                )
+                if conv_id and not getattr(session, "meko_conversation_id", None):
+                    session.meko_conversation_id = conv_id
+
+                pref = extract_rememberable_preference(user_text)
+                if pref:
+                    logger.info("Logging memory preference for session=%s: %s", session_id, pref)
+                    res = await meko.remember(
+                        pref,
+                        conversation_id=getattr(session, "meko_conversation_id", None),
+                        patient_id=pid,
+                        session_id=session_id,
+                    )
+                    logger.info("Meko preference memory saved: %s", res)
+            except Exception as exc:
+                logger.warning("Background Meko turn logging failed (fail-open): %s", type(exc).__name__)
+
+        task = asyncio.create_task(_worker())
+        _bg = getattr(request.app.state, "_background_tasks", None)
+        if _bg is not None:
+            _bg.add(task)
+            task.add_done_callback(_bg.discard)
+        return task
 
     if not body.stream:
         async with session.lock:
             history = sessions.context(session)
             try:
-                result = await service.generate_chat(history, body.message.strip(), body.language, catalogue_context)
+                try:
+                    result = await service.generate_chat(
+                        history,
+                        body.message.strip(),
+                        body.language,
+                        catalogue_context,
+                        memory_context=memory_context,
+                    )
+                except TypeError:
+                    result = await service.generate_chat(
+                        history,
+                        body.message.strip(),
+                        body.language,
+                        catalogue_context,
+                    )
             except (GeminiConfigurationError, GeminiTimeoutError, GeminiRateLimitError, GeminiProviderError) as exc:
                 raise _provider_http_error(exc) from exc
+
             sessions.add_turn(session, body.message.strip(), result["response"])
+            _log_turn_background(body.message.strip(), result["response"])
             return {"success": True, "session_id": session_id, **result}
 
     # Fail with a real HTTP status before starting SSE if the credential is missing.
-    if not service.api_key:
+    if not getattr(service, "api_key", None):
         raise HTTPException(status_code=503, detail="Gemini is not configured; set GEMINI_API_KEY in the backend environment")
 
     async def event_stream():
@@ -99,9 +199,28 @@ async def chat(request: Request, body: AIChatRequest):
             async def on_chunk(text: str) -> None:
                 await queue.put(_sse({"type": "delta", "text": text}))
 
-            task = asyncio.create_task(
-                service.generate_chat(history, body.message.strip(), body.language, catalogue_context, on_chunk=on_chunk)
-            )
+            try:
+                task = asyncio.create_task(
+                    service.generate_chat(
+                        history,
+                        body.message.strip(),
+                        body.language,
+                        catalogue_context,
+                        memory_context=memory_context,
+                        on_chunk=on_chunk,
+                    )
+                )
+            except TypeError:
+                task = asyncio.create_task(
+                    service.generate_chat(
+                        history,
+                        body.message.strip(),
+                        body.language,
+                        catalogue_context,
+                        on_chunk=on_chunk,
+                    )
+                )
+
             yield _sse({"type": "meta", "session_id": session_id})
             try:
                 while not task.done() or not queue.empty():
@@ -112,6 +231,7 @@ async def chat(request: Request, body: AIChatRequest):
                         continue
                 result = await task
                 sessions.add_turn(session, body.message.strip(), result["response"])
+                _log_turn_background(body.message.strip(), result["response"])
                 yield _sse({"type": "done", "session_id": session_id, **result})
             except (GeminiConfigurationError, GeminiTimeoutError, GeminiRateLimitError, GeminiProviderError) as exc:
                 status = 503 if isinstance(exc, GeminiConfigurationError) else 504 if isinstance(exc, GeminiTimeoutError) else 429 if isinstance(exc, GeminiRateLimitError) else 502

@@ -1,11 +1,12 @@
 import type { SpeechState } from "./assistantTypes";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 type VoiceVisualizerProps = {
   state: SpeechState;
-  isHindi: boolean;
 };
 
-export function VoiceVisualizer({ state, isHindi }: VoiceVisualizerProps) {
+export function VoiceVisualizer({ state }: VoiceVisualizerProps) {
+  const { tr } = useLanguage();
   const isListening = state === "listening";
   const isSpeaking = state === "speaking";
   const isProcessing = state === "processing";
@@ -44,33 +45,33 @@ export function VoiceVisualizer({ state, isHindi }: VoiceVisualizerProps) {
         {isListening && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-            {isHindi ? "आपकी आवाज़ सुन रहे हैं..." : "Listening to your voice..."}
+            {tr("Listening to your voice...", "आपकी आवाज़ सुन रहे हैं...")}
           </span>
         )}
         {isProcessing && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
             <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-            {isHindi ? "Gemini सोच रहा है..." : "Processing with Gemini AI..."}
+            {tr("Processing with Gemini AI...", "Gemini सोच रहा है...")}
           </span>
         )}
         {isGenerating && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
             <span className="h-2 w-2 rounded-full bg-violet-500 animate-pulse" />
-            {isHindi ? "आवाज़ तैयार हो रही है..." : "Generating audio..."}
+            {tr("Generating audio...", "आवाज़ तैयार हो रही है...")}
           </span>
         )}
         {isSpeaking && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-brand">
             <span className="h-2 w-2 rounded-full bg-brand animate-pulse" />
-            {isHindi ? "ElevenLabs बोल रहा है..." : "Speaking via ElevenLabs..."}
+            {tr("Speaking via ElevenLabs...", "ElevenLabs बोल रहा है...")}
           </span>
         )}
         {state === "idle" && (
           <span className="text-xs font-medium text-slate-400">
-            {isHindi ? "बोलने के लिए माइक दबाएं" : "Tap microphone to speak"}
+            {tr("Tap microphone to speak", "बोलने के लिए माइक दबाएं")}
           </span>
         )}
-        {state === "paused" && <span className="text-xs font-medium text-slate-400">{isHindi ? "आवाज़ रोकी गई है" : "Playback paused"}</span>}
+        {state === "paused" && <span className="text-xs font-medium text-slate-400">{tr("Playback paused", "आवाज़ रोकी गई है")}</span>}
       </div>
     </div>
   );

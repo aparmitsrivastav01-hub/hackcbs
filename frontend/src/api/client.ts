@@ -12,7 +12,10 @@ import type {
   PharmacyEnquiry,
   PriceOption,
   SearchResponse,
+  ShopWhatsAppContactRequest,
+  ShopWhatsAppContactResponse,
 } from "../types";
+export { formatInr, formatSavingsText } from "../i18n/formatters";
 
 const API = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://127.0.0.1:8000";
 
@@ -416,6 +419,23 @@ export async function listEnquiries(): Promise<{ count: number; items: PharmacyE
   }
 }
 
+/**
+ * POST /api/stores/whatsapp-contact
+ * On-demand discovery of verified WhatsApp number or phone contact for a specific pharmacy via TinyFish.
+ */
+export async function getShopWhatsAppContact(
+  payload: ShopWhatsAppContactRequest,
+  signal?: AbortSignal,
+): Promise<ShopWhatsAppContactResponse> {
+  return request<ShopWhatsAppContactResponse>("/api/stores/whatsapp-contact", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    signal,
+    timeoutMs: 45000,
+  });
+}
+
 // -------------------------------------------------------------
 // Batch Alert Safety Checker (Screen 10)
 // -------------------------------------------------------------
@@ -521,24 +541,5 @@ export async function checkBatchSafety(payload: {
 // -------------------------------------------------------------
 // Formatters & Utility
 // -------------------------------------------------------------
-
-export function formatInr(value: number | null | undefined): string {
-  if (value == null) return "Not available";
-  return `â‚¹${value.toLocaleString("en-IN", {
-    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-export function formatSavingsText(amount: number | null | undefined, percentage: number | null | undefined): string {
-  if (amount == null) return "No savings data";
-  if (amount < 0) {
-    return `Costs ${formatInr(Math.abs(amount))} more`;
-  }
-  if (percentage != null) {
-    return `Save ${formatInr(amount)} (${percentage.toFixed(1)}%)`;
-  }
-  return `Save ${formatInr(amount)}`;
-}
 
 // Synthetic extraction fallback

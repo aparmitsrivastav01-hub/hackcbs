@@ -7,6 +7,8 @@ from urllib.parse import urlparse
 
 import httpx
 
+from app.services.phone_utils import normalize_indian_phone, verified_whatsapp
+
 TINYFISH_SEARCH_URL = "https://api.search.tinyfish.ai"
 TINYFISH_AGENT_RUN_URL = "https://agent.tinyfish.ai/v1/automation/run"
 
@@ -38,6 +40,33 @@ STORE_OUTPUT_SCHEMA = {
         }
     },
     "required": ["stores"],
+}
+
+WHATSAPP_CONTACT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "matched_exact_shop": {"type": "boolean"},
+        "phone_number": {"type": "string", "nullable": True},
+        "whatsapp_number": {"type": "string", "nullable": True},
+        "whatsapp_url": {"type": "string", "nullable": True},
+        "is_explicit_whatsapp": {"type": "boolean"},
+        "source_type": {
+            "type": "string",
+            "enum": ["official_website", "google_business", "social_media", "public_directory", "unknown"],
+        },
+        "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low", "none"],
+        },
+        "notes": {"type": "string", "nullable": True},
+    },
+    "required": [
+        "matched_exact_shop",
+        "phone_number",
+        "whatsapp_number",
+        "whatsapp_url",
+        "is_explicit_whatsapp",
+    ],
 }
 
 
@@ -134,6 +163,183 @@ class TinyFishService:
         if not isinstance(stores, list):
             raise TinyFishError("TinyFish returned an invalid extraction response")
         return [store for store in stores if isinstance(store, dict)]
+
+    async def extract_shop_contact(
+        self,
+        source_url: str,
+        shop_name: str,
+        shop_address: str | None = None,
+        city: str | None = None,
+    ) -> dict[str, Any]:
+        if not self._valid_http_url(source_url):
+            return {}
+        headers = self._headers()
+        location_desc = f" at {shop_address}" if shop_address else (f" in {city}" if city else "")
+        goal = (
+            f"Inspect this public page for official contact details of the pharmacy named '{shop_name}'{location_desc}. "
+            "1. matched_exact_shop: Set to true ONLY if this page is genuinely for this exact pharmacy shop and location. "
+            "If it is for a different pharmacy or another city, set to false. "
+            "2. whatsapp_number & whatsapp_url: Extract ONLY if this page explicitly labels or links a WhatsApp contact "
+            "(e.g. wa.me link or explicit 'WhatsApp: ...'). A phone number alone is NOT proof of WhatsApp availability. "
+            "3. phone_number: Extract general telephone/mobile contact published for this shop. "
+            "4. is_explicit_whatsapp: Set to true if the number or link is explicitly confirmed as WhatsApp on the page; otherwise false. "
+            "5. Never invent or guess numbers. Return null when not explicitly found."
+        )
+        payload = {
+            "url": source_url,
+            "goal": goal,
+            "output_schema": WHATSAPP_CONTACT_SCHEMA,
+            "agent_config": {"max_duration_seconds": 45},
+        }
+        try:
+            async with httpx.AsyncClient(timeout=self.agent_timeout_seconds, transport=self.transport) as client:
+                response = await client.post(
+                    TINYFISH_AGENT_RUN_URL,
+                    headers={**headers, "Content-Type": "application/json"},
+                    json=payload,
+                )
+                response.raise_for_status()
+                result_body = response.json()
+        except httpx.TimeoutException as exc:
+            raise TinyFishTimeout("TinyFish contact extraction request timed out") from exc
+        except (httpx.HTTPError, ValueError) as exc:
+            raise TinyFishError("TinyFish contact extraction request failed") from exc
+
+        if not isinstance(result_body, dict) or result_body.get("status") != "COMPLETED":
+            raise TinyFishError("TinyFish contact extraction did not complete")
+        extracted = result_body.get("result")
+        if isinstance(extracted, dict) and isinstance(extracted.get("result"), dict):
+            extracted = extracted["result"]
+        return extracted if isinstance(extracted, dict) else {}
+
+    async def discover_whatsapp_contact(
+        self,
+        shop_name: str,
+        shop_address: str | None = None,
+        city: str | None = None,
+        locality: str | None = None,
+        maps_url: str | None = None,
+        query: str | None = None,
+    ) -> dict[str, Any]:
+        """Search publicly accessible sources via TinyFish and extract verified contact."""
+        location_part = shop_address or locality or city or ""
+        search_query = (
+            query.strip()
+            if query and query.strip()
+            else f"{shop_name} {location_part} pharmacy official contact phone whatsapp website".strip()
+        )
+
+        candidate_urls: list[str] = []
+        if maps_url and self._valid_http_url(maps_url):
+            candidate_urls.append(maps_url)
+
+        try:
+            search_results = await self.search(search_query)
+            for res in search_results:
+                url = res.get("url")
+                if url and self._valid_http_url(url) and url not in candidate_urls:
+                    candidate_urls.append(url)
+        except TinyFishTimeout:
+            raise
+        except TinyFishError:
+            if not candidate_urls:
+                raise
+
+        if not candidate_urls:
+            return {
+                "shop_name": shop_name,
+                "phone_number": None,
+                "whatsapp_number": None,
+                "source_url": None,
+                "verification_status": "not_found",
+                "confidence": "none",
+                "message": "No public listings found for this shop.",
+            }
+
+        candidate_urls = candidate_urls[:2]
+
+        found_phone: str | None = None
+        phone_source_url: str | None = None
+        errors: list[Exception] = []
+
+        for candidate_url in candidate_urls:
+            try:
+                extracted = await self.extract_shop_contact(
+                    source_url=candidate_url,
+                    shop_name=shop_name,
+                    shop_address=shop_address,
+                    city=city or locality,
+                )
+            except (TinyFishError, TinyFishTimeout) as exc:
+                errors.append(exc)
+                continue
+
+            if not extracted.get("matched_exact_shop"):
+                continue
+
+            raw_wa = extracted.get("whatsapp_number")
+            raw_wa_url = extracted.get("whatsapp_url")
+            is_explicit_wa = bool(extracted.get("is_explicit_whatsapp"))
+            raw_phone = extracted.get("phone_number")
+
+            norm_wa = normalize_indian_phone(raw_wa, require_mobile=True) if raw_wa else None
+            norm_phone = normalize_indian_phone(raw_phone, require_mobile=False) if raw_phone else None
+
+            # Priority: explicit WhatsApp contact
+            if raw_wa_url:
+                verified_num, is_wa = verified_whatsapp(norm_wa or raw_phone, raw_wa_url)
+                if is_wa and verified_num:
+                    return {
+                        "shop_name": shop_name,
+                        "phone_number": norm_phone or verified_num,
+                        "whatsapp_number": verified_num,
+                        "source_url": candidate_url,
+                        "verification_status": "verified_whatsapp",
+                        "confidence": "high",
+                        "message": "Verified WhatsApp number found.",
+                    }
+
+            if is_explicit_wa and norm_wa:
+                return {
+                    "shop_name": shop_name,
+                    "phone_number": norm_phone or norm_wa,
+                    "whatsapp_number": norm_wa,
+                    "source_url": candidate_url,
+                    "verification_status": "verified_whatsapp",
+                    "confidence": "high",
+                    "message": "Verified WhatsApp number found.",
+                }
+
+            if not found_phone and norm_phone:
+                found_phone = norm_phone
+                phone_source_url = candidate_url
+
+        if not found_phone and errors and len(errors) == len(candidate_urls):
+            # All extraction calls failed
+            first_err = errors[0]
+            if isinstance(first_err, (TinyFishError, TinyFishTimeout)):
+                raise first_err
+
+        if found_phone:
+            return {
+                "shop_name": shop_name,
+                "phone_number": found_phone,
+                "whatsapp_number": None,
+                "source_url": phone_source_url,
+                "verification_status": "phone_only",
+                "confidence": "medium",
+                "message": "Public phone number found, but WhatsApp could not be verified for this shop.",
+            }
+
+        return {
+            "shop_name": shop_name,
+            "phone_number": None,
+            "whatsapp_number": None,
+            "source_url": candidate_urls[0] if candidate_urls else None,
+            "verification_status": "not_found",
+            "confidence": "none",
+            "message": "WhatsApp number could not be verified for this shop.",
+        }
 
     @staticmethod
     def _valid_http_url(value: Any) -> bool:

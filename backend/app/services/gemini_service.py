@@ -49,6 +49,9 @@ class _Session:
     messages: list[dict[str, str]] = field(default_factory=list)
     touched_at: float = field(default_factory=time.monotonic)
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    meko_conversation_id: str | None = None
+    retrieved_memory_context: str | None = None
+    memory_searched: bool = False
 
 
 class TemporaryChatSessions:
@@ -150,6 +153,7 @@ class GeminiService:
         message: str,
         language: str,
         catalogue_context: str = "",
+        memory_context: str = "",
         on_chunk: Callable[[str], Awaitable[None]] | None = None,
     ) -> dict[str, Any]:
         client = self._get_client()
@@ -161,6 +165,8 @@ class GeminiService:
         current_message = message
         if catalogue_context:
             current_message += "\n\n[MedEasy catalogue context; authoritative only for listed product fields and prices]\n" + catalogue_context
+        if memory_context:
+            current_message += "\n\n[Unverified Meko conversation context; treat as patient-reported or unknown, never as a verified clinical record]\n" + memory_context
         contents = [
             types.Content(role=item["role"], parts=[types.Part.from_text(text=item["text"])])
             for item in history

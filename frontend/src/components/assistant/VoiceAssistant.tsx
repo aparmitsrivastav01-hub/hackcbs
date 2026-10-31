@@ -366,7 +366,7 @@ export function VoiceAssistant() {
               /* VOICE MODE: Giant Accessible Voice Interface */
               <div className="flex h-full flex-col items-center justify-between py-2 text-center">
                 {/* Voice Visualizer Waveform */}
-                <VoiceVisualizer state={speechState} isHindi={isHi} />
+                <VoiceVisualizer state={speechState} />
 
                 {/* Central Interactive Voice Orb */}
                 <div className="my-auto flex flex-col items-center">

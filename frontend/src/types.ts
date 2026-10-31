@@ -262,3 +262,24 @@ export type DatasetStatus = {
   last_modified: string | null;
   note: string;
 };
+
+// On-Demand TinyFish WhatsApp Contact Discovery
+export type ShopWhatsAppContactRequest = {
+  shop_name: string;
+  shop_address?: string;
+  city?: string;
+  locality?: string;
+  maps_url?: string;
+  query?: string;
+};
+
+export type ShopWhatsAppContactResponse = {
+  shop_name: string;
+  phone_number?: string | null;
+  whatsapp_number?: string | null;
+  source_url?: string | null;
+  verification_status: "verified_whatsapp" | "phone_only" | "not_found";
+  confidence: "high" | "medium" | "low" | "none";
+  message: string;
+  cached?: boolean;
+};

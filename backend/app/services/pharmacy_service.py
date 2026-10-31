@@ -11,8 +11,9 @@ from uuid import uuid4
 from typing import Any
 
 
-from app.models.pharmacy_schemas import NearbyPharmaciesRequest
+from app.models.pharmacy_schemas import NearbyPharmaciesRequest, ShopWhatsAppContactRequest
 from app.services.cart_service import CartService
+from app.services.phone_utils import normalize_indian_phone, verified_whatsapp
 from app.services.tinyfish_service import TinyFishError, TinyFishNotConfigured, TinyFishService
 from app.services.cdsco_safety_service import CDSCOSafetyService
 from app.services.search_service import normalize
@@ -34,38 +35,8 @@ def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return round(EARTH_RADIUS_KM * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)), 2)
 
 
-def normalize_indian_phone(value: str | None, require_mobile: bool = False) -> str | None:
-    """Normalize common Indian 10-digit numbers; reject malformed contact strings."""
-    if not value or not isinstance(value, str):
-        return None
-    digits = "".join(re.findall(r"\d", value))
-    if len(digits) == 12 and digits.startswith("91"):
-        digits = digits[2:]
-    elif len(digits) == 11 and digits.startswith("0"):
-        digits = digits[1:]
-    if len(digits) != 10 or digits[0] not in "123456789":
-        return None
-    # A WhatsApp contact needs a mobile-format Indian subscriber number.
-    if require_mobile and digits[0] not in "6789":
-        return None
-    return "+91" + digits
-
-
-def verified_whatsapp(phone: str | None, whatsapp_url: str | None) -> tuple[str | None, bool]:
-    normalized = normalize_indian_phone(phone, require_mobile=True)
-    if normalized is None or not whatsapp_url:
-        return None, False
-    try:
-        parsed = urlparse(whatsapp_url)
-        if parsed.scheme != "https" or parsed.hostname not in {"wa.me", "api.whatsapp.com"}:
-            return None, False
-        linked = "".join(re.findall(r"\d", parsed.path if parsed.hostname == "wa.me" else parse_qs(parsed.query).get("phone", [""])[0]))
-        actual = normalized.lstrip("+")
-        if not linked or linked != actual:
-            return None, False
-        return normalized, True
-    except (ValueError, TypeError):
-        return None, False
+# Re-exported from app.services.phone_utils for backward compatibility:
+# normalize_indian_phone, verified_whatsapp
 
 
 class PharmacyService:
@@ -81,6 +52,7 @@ class PharmacyService:
         self.safety_service = safety_service
         self.cache_ttl_seconds = cache_ttl_seconds or int(os.getenv("PHARMACY_CACHE_TTL_SECONDS", "3600"))
         self._cache: dict[tuple[Any, ...], tuple[float, list[dict[str, Any]]]] = {}
+        self._whatsapp_cache: dict[str, tuple[float, dict[str, Any]]] = {}
         self._stores: dict[str, dict[str, Any]] = {}
         self._enquiries: dict[str, dict[str, Any]] = {}
 
@@ -151,6 +123,28 @@ class PharmacyService:
             return None
         age = (datetime.now(timezone.utc) - store["last_verified_at"]).total_seconds()
         return store if age <= self.cache_ttl_seconds else None
+
+    async def get_shop_whatsapp_contact(self, request: ShopWhatsAppContactRequest) -> dict[str, Any]:
+        cache_key = f"{re.sub(r'\\W+', ' ', request.shop_name.casefold()).strip()}|{re.sub(r'\\W+', ' ', (request.shop_address or request.locality or request.city or '').casefold()).strip()}"
+        cached = self._whatsapp_cache.get(cache_key)
+        if cached and cached[0] > time.monotonic():
+            data = dict(cached[1])
+            data["cached"] = True
+            return data
+
+        result = await self.tinyfish.discover_whatsapp_contact(
+            shop_name=request.shop_name,
+            shop_address=request.shop_address,
+            city=request.city,
+            locality=request.locality,
+            maps_url=request.maps_url,
+            query=request.query,
+        )
+
+        result_copy = dict(result)
+        result_copy["cached"] = False
+        self._whatsapp_cache[cache_key] = (time.monotonic() + self.cache_ttl_seconds, result_copy)
+        return dict(result_copy)
 
     def create_enquiry(self, store_id: str, cart_session_id: str) -> dict[str, Any]:
         store = self.get_store(store_id)

@@ -172,7 +172,7 @@ export function BatchSafetyPage() {
                   required
                   value={batchNumber}
                   onChange={(e) => setBatchNumber(e.target.value)}
-                  placeholder="e.g., PCM23H88, PNT24A09, B2401..."
+                  placeholder={tr("e.g., PCM23H88, PNT24A09, B2401...", "उदा. PCM23H88, PNT24A09, B2401...")}
                   className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 bg-[#f8fbff] px-4 font-mono text-sm font-bold uppercase text-navy placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none"
                 />
               </div>

@@ -27,7 +27,7 @@ import { useLanguage } from "../i18n/LanguageContext";
 import type { MaximumSavingsResponse, MedicineResponse } from "../types";
 
 export function MedicinesPage() {
-  const { tr } = useLanguage();
+  const { tr, locale } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") ?? "";
 
@@ -187,7 +187,7 @@ export function MedicinesPage() {
   return (
     <>
       <Helmet>
-        <title>Explore Medicines & Compare Prices — MedEasy</title>
+        <title>{tr("Explore Medicines & Compare Prices — MedEasy", "दवाइयां खोजें और कीमतों की तुलना करें — MedEasy")}</title>
         <meta
           name="description"
           content="Search and compare medicine prices across Jan Aushadhi, Dava India, and private brands. Find generic alternatives and maximise your savings."
@@ -307,7 +307,7 @@ export function MedicinesPage() {
           <div className="mt-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">
             <AlertCircle className="h-5 w-5 shrink-0 text-red-500" />
             <div>
-              <p className="font-bold">Search error</p>
+              <p className="font-bold">{tr("Search error", "खोज में त्रुटि")}</p>
               <p className="text-xs">{error}</p>
             </div>
           </div>
@@ -397,7 +397,7 @@ export function MedicinesPage() {
                               Save up to
                             </span>
                             <span className="text-base font-extrabold text-emerald-800">
-                              {formatSavingsText(maxSaving.amount, maxSaving.percentage)}
+                              {formatSavingsText(maxSaving.amount, maxSaving.percentage, locale)}
                             </span>
                           </div>
                         </div>
@@ -414,7 +414,7 @@ export function MedicinesPage() {
                         <span className="mt-1 block text-lg font-extrabold text-navy">
                           {formatInr(med.prices.private_brand)}
                         </span>
-                        <span className="text-[10px] text-slate-400">Retail benchmark</span>
+                        <span className="text-[10px] text-slate-400">{tr("Retail benchmark", "खुदरा मूल्य मानक")}</span>
                       </div>
 
                       {/* Jan Aushadhi */}
@@ -443,6 +443,7 @@ export function MedicinesPage() {
                             ? formatSavingsText(
                                 med.savings_comparison.jan_aushadhi.savings_amount,
                                 med.savings_comparison.jan_aushadhi.savings_percentage,
+                                locale,
                               )
                             : tr("No alternative listed", "कोई विकल्प सूचीबद्ध नहीं")}
                         </span>
@@ -474,6 +475,7 @@ export function MedicinesPage() {
                             ? formatSavingsText(
                                 med.savings_comparison.dava_india.savings_amount,
                                 med.savings_comparison.dava_india.savings_percentage,
+                                locale,
                               )
                             : tr("No alternative listed", "कोई विकल्प सूचीबद्ध नहीं")}
                         </span>
@@ -529,10 +531,9 @@ export function MedicinesPage() {
             {!loading && filteredResults.length === 0 && (
               <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
                 <Pill className="mx-auto h-12 w-12 text-slate-300" />
-                <h3 className="mt-3 text-lg font-bold text-navy">No exact catalogue matches found</h3>
+                <h3 className="mt-3 text-lg font-bold text-navy">{tr("No exact catalogue matches found", "कैटलॉग में सटीक दवा नहीं मिली")}</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-                  We couldn't find a medicine matching &ldquo;{activeQuery}&rdquo;. Try searching by active composition
-                  (e.g., &ldquo;Paracetamol&rdquo; or &ldquo;Amoxicillin&rdquo;) or check spelling.
+                  {tr("We couldn't find a medicine matching", "इससे मेल खाती दवा नहीं मिली")} &ldquo;{activeQuery}&rdquo;. {tr("Try searching by active composition (e.g., Paracetamol or Amoxicillin) or check spelling.", "सक्रिय घटक (जैसे पैरासिटामोल या एमॉक्सिसिलिन) से खोजें या वर्तनी जांचें।")}
                 </p>
                 <div className="mt-6 flex justify-center gap-3">
                   <button
@@ -540,13 +541,13 @@ export function MedicinesPage() {
                     onClick={() => setQ("Paracetamol")}
                     className="rounded-full bg-brand px-5 py-2 text-xs font-bold text-white"
                   >
-                    Try &ldquo;Paracetamol&rdquo;
+                    {tr("Try", "खोजें")} &ldquo;Paracetamol&rdquo;
                   </button>
                   <Link
                     to="/scan"
                     className="rounded-full border border-slate-200 px-5 py-2 text-xs font-semibold text-navy hover:border-brand"
                   >
-                    Scan prescription instead
+                    {tr("Scan prescription instead", "इसके बजाय पर्चा स्कैन करें")}
                   </Link>
                 </div>
               </div>
@@ -559,15 +560,15 @@ export function MedicinesPage() {
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-brand" />
-                <span className="font-bold text-navy">Top Verified Savings Opportunities</span>
+                <span className="font-bold text-navy">{tr("Top Verified Savings Opportunities", "सबसे अधिक बचत के अवसर")}</span>
               </div>
 
               <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1">
                 {(
                   [
-                    { key: "all", label: "All Providers" },
-                    { key: "jan_aushadhi", label: "Jan Aushadhi" },
-                    { key: "dava_india", label: "Dava India" },
+                    { key: "all", label: tr("All Providers", "सभी प्रदाता") },
+                    { key: "jan_aushadhi", label: tr("Jan Aushadhi", "जन औषधि") },
+                    { key: "dava_india", label: tr("Dava India", "दवा इंडिया") },
                   ] as const
                 ).map((tab) => (
                   <button
@@ -594,7 +595,7 @@ export function MedicinesPage() {
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
                       <TrendingDown className="h-3.5 w-3.5" />
-                      Highest Rupee Saving
+                      {tr("Highest Rupee Saving", "सबसे अधिक रुपये की बचत")}
                     </span>
                     <span className="text-xs font-bold text-emerald-700">
                       {maxSavings.highest_savings_amount.alternative_provider}
@@ -605,13 +606,13 @@ export function MedicinesPage() {
                   </h3>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
-                      <span className="block text-xs text-slate-500">Private brand: {formatInr(maxSavings.highest_savings_amount.private_brand_price)}</span>
+                      <span className="block text-xs text-slate-500">{tr("Private brand:", "प्राइवेट ब्रांड:")} {formatInr(maxSavings.highest_savings_amount.private_brand_price)}</span>
                       <span className="text-xl font-extrabold text-emerald-700">
-                        Alternative: {formatInr(maxSavings.highest_savings_amount.alternative_price)}
+                        {tr("Alternative:", "विकल्प:")} {formatInr(maxSavings.highest_savings_amount.alternative_price)}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="block text-xs font-semibold text-emerald-600">Save amount</span>
+                      <span className="block text-xs font-semibold text-emerald-600">{tr("Save amount", "बचत राशि")}</span>
                       <span className="text-xl font-black text-emerald-800">
                         {formatInr(maxSavings.highest_savings_amount.savings_amount)}
                       </span>
@@ -622,7 +623,7 @@ export function MedicinesPage() {
                       to={`/medicines/${maxSavings.highest_savings_amount.medicine_id}`}
                       className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 hover:underline"
                     >
-                      <span>View medicine breakdown</span>
+                      <span>{tr("View medicine breakdown", "दवा की कीमतों का विवरण देखें")}</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                   </div>
@@ -634,7 +635,7 @@ export function MedicinesPage() {
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-brand">
                         <Percent className="h-3.5 w-3.5" />
-                        Highest Percentage Saving
+                        {tr("Highest Percentage Saving", "सबसे अधिक प्रतिशत बचत")}
                       </span>
                       <span className="text-xs font-bold text-brand">
                         {maxSavings.highest_savings_percentage.alternative_provider}
@@ -645,15 +646,15 @@ export function MedicinesPage() {
                     </h3>
                     <div className="mt-4 flex items-end justify-between">
                       <div>
-                        <span className="block text-xs text-slate-500">Private brand: {formatInr(maxSavings.highest_savings_percentage.private_brand_price)}</span>
+                        <span className="block text-xs text-slate-500">{tr("Private brand:", "प्राइवेट ब्रांड:")} {formatInr(maxSavings.highest_savings_percentage.private_brand_price)}</span>
                         <span className="text-xl font-extrabold text-brand">
-                          Alternative: {formatInr(maxSavings.highest_savings_percentage.alternative_price)}
+                          {tr("Alternative:", "विकल्प:")} {formatInr(maxSavings.highest_savings_percentage.alternative_price)}
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="block text-xs font-semibold text-brand">Discount</span>
+                      <span className="block text-xs font-semibold text-brand">{tr("Discount", "छूट")}</span>
                         <span className="text-xl font-black text-brand">
-                          {maxSavings.highest_savings_percentage.savings_percentage.toFixed(1)}% OFF
+                          {maxSavings.highest_savings_percentage.savings_percentage.toFixed(1)}% {tr("OFF", "की बचत")}
                         </span>
                       </div>
                     </div>
@@ -662,7 +663,7 @@ export function MedicinesPage() {
                         to={`/medicines/${maxSavings.highest_savings_percentage.medicine_id}`}
                         className="inline-flex items-center gap-1.5 text-xs font-bold text-brand hover:underline"
                       >
-                        <span>View medicine breakdown</span>
+                        <span>{tr("View medicine breakdown", "दवा की कीमतों का विवरण देखें")}</span>
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Link>
                     </div>
@@ -675,12 +676,12 @@ export function MedicinesPage() {
             <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
               <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-navy">Top 10 Catalogue Opportunities</h3>
+                  <h3 className="font-bold text-navy">{tr("Top 10 Catalogue Opportunities", "कैटलॉग के 10 सर्वोत्तम अवसर")}</h3>
                   <p className="text-xs text-muted">
-                    Ranked by absolute rupee savings per standard unit or pack.
+                    {tr("Ranked by absolute rupee savings per standard unit or pack.", "प्रति मानक इकाई या पैक रुपये की बचत के आधार पर क्रमबद्ध।")}
                   </p>
                 </div>
-                {savingsLoading && <span className="text-xs text-brand animate-pulse">Updating...</span>}
+                {savingsLoading && <span className="text-xs text-brand animate-pulse">{tr("Updating...", "अपडेट हो रहा है...")}</span>}
               </div>
 
               <div className="divide-y divide-slate-100">
@@ -724,7 +725,7 @@ export function MedicinesPage() {
                           {item.medicine_name}
                         </Link>
                         <span className="text-xs text-slate-500">
-                          {item.alternative_provider} vs Private Brand ({formatInr(item.private_brand_price)})
+                          {item.alternative_provider} {tr("vs Private Brand", "बनाम प्राइवेट ब्रांड")} ({formatInr(item.private_brand_price)})
                         </span>
                       </div>
                     </div>
@@ -732,10 +733,10 @@ export function MedicinesPage() {
                     <div className="flex items-center justify-between gap-4 sm:justify-end">
                       <div className="text-right">
                         <span className="block text-xs font-extrabold text-emerald-700">
-                          Save {formatInr(item.savings_amount)}
+                          {tr("Save", "बचत")} {formatInr(item.savings_amount)}
                         </span>
                         <span className="text-[11px] text-slate-400">
-                          ({item.savings_percentage.toFixed(0)}% lower)
+                          ({item.savings_percentage.toFixed(0)}% {tr("lower", "कम")})
                         </span>
                       </div>
 
@@ -743,7 +744,7 @@ export function MedicinesPage() {
                         to={`/medicines/${item.medicine_id}`}
                         className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-navy transition hover:border-brand hover:text-brand"
                       >
-                        Compare
+                        {tr("Compare", "तुलना करें")}
                       </Link>
                     </div>
                   </div>
