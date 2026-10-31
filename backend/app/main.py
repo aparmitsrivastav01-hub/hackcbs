@@ -19,13 +19,10 @@ from app.api.routes.enquiries import router as enquiries_router
 from app.api.routes.safety import router as safety_router, batch_safety_router
 from app.api.routes.ai import router as ai_router
 from app.api.routes.elevenlabs import router as elevenlabs_router
-<<<<<<< HEAD
 from app.api.routes.auth import router as auth_router
 from app.api.routes.profile import router as profile_router
 from app.api.routes.privacy import router as privacy_router
-=======
 from app.api.routes.memory import router as memory_router
->>>>>>> 99ea3c54d9d08682bc49c798eea7fae9f24afb1f
 from app.core.config import DEFAULT_CSV_PATH, get_cors_origins
 from app.db.base import check_database_health, get_async_engine
 from app.services.medicine_service import MedicineService
@@ -63,7 +60,6 @@ async def lifespan(app: FastAPI):
         raise
     app.state.cart_service = CartService(medicine_service, app.state.safety_service)
     app.state.pharmacy_service = PharmacyService(app.state.cart_service, safety_service=app.state.safety_service)
-<<<<<<< HEAD
 
     # Check and log YugabyteDB / Database connectivity status
     db_health = await check_database_health()
@@ -72,20 +68,15 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("YugabyteDB connection warning: %s", db_health.get("error"))
 
-=======
     app.state._background_tasks = set()
     meko_service = MekoService()
     await meko_service.initialize()
     app.state.meko_service = meko_service
->>>>>>> 99ea3c54d9d08682bc49c798eea7fae9f24afb1f
+
     try:
         yield
     finally:
         await app.state.gemini_service.close()
-<<<<<<< HEAD
-        engine = get_async_engine()
-        await engine.dispose()
-=======
         bg_tasks = list(getattr(app.state, "_background_tasks", []))
         for task in bg_tasks:
             if not task.done():
@@ -95,7 +86,8 @@ async def lifespan(app: FastAPI):
                     pass
         if getattr(app.state, "meko_service", None):
             await app.state.meko_service.close()
->>>>>>> 99ea3c54d9d08682bc49c798eea7fae9f24afb1f
+        engine = get_async_engine()
+        await engine.dispose()
 
 
 app = FastAPI(
@@ -122,10 +114,7 @@ app.include_router(safety_router)
 app.include_router(batch_safety_router)
 app.include_router(ai_router)
 app.include_router(elevenlabs_router)
-<<<<<<< HEAD
 app.include_router(auth_router)
 app.include_router(profile_router)
 app.include_router(privacy_router)
-=======
 app.include_router(memory_router)
->>>>>>> 99ea3c54d9d08682bc49c798eea7fae9f24afb1f
