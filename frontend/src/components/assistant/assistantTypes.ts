@@ -14,8 +14,10 @@ export type AssistantMessage = {
   timestamp: string;
   action?: AssistantAction;
   spoken?: boolean;
+  safetyFlags?: string[];
+  usage?: { prompt_tokens: number | null; response_tokens: number | null; total_tokens: number | null };
 };
 
-export type SpeechState = "idle" | "listening" | "processing" | "speaking";
+export type SpeechState = "idle" | "listening" | "processing" | "generating" | "speaking" | "paused";
 
 export type AssistantMode = "voice" | "chat";

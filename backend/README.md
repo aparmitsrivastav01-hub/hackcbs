@@ -6,6 +6,7 @@ MedEasy's Python backend has two modular stages:
 - **Stage 2:** prescription upload, Gemini vision extraction, conservative catalogue matching, and structured price comparisons.
 - **Stage 3:** cart, nearby pharmacy discovery, and WhatsApp stock enquiry.
 - **Stage 12:** CDSCO NSQ alert lookup and pharmacy batch verification.
+- **MedSaathi:** Gemini healthcare chat with temporary session context and ElevenLabs text-to-speech.
 
 The catalogue is loaded with Pandas on startup. Prescription images/PDFs are validated and processed in memory; uploaded files are not retained. Scan results use temporary in-memory storage and are lost when the server restarts or when a different worker receives a later request.
 
@@ -25,6 +26,9 @@ Swagger UI: `http://localhost:8000/docs`.
 
 - `GEMINI_API_KEY` — required to use the default Google Gemini extraction provider. If missing, scan returns HTTP 503. Never commit this key.
 - `GEMINI_MODEL` — optional Gemini model name; defaults to `gemini-2.5-flash`.
+- `ELEVENLABS_API_KEY` — required for speech synthesis; keep it in the backend environment only.
+- `ELEVENLABS_VOICE_ID` — provider voice ID used for synthesis.
+- `ELEVENLABS_MODEL_ID` — provider model; `eleven_multilingual_v2` is the default and infers Hindi or English from the text.
 - `MEDEASY_CSV_PATH` — optional catalogue path; defaults to `app/data/MedEasy_catalogue_500_complete.csv`.
 - `MEDEASY_CORS_ORIGINS` — comma-separated allowed browser origins; defaults to localhost ports 5173.
 - `TINYFISH_API_KEY` — required for live pharmacy discovery; stored in ignored `backend/.env`.
@@ -61,6 +65,15 @@ The scan response contains each extracted medicine, its match status and candida
 ## Tests
 
 From `backend/`, run `pytest -q`. Prescription tests use a mocked extraction provider and require no paid Gemini calls.
+
+## MedSaathi AI and voice
+
+- `POST /api/ai/chat` accepts `message`, optional `session_id`, `language` (`en` or `hi`), and `stream`. Set `stream: true` for Server-Sent Events (`meta`, `delta`, `done` or `error` frames); `stream: false` returns the JSON response directly.
+- `POST /api/voice/elevenlabs/speak` accepts `text` and `language`, and returns playable `audio/mpeg` bytes. API credentials and the selected voice stay on the backend.
+- Chat context is held in bounded, expiring in-memory sessions only. It is temporary conversation context, not persistent medical memory; restarts clear it.
+- The existing browser SpeechRecognition implementation remains the microphone input path. The UI sends recognized speech and typed questions to Gemini. Typed replies can be spoken with the per-message **Speak response** control; voice-originated interactions can speak the response in the left voice panel. Playback supports pause, resume and stop.
+- Gemini is instructed to provide general health information, avoid diagnosis/prescribing, flag emergency situations, and use catalogue facts only when supplied by the backend. A potential-emergency flag is a heuristic on the user message, not a clinical triage result.
+- Gemini provider calls are asynchronous with bounded retries and timeout. ElevenLabs calls use the official SDK with a timeout. Provider errors are returned as HTTP errors (or an SSE `error` frame once streaming begins); no canned answer or fabricated audio is substituted.
 
 ## Stage 3: cart and pharmacy enquiries
 

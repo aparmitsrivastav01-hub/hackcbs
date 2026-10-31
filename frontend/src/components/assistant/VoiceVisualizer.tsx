@@ -9,6 +9,7 @@ export function VoiceVisualizer({ state, isHindi }: VoiceVisualizerProps) {
   const isListening = state === "listening";
   const isSpeaking = state === "speaking";
   const isProcessing = state === "processing";
+  const isGenerating = state === "generating";
 
   return (
     <div className="flex flex-col items-center justify-center py-2">
@@ -30,7 +31,7 @@ export function VoiceVisualizer({ state, isHindi }: VoiceVisualizerProps) {
                 ? `${bar.activeH} animate-pulse bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] ${bar.delay}`
                 : isSpeaking
                   ? `${bar.activeH} animate-pulse bg-brand shadow-[0_0_8px_rgba(8,123,255,0.5)] ${bar.delay}`
-                  : isProcessing
+                  : isProcessing || isGenerating
                     ? "h-4 animate-bounce bg-amber-400"
                     : "h-2 bg-slate-200"
             }`}
@@ -52,6 +53,12 @@ export function VoiceVisualizer({ state, isHindi }: VoiceVisualizerProps) {
             {isHindi ? "Gemini सोच रहा है..." : "Processing with Gemini AI..."}
           </span>
         )}
+        {isGenerating && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
+            <span className="h-2 w-2 rounded-full bg-violet-500 animate-pulse" />
+            {isHindi ? "आवाज़ तैयार हो रही है..." : "Generating audio..."}
+          </span>
+        )}
         {isSpeaking && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-brand">
             <span className="h-2 w-2 rounded-full bg-brand animate-pulse" />
@@ -63,6 +70,7 @@ export function VoiceVisualizer({ state, isHindi }: VoiceVisualizerProps) {
             {isHindi ? "बोलने के लिए माइक दबाएं" : "Tap microphone to speak"}
           </span>
         )}
+        {state === "paused" && <span className="text-xs font-medium text-slate-400">{isHindi ? "आवाज़ रोकी गई है" : "Playback paused"}</span>}
       </div>
     </div>
   );

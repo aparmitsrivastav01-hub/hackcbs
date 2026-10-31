@@ -118,18 +118,19 @@ export function VoiceAssistant() {
 
     // 2. Process with Gemini / Semantic Intent Engine
     try {
-      const response = await assistantService.processUserInput(queryText, locale);
+      const response = await assistantService.processUserInput(queryText, locale, null);
 
-      addMessage(response.textEn, response.textHi, "assistant", response.action);
+      addMessage(response.response, response.response, "assistant", response.action);
 
       // 3. Spoken Response via ElevenLabs / Web Speech
-      const spokenText = locale === "hi" ? response.textHi : response.textEn;
+      const spokenText = response.response;
 
       if (!isVoiceMuted) {
         setSpeechState("speaking");
         await assistantService.speakText(
           spokenText,
           locale,
+          () => setSpeechState("processing"),
           () => setSpeechState("speaking"),
           () => setSpeechState("idle")
         );
@@ -141,13 +142,9 @@ export function VoiceAssistant() {
       if (response.action) {
         handleExecuteAction(response.action, false);
       }
-    } catch {
+    } catch (error) {
       setSpeechState("idle");
-      addMessage(
-        "I encountered a temporary issue. Please try again.",
-        "कुछ समस्या आई। कृपया पुनः प्रयास करें।",
-        "assistant"
-      );
+      addMessage(error instanceof Error ? error.message : "Assistant request failed.", error instanceof Error ? error.message : "सहायक अनुरोध विफल हुआ।", "assistant");
     }
   }
 

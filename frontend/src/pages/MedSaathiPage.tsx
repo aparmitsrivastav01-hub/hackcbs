@@ -6,13 +6,16 @@ import {
   Lock,
   MapPin,
   Mic,
+  Pause,
   Pill,
+  Play,
   RotateCcw,
   ScanLine,
   Send,
   ShieldCheck,
   ShoppingCart,
   Sparkles,
+  Square,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -43,6 +46,11 @@ export function MedSaathiPage() {
   const [isVoiceMuted, setIsVoiceMuted] = useState(false);
   const [inputText, setInputText] = useState("");
   const [transcriptPreview, setTranscriptPreview] = useState("");
+  const [chatSessionId, setChatSessionId] = useState<string | null>(null);
+  const [streamingText, setStreamingText] = useState("");
+  const [chatError, setChatError] = useState("");
+  const requestInFlight = useRef(false);
+  const voiceQueryPending = useRef(false);
 
   const [messages, setMessages] = useState<AssistantMessage[]>([
     {
@@ -70,7 +78,7 @@ export function MedSaathiPage() {
       return;
     }
 
-    if (speechState === "speaking") {
+    if (["speaking", "generating", "paused"].includes(speechState)) {
       assistantService.stopSpeaking();
       setSpeechState("idle");
       return;
@@ -83,6 +91,7 @@ export function MedSaathiPage() {
       locale,
       (transcript) => {
         setTranscriptPreview(transcript);
+        voiceQueryPending.current = true;
         handleSendQuery(transcript);
       },
       (error) => {
@@ -103,38 +112,43 @@ export function MedSaathiPage() {
 
   // Handle Query Execution
   async function handleSendQuery(queryText: string) {
-    if (!queryText.trim()) return;
+    if (!queryText.trim() || requestInFlight.current) return;
 
+    requestInFlight.current = true;
+    setChatError("");
+    setStreamingText("");
     addMessage(queryText, queryText, "user");
     setInputText("");
     setTranscriptPreview("");
     setSpeechState("processing");
 
     try {
-      const response = await assistantService.processUserInput(queryText, locale);
+      const response = await assistantService.processUserInput(queryText, locale, chatSessionId, (delta) => setStreamingText((current) => current + delta));
+      setChatSessionId(response.session_id);
+      setStreamingText("");
+      addMessage(response.response, response.response, "assistant", response.action, response.safety_flags, response.usage);
 
-      addMessage(response.textEn, response.textHi, "assistant", response.action);
-
-      const spokenText = locale === "hi" ? response.textHi : response.textEn;
-
-      if (!isVoiceMuted) {
-        setSpeechState("speaking");
+      const speakThisVoiceTurn = voiceQueryPending.current;
+      voiceQueryPending.current = false;
+      if (speakThisVoiceTurn && !isVoiceMuted) {
+        setSpeechState("generating");
         await assistantService.speakText(
-          spokenText,
+          response.response,
           locale,
+          () => setSpeechState("generating"),
           () => setSpeechState("speaking"),
           () => setSpeechState("idle")
         );
       } else {
         setSpeechState("idle");
       }
-    } catch {
+    } catch (error) {
       setSpeechState("idle");
-      addMessage(
-        "I encountered a temporary issue. Please try again.",
-        "कुछ समस्या आई। कृपया पुनः प्रयास करें।",
-        "assistant"
-      );
+      setStreamingText("");
+      setChatError(error instanceof Error ? error.message : "The assistant request failed.");
+    } finally {
+      requestInFlight.current = false;
+      voiceQueryPending.current = false;
     }
   }
 
@@ -142,7 +156,9 @@ export function MedSaathiPage() {
     textEn: string,
     textHi: string,
     role: "user" | "assistant",
-    action?: AssistantAction
+    action?: AssistantAction,
+    safetyFlags?: string[],
+    usage?: AssistantMessage["usage"]
   ) {
     setMessages((prev) => [
       ...prev,
@@ -153,6 +169,8 @@ export function MedSaathiPage() {
         textHi,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         action,
+        safetyFlags,
+        usage,
       },
     ]);
   }
@@ -168,6 +186,11 @@ export function MedSaathiPage() {
   function handleReset() {
     assistantService.stopSpeaking();
     assistantService.stopListening();
+    requestInFlight.current = false;
+    voiceQueryPending.current = false;
+    setChatSessionId(null);
+    setStreamingText("");
+    setChatError("");
     setSpeechState("idle");
     setTranscriptPreview("");
     setMessages([
@@ -284,7 +307,7 @@ export function MedSaathiPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (speechState === "speaking") assistantService.stopSpeaking();
+                        if (["speaking", "generating", "paused"].includes(speechState)) assistantService.stopSpeaking();
                         setIsVoiceMuted((v) => !v);
                       }}
                       className={`rounded-full p-2 text-slate-500 hover:bg-slate-100 ${
@@ -308,7 +331,7 @@ export function MedSaathiPage() {
                     {speechState === "listening" && (
                       <div className="absolute -inset-6 rounded-full bg-emerald-400/30 animate-ping" />
                     )}
-                    {speechState === "speaking" && (
+                    {["speaking", "generating"].includes(speechState) && (
                       <div className="absolute -inset-6 rounded-full bg-brand/30 animate-pulse" />
                     )}
 
@@ -318,14 +341,14 @@ export function MedSaathiPage() {
                       className={`relative flex h-36 w-36 items-center justify-center rounded-full text-white shadow-2xl transition-all duration-300 active:scale-95 ${
                         speechState === "listening"
                           ? "bg-emerald-500 ring-8 ring-emerald-100 shadow-[0_0_48px_rgba(16,185,129,0.55)] scale-105"
-                          : speechState === "speaking"
+                          : ["speaking", "generating", "paused"].includes(speechState)
                             ? "bg-brand ring-8 ring-blue-100 shadow-[0_0_48px_rgba(8,123,255,0.55)] scale-105"
                             : "bg-[linear-gradient(135deg,#087BFF_0%,#0056cc_100%)] ring-8 ring-blue-50 hover:scale-105"
                       }`}
                     >
                       {speechState === "listening" ? (
                         <Mic className="h-16 w-16 text-white animate-bounce" />
-                      ) : speechState === "speaking" ? (
+                      ) : ["speaking", "generating", "paused"].includes(speechState) ? (
                         <Volume2 className="h-16 w-16 text-white animate-pulse" />
                       ) : (
                         <Mic className="h-16 w-16 text-white" />
@@ -338,14 +361,16 @@ export function MedSaathiPage() {
                       ? isHi
                         ? "सुन रहे हैं... बोलिए"
                         : "Listening... speak now"
-                      : speechState === "speaking"
+                      : ["speaking", "generating", "paused"].includes(speechState)
                         ? isHi
-                          ? "बोल रहे हैं (रोकने के लिए दबाएं)"
-                          : "Speaking aloud (Tap to stop)"
+                          ? speechState === "generating" ? "आवाज़ तैयार हो रही है..." : "बोल रहे हैं (रोकने के लिए दबाएं)"
+                          : speechState === "generating" ? "Generating voice..." : "Speaking aloud (Tap to stop)"
                         : isHi
                           ? "बोलने के लिए माइक दबाएं"
                           : "Tap microphone to speak"}
                   </p>
+                  {speechState === "speaking" && <div className="mt-3 flex gap-2"><button type="button" onClick={() => { assistantService.pauseSpeaking(); setSpeechState("paused"); }} className="rounded-lg border px-3 py-1 text-xs"><Pause className="mr-1 inline h-3 w-3" />Pause</button><button type="button" onClick={() => { assistantService.stopSpeaking(); setSpeechState("idle"); }} className="rounded-lg border px-3 py-1 text-xs"><Square className="mr-1 inline h-3 w-3" />Stop</button></div>}
+                  {speechState === "paused" && <div className="mt-3 flex gap-2"><button type="button" onClick={() => { void assistantService.resumeSpeaking().then(() => setSpeechState("speaking")).catch(() => setSpeechState("idle")); }} className="rounded-lg border px-3 py-1 text-xs"><Play className="mr-1 inline h-3 w-3" />Resume</button><button type="button" onClick={() => { assistantService.stopSpeaking(); setSpeechState("idle"); }} className="rounded-lg border px-3 py-1 text-xs"><Square className="mr-1 inline h-3 w-3" />Stop</button></div>}
                   <p className="mt-1 text-xs text-slate-400">
                     {isHi
                       ? "हिंदी या अंग्रेजी में कोई भी सवाल पूछें"
@@ -412,6 +437,13 @@ export function MedSaathiPage() {
                       }`}
                     >
                       <p>{isHi ? msg.textHi : msg.textEn}</p>
+                      {msg.safetyFlags?.includes("potential_emergency") && <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">Potential emergency detected. Seek urgent local medical care.</p>}
+                      {msg.role === "assistant" && msg.id !== "medsaathi-welcome" && msg.id !== "reset-welcome" && <button type="button" onClick={() => {
+                        setChatError("");
+                        void assistantService.speakText(isHi ? msg.textHi : msg.textEn, locale,
+                          () => setSpeechState("generating"), () => setSpeechState("speaking"), () => setSpeechState("idle")
+                        ).catch((error: unknown) => { setSpeechState("idle"); setChatError(error instanceof Error ? error.message : "Voice playback failed."); });
+                      }} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand"><Volume2 className="h-3.5 w-3.5" />{isHi ? "जवाब सुनें" : "Speak response"}</button>}
 
                       {/* Interactive Execution Action */}
                       {msg.action && (
@@ -439,6 +471,8 @@ export function MedSaathiPage() {
                     </div>
                   </div>
                 )}
+                {streamingText && <div className="flex flex-col items-start"><div className="max-w-[85%] rounded-3xl rounded-bl-xs border border-slate-200 bg-[#f8fbff] px-5 py-3.5 text-sm leading-relaxed text-navy">{streamingText}<span className="ml-1 animate-pulse">▍</span></div></div>}
+                {chatError && <p role="alert" className="rounded-xl bg-red-50 px-4 py-2 text-xs text-red-700">{chatError}</p>}
                 <div ref={chatContainerRef} />
               </div>
 
