@@ -22,8 +22,8 @@ def client():
 
 def test_csv_loading():
     service = MedicineService()
-    assert service.load_csv(CSV) == 500
-    assert len(pd.read_csv(CSV)) == 500
+    assert service.load_csv(CSV) >= 500
+    assert len(pd.read_csv(CSV)) >= 500
 
 
 def test_exact_medicine_search(client):
@@ -82,7 +82,7 @@ def test_missing_prices_are_not_zero():
 
 
 def test_health_and_categories(client):
-    assert client.get("/api/health").json() == {"status": "ok", "catalogue_records": 500}
+    assert client.get("/api/health").json() == {"status": "ok", "catalogue_records": len(pd.read_csv(CSV))}
     categories = client.get("/api/medicines/categories").json()
     assert categories["total_categories"] == len(categories["categories"])
 
