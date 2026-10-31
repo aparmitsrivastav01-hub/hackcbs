@@ -107,3 +107,34 @@ class PharmacyEnquiryResponse(BaseModel):
 
 class PharmacyEnquiryRecord(PharmacyEnquiryResponse):
     pass
+
+
+class ShopWhatsAppContactRequest(BaseModel):
+    shop_name: str = Field(min_length=1, max_length=200)
+    shop_address: str | None = Field(default=None, max_length=500)
+    city: str | None = Field(default=None, max_length=100)
+    locality: str | None = Field(default=None, max_length=100)
+    maps_url: str | None = Field(default=None, max_length=1000)
+    query: str | None = Field(default=None, max_length=300)
+
+    @model_validator(mode="after")
+    def validate_shop(self):
+        if not self.shop_name or not self.shop_name.strip():
+            raise ValueError("shop_name cannot be blank or whitespace only")
+        return self
+
+
+class ShopWhatsAppContactResponse(BaseModel):
+    shop_name: str
+    address: str | None = None
+    mobile_number: str | None = None
+    phone_number: str | None = None
+    whatsapp_number: str | None = None
+    source_url: str | None = None
+    run_url: str | None = None
+    embed_url: str | None = None
+    verification_status: Literal["verified", "verified_whatsapp", "phone_only", "not_found", "ambiguous"]
+    confidence: Literal["high", "medium", "low", "none"] | None = None
+    message: str
+    cached: bool = False
+

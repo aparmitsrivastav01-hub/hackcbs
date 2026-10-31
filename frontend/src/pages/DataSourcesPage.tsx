@@ -111,7 +111,7 @@ export function DataSourcesPage() {
               <Skeleton className="mt-2 h-9 w-20 rounded-lg" />
             ) : (
               <p className="mt-2 text-3xl font-black text-navy">
-                {dataset?.records_loaded ?? 342}
+                {dataset?.records_loaded ?? "—"}
               </p>
             )}
             <p className="mt-1 text-xs text-slate-400">

@@ -9,6 +9,8 @@ from app.models.pharmacy_schemas import (
     PharmacyEnquiryRecord,
     PharmacyEnquiryResponse,
     PharmacyStore,
+    ShopWhatsAppContactRequest,
+    ShopWhatsAppContactResponse,
 )
 from app.services.pharmacy_service import PharmacyService
 from app.services.tinyfish_service import TinyFishError, TinyFishNotConfigured, TinyFishTimeout
@@ -28,6 +30,21 @@ async def nearby_pharmacies(body: NearbyPharmaciesRequest, service: PharmacyServ
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except TinyFishTimeout as exc:
         raise HTTPException(status_code=504, detail=str(exc)) from exc
+    except TinyFishError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.post("/whatsapp-contact", response_model=ShopWhatsAppContactResponse)
+async def pharmacy_whatsapp_contact(
+    body: ShopWhatsAppContactRequest,
+    service: PharmacyService = Depends(get_pharmacy_service),
+):
+    try:
+        return await service.get_shop_whatsapp_contact(body)
+    except TinyFishNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except TinyFishTimeout as exc:
+        raise HTTPException(status_code=504, detail="TinyFish contact discovery timed out") from exc
     except TinyFishError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 

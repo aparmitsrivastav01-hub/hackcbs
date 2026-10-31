@@ -580,7 +580,7 @@ export function ScanPage() {
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#eef5ff] text-brand animate-spin">
               <RotateCcw className="h-6 w-6" />
             </div>
-            <p className="text-base font-bold text-navy">Analyzing your prescription...</p>
+            <p className="text-base font-bold text-navy">{tr("Analyzing your prescription...", "पर्चे का विश्लेषण हो रहा है...")}</p>
             <p className="mt-1 text-xs text-slate-500">
               Reading doctor&apos;s handwriting, medicine names and dosage schedules.
             </p>
@@ -659,7 +659,7 @@ export function ScanPage() {
                           next[index] = { ...item, medicine_name: e.target.value };
                           setItems(next);
                         }}
-                        placeholder="e.g. Paracetamol"
+                        placeholder={tr("e.g. Paracetamol", "उदा. पैरासिटामोल")}
                       />
                     </div>
                     <div>
@@ -673,7 +673,7 @@ export function ScanPage() {
                           next[index] = { ...item, strength: e.target.value };
                           setItems(next);
                         }}
-                        placeholder="e.g. 500 mg"
+                        placeholder={tr("e.g. 500 mg", "उदा. 500 mg")}
                       />
                     </div>
                     <div>
@@ -687,7 +687,7 @@ export function ScanPage() {
                           next[index] = { ...item, dosage_form: e.target.value };
                           setItems(next);
                         }}
-                        placeholder="e.g. Tablet"
+                        placeholder={tr("e.g. Tablet", "उदा. टैबलेट")}
                       />
                     </div>
                   </div>

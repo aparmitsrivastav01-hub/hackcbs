@@ -21,7 +21,7 @@ import type { MedicineResponse } from "../types";
 
 export function MedicineDetailPage() {
   const { id } = useParams();
-  const { tr } = useLanguage();
+  const { tr, locale } = useLanguage();
   const { addItem } = useCart();
 
   const [medicine, setMedicine] = useState<MedicineResponse | null>(null);
@@ -89,7 +89,7 @@ export function MedicineDetailPage() {
     return (
       <>
         <Helmet>
-          <title>Loading Medicine Details — MedEasy</title>
+          <title>{tr("Loading Medicine Details — MedEasy", "दवा का विवरण लोड हो रहा है — MedEasy")}</title>
         </Helmet>
         <div className="min-h-screen bg-[#f7faff] pb-24 pt-8">
           <div className="mx-auto max-w-[1080px] px-4 sm:px-6 lg:px-8">
@@ -173,20 +173,20 @@ export function MedicineDetailPage() {
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
           <AlertCircle className="h-7 w-7" />
         </div>
-        <h2 className="mt-4 text-2xl font-bold text-navy">Medicine not found</h2>
-        <p className="mt-2 text-sm text-muted">{error ?? "Unable to load catalogue record."}</p>
+        <h2 className="mt-4 text-2xl font-bold text-navy">{tr("Medicine not found", "दवा नहीं मिली")}</h2>
+        <p className="mt-2 text-sm text-muted">{error ?? tr("Unable to load catalogue record.", "कैटलॉग रिकॉर्ड लोड नहीं हो सका।")}</p>
         <div className="mt-6 flex justify-center gap-3">
           <Link
             to="/medicines"
             className="rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white shadow-xs"
           >
-            Back to catalogue
+            {tr("Back to catalogue", "कैटलॉग पर लौटें")}
           </Link>
           <Link
             to="/scan"
             className="rounded-full border border-slate-200 bg-white px-6 py-2.5 text-sm font-semibold text-navy"
           >
-            Scan prescription
+            {tr("Scan prescription", "पर्चा स्कैन करें")}
           </Link>
         </div>
       </div>
@@ -199,7 +199,7 @@ export function MedicineDetailPage() {
 
   // Render provider display name when single or tie
   const formatProviderName = (prov: string | string[] | undefined) => {
-    if (!prov) return "Alternative Provider";
+    if (!prov) return tr("Alternative Provider", "वैकल्पिक प्रदाता");
     if (Array.isArray(prov)) return prov.join(" & ");
     return prov;
   };
@@ -258,10 +258,10 @@ export function MedicineDetailPage() {
                   {tr("Maximum Potential Savings", "अधिकतम संभावित बचत")}
                 </span>
                 <p className="mt-1 text-2xl font-black text-emerald-800">
-                  {formatSavingsText(maxSaving.amount, maxSaving.percentage)}
+                  {formatSavingsText(maxSaving.amount, maxSaving.percentage, locale)}
                 </p>
                 <p className="text-xs font-semibold text-slate-500">
-                  via {formatProviderName(maxSaving.provider)}
+                  {tr("via", "द्वारा")} {formatProviderName(maxSaving.provider)}
                 </p>
               </div>
             ) : null}
@@ -318,7 +318,7 @@ export function MedicineDetailPage() {
               </p>
               <p className="mt-1 text-xs font-semibold text-emerald-700">
                 {jaSavings?.savings_amount != null
-                  ? formatSavingsText(jaSavings.savings_amount, jaSavings.savings_percentage)
+                  ? formatSavingsText(jaSavings.savings_amount, jaSavings.savings_percentage, locale)
                   : tr("Not available in catalogue", "कैटलॉग में उपलब्ध नहीं")}
               </p>
 
@@ -351,7 +351,7 @@ export function MedicineDetailPage() {
               </p>
               <p className="mt-1 text-xs font-semibold text-brand">
                 {diSavings?.savings_amount != null
-                  ? formatSavingsText(diSavings.savings_amount, diSavings.savings_percentage)
+                  ? formatSavingsText(diSavings.savings_amount, diSavings.savings_percentage, locale)
                   : tr("Not available in catalogue", "कैटलॉग में उपलब्ध नहीं")}
               </p>
 
@@ -367,13 +367,13 @@ export function MedicineDetailPage() {
           <div className="mt-8 flex flex-col gap-3 rounded-2xl bg-slate-50 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold text-navy">
-                Selected option:{" "}
+              {tr("Selected option:", "चुना गया विकल्प:")} {" "}
                 <span className="capitalize text-brand">
                   {selectedProvider.replace("_", " ")}
                 </span>
               </p>
               <p className="text-xs text-slate-500">
-                Add this medicine to your pharmacy enquiry list to request availability and quotes.
+                {tr("Add this medicine to your pharmacy enquiry list to request availability and quotes.", "उपलब्धता और कीमत पूछने के लिए इस दवा को अपनी फार्मेसी पूछताछ सूची में जोड़ें।")}
               </p>
             </div>
 
@@ -390,12 +390,12 @@ export function MedicineDetailPage() {
                 {added ? (
                   <>
                     <Check className="h-4 w-4" />
-                    <span>Added to enquiry!</span>
+                    <span>{tr("Added to enquiry!", "पूछताछ सूची में जोड़ा गया!")}</span>
                   </>
                 ) : (
                   <>
                     <ShoppingCart className="h-4 w-4" />
-                    <span>Add to enquiry list</span>
+                    <span>{tr("Add to enquiry list", "पूछताछ सूची में जोड़ें")}</span>
                   </>
                 )}
               </button>
@@ -405,7 +405,7 @@ export function MedicineDetailPage() {
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-navy transition hover:border-brand hover:text-brand"
               >
                 <MapPin className="h-4 w-4 text-slate-400" />
-                <span>Find nearby stores</span>
+                <span>{tr("Find nearby stores", "नज़दीकी स्टोर खोजें")}</span>
               </Link>
             </div>
           </div>
@@ -418,10 +418,9 @@ export function MedicineDetailPage() {
             <div className="flex items-start gap-3">
               <Info className="h-5 w-5 shrink-0 text-slate-400" />
               <div>
-                <h3 className="font-bold text-navy">Pack Size & Comparability Caveat</h3>
+                <h3 className="font-bold text-navy">{tr("Pack Size & Comparability Caveat", "पैक आकार और तुलना संबंधी सूचना")}</h3>
                 <p className="mt-1 text-xs leading-relaxed text-muted">
-                  Prices displayed are catalogue reference values. Pack sizes (e.g. 10 tablets vs. 15 tablets)
-                  or specific excipients may differ between brands. Always verify pack counts with your chemist.
+                  {tr("Prices displayed are catalogue reference values. Pack sizes (e.g. 10 tablets vs. 15 tablets) or specific excipients may differ between brands. Always verify pack counts with your chemist.", "दिखाई गई कीमतें कैटलॉग संदर्भ मूल्य हैं। ब्रांड के अनुसार पैक आकार (जैसे 10 बनाम 15 टैबलेट) या सहायक तत्व अलग हो सकते हैं। पैक की मात्रा अपने फार्मासिस्ट से जांचें।")}
                 </p>
               </div>
             </div>
@@ -432,10 +431,9 @@ export function MedicineDetailPage() {
             <div className="flex items-start gap-3">
               <ShieldAlert className="h-5 w-5 shrink-0 text-amber-600" />
               <div>
-                <h3 className="font-bold text-amber-900">Medical Safety & Substitution Notice</h3>
+                <h3 className="font-bold text-amber-900">{tr("Medical Safety & Substitution Notice", "चिकित्सा सुरक्षा और दवा बदलने की सूचना")}</h3>
                 <p className="mt-1 text-xs leading-relaxed text-amber-800">
-                  This comparison is for price discovery only. It is not a prescription or clinical recommendation.
-                  Do not substitute prescribed medications without consulting your prescribing doctor or licensed pharmacist.
+                  {tr("This comparison is for price discovery only. It is not a prescription or clinical recommendation. Do not substitute prescribed medications without consulting your prescribing doctor or licensed pharmacist.", "यह तुलना केवल कीमतों की जानकारी के लिए है। यह पर्चा या चिकित्सीय सलाह नहीं है। डॉक्टर या लाइसेंस प्राप्त फार्मासिस्ट से पूछे बिना निर्धारित दवा न बदलें।")}
                 </p>
               </div>
             </div>
@@ -449,15 +447,15 @@ export function MedicineDetailPage() {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-bold text-navy">Have a pack of {medicine.brand_name} at home?</p>
-              <p className="text-xs text-muted">Check its batch number against official CDSCO drug quality alerts.</p>
+              <p className="font-bold text-navy">{tr("Have a pack of", "क्या आपके पास")} {medicine.brand_name} {tr("at home?", "का पैक है?")}</p>
+              <p className="text-xs text-muted">{tr("Check its batch number against official CDSCO drug quality alerts.", "इसका बैच नंबर CDSCO के आधिकारिक दवा गुणवत्ता अलर्ट में जांचें।")}</p>
             </div>
           </div>
           <Link
             to="/batch-safety"
             className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-navy hover:border-brand hover:text-brand"
           >
-            Check Batch Number →
+            {tr("Check Batch Number →", "बैच नंबर जांचें →")}
           </Link>
         </div>
       </div>

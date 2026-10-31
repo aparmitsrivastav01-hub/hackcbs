@@ -263,6 +263,7 @@ export type DatasetStatus = {
   note: string;
 };
 
+<<<<<<< HEAD
 // -------------------------------------------------------------
 // Phase 2: User Account, Patient Profile, & Privacy Consent Types
 // -------------------------------------------------------------
@@ -315,3 +316,29 @@ export type MekoContextResponse = {
   message?: string;
 };
 
+=======
+// On-Demand TinyFish WhatsApp Contact Discovery
+export type ShopWhatsAppContactRequest = {
+  shop_name: string;
+  shop_address?: string;
+  city?: string;
+  locality?: string;
+  maps_url?: string;
+  query?: string;
+};
+
+export type ShopWhatsAppContactResponse = {
+  shop_name: string;
+  address?: string | null;
+  mobile_number?: string | null;
+  phone_number?: string | null;
+  whatsapp_number?: string | null;
+  source_url?: string | null;
+  run_url?: string | null;
+  embed_url?: string | null;
+  verification_status: "verified" | "verified_whatsapp" | "phone_only" | "not_found" | "ambiguous";
+  confidence?: "high" | "medium" | "low" | "none" | null;
+  message: string;
+  cached?: boolean;
+};
+>>>>>>> 99ea3c54d9d08682bc49c798eea7fae9f24afb1f
