@@ -6,6 +6,7 @@ export const copy = {
   en: {
     brand: "MedEasy",
     navHome: "Home",
+    navDashboard: "Dashboard",
     navScan: "Scan Rx",
     navMedicines: "Explore Medicines",
     navStores: "Nearby Stores",
@@ -77,6 +78,7 @@ export const copy = {
   hi: {
     brand: "MedEasy",
     navHome: "होम",
+    navDashboard: "डैशबोर्ड",
     navScan: "पर्चा स्कैन",
     navMedicines: "दवाइयां खोजें",
     navStores: "नज़दीकी मेडिकल स्टोर",

@@ -11,7 +11,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? "/account";
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

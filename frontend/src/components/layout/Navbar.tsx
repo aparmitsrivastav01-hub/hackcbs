@@ -1,24 +1,25 @@
-import { Menu, Plus, ShoppingCart, User, X } from "lucide-react";
+import { LayoutDashboard, Menu, Plus, ShoppingCart, User, X } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useLanguage } from "../../i18n/LanguageContext";
 
-const links = [
-  { to: "/", key: "navHome" as const },
-  { to: "/scan", key: "navScan" as const },
-  { to: "/medicines", key: "navMedicines" as const },
-  { to: "/stores", key: "navStores" as const },
-  { to: "/batch-safety", key: "navBatchSafety" as const },
-  { to: "/med-saathi", key: "navMedSaathi" as const },
-];
-
 export function Navbar() {
   const { t, locale, setLocale } = useLanguage();
   const { itemCount } = useCart();
   const { isAuthenticated, profile } = useAuth();
   const [open, setOpen] = useState(false);
+
+  const navLinks = [
+    { to: "/", key: "navHome" as const },
+    ...(isAuthenticated ? [{ to: "/dashboard", key: "navDashboard" as const }] : []),
+    { to: "/scan", key: "navScan" as const },
+    { to: "/medicines", key: "navMedicines" as const },
+    { to: "/stores", key: "navStores" as const },
+    { to: "/batch-safety", key: "navBatchSafety" as const },
+    { to: "/med-saathi", key: "navMedSaathi" as const },
+  ];
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur-md">
@@ -36,7 +37,7 @@ export function Navbar() {
 
         {/* Desktop Nav Links */}
         <nav className="hidden items-center gap-6 lg:flex">
-          {links.map((link) => (
+          {navLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
@@ -103,16 +104,26 @@ export function Navbar() {
 
           {/* User Account / Sign In Pill */}
           {isAuthenticated ? (
-            <Link
-              to="/account"
-              title="Patient Account & Privacy"
-              className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-[#f8fbff] px-3 py-1.5 text-xs font-bold text-navy transition hover:border-brand hover:text-brand"
-            >
-              <User className="h-3.5 w-3.5 text-brand" />
-              <span className="hidden sm:inline max-w-[100px] truncate">
-                {profile?.display_label || "Account"}
-              </span>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/dashboard"
+                title="Patient Dashboard"
+                className="hidden sm:flex items-center gap-1.5 rounded-full border border-brand/20 bg-brand/5 px-3 py-1.5 text-xs font-bold text-brand transition hover:bg-brand/10 hover:border-brand"
+              >
+                <LayoutDashboard className="h-3.5 w-3.5 text-brand" />
+                <span>{t.navDashboard}</span>
+              </Link>
+              <Link
+                to="/account"
+                title="Patient Account & Privacy"
+                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-[#f8fbff] px-3 py-1.5 text-xs font-bold text-navy transition hover:border-brand hover:text-brand"
+              >
+                <User className="h-3.5 w-3.5 text-brand" />
+                <span className="hidden sm:inline max-w-[100px] truncate">
+                  {profile?.display_label || "Account"}
+                </span>
+              </Link>
+            </div>
           ) : (
             <Link
               to="/login"
@@ -137,7 +148,7 @@ export function Navbar() {
       {/* Mobile Drawer */}
       {open ? (
         <div className="border-t border-slate-100 bg-white px-5 py-3 lg:hidden">
-          {links.map((link) => (
+          {navLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}

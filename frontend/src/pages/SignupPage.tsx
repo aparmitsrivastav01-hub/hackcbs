@@ -46,7 +46,7 @@ export function SignupPage() {
         display_label: displayLabel.trim() || undefined,
         preferred_language: preferredLanguage,
       });
-      navigate("/account", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {

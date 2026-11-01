@@ -10,6 +10,7 @@ import { AboutPage } from "./pages/AboutPage";
 import { AccountPage } from "./pages/AccountPage";
 import { BatchSafetyPage } from "./pages/BatchSafetyPage";
 import { CartPage } from "./pages/CartPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { HelpPage } from "./pages/HelpPage";
 import { HomePage } from "./pages/HomePage";
 import { HowItWorksPage } from "./pages/HowItWorksPage";
@@ -45,6 +46,14 @@ export default function App() {
                   <Route path="/data-sources" element={<Navigate to="/med-saathi" replace />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <PrivateRoute>
+                        <DashboardPage />
+                      </PrivateRoute>
+                    }
+                  />
                   <Route
                     path="/account"
                     element={
