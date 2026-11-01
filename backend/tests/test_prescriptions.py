@@ -446,6 +446,25 @@ def test_dosage_form_mismatch_fails_cleanly(client):
     assert res_razod["review_note"] == "No verified catalogue match found."
 
 
+def test_ocr_mismatch_pantil_plus_suggested_candidate(client):
+    # Pantil Plus is an OCR transcription mismatch for Petril Plus.
+    # It must NOT silently declare an exact match.
+    # It must return Petril Plus as a suggested candidate requiring confirmation.
+    response = client.post(
+        "/api/prescriptions/search-confirmed",
+        json={"items": [{"medicine_name": "Pantil Plus"}]},
+    )
+    assert response.status_code == 200
+    res = response.json()["results"][0]
+    assert res["match_count"] == 1
+    assert res["match_type"] == "suggested_candidate"
+    assert "Requires confirmation" in res["review_note"] or "suggested candidate" in res["review_note"].lower()
+    matched = res["matches"][0]
+    assert matched["medicine"]["brand_name"] == "Petril Plus"
+    assert matched["match_type"] == "suggested_candidate"
+    assert matched["match_confidence"] < 0.93  # Not exact
+
+
 def test_truly_unknown_medicine_returns_no_match(client):
     response = client.post(
         "/api/prescriptions/search-confirmed",
@@ -454,5 +473,88 @@ def test_truly_unknown_medicine_returns_no_match(client):
     assert response.status_code == 200
     res = response.json()["results"][0]
     assert res["match_count"] == 0
+    assert res["match_status"] == "No Match Found"
     assert res["review_note"] == "No verified catalogue match found."
     assert res["matches"] == []
+
+
+def test_petril_plus_and_placida_variations_match_as_exact(client):
+    """Test clinical doctor prescription prefixes (Tab., T.) and suffixes for Petril Plus and Placida."""
+    items = [
+        {"medicine_name": "Petril Plus"},
+        {"medicine_name": "Tab Petril Plus"},
+        {"medicine_name": "T. Petril Plus"},
+        {"medicine_name": "Petril Plus Tab"},
+        {"medicine_name": "Placida"},
+        {"medicine_name": "Tab Placida"},
+        {"medicine_name": "T. Placida"},
+        {"medicine_name": "Placida Tab"},
+    ]
+    response = client.post("/api/prescriptions/search-confirmed", json={"items": items})
+    assert response.status_code == 200
+    results = response.json()["results"]
+    assert len(results) == 8
+
+    # All Petril Plus variations match id 506 as Exact Match
+    for res in results[:4]:
+        assert res["match_count"] >= 1
+        assert res["match_status"] == "Exact Match"
+        assert res["matches"][0]["medicine"]["id"] == 506
+        assert res["matches"][0]["medicine"]["brand_name"] == "Petril Plus"
+
+    # All Placida variations match id 507 as Exact Match
+    for res in results[4:]:
+        assert res["match_count"] >= 1
+        assert res["match_status"] == "Exact Match"
+        assert res["matches"][0]["medicine"]["id"] == 507
+        assert res["matches"][0]["medicine"]["brand_name"] == "Placida"
+
+
+def test_enotet_investigation_and_safety_requirements(client):
+    """Detailed investigation of Enotet / Enotet 40 against catalogue:
+    - Row 508 has brand 'Enotet / Etojet / Etojet-90' with active salt 'Etoricoxib 90 mg Tab'.
+    - Exact alias 'Enotet' matches with Exact Match (exact_alias).
+    - Prescribed 'Enotet 40' surfaces row 508 under 'Possible Match — Needs Review'.
+    - If explicit strength '40 mg' is provided, it must NOT be substituted as an exact 90 mg match.
+    """
+    # 1. Exact alias 'Enotet'
+    res1 = client.post("/api/prescriptions/search-confirmed", json={"items": [{"medicine_name": "Enotet"}]}).json()["results"][0]
+    assert res1["match_count"] >= 1
+    assert res1["match_status"] == "Exact Match"
+    assert res1["match_type"] == "exact_alias"
+    assert res1["matches"][0]["medicine"]["id"] == 508
+
+    # 2. Prescribed 'Enotet 40' without explicit strength override -> suggested candidate / Possible Match — Needs Review
+    res2 = client.post("/api/prescriptions/search-confirmed", json={"items": [{"medicine_name": "Enotet 40"}]}).json()["results"][0]
+    assert res2["match_count"] >= 1
+    assert res2["match_status"] == "Possible Match — Needs Review"
+    assert res2["match_type"] in ("strength_variant", "suggested_candidate")
+    assert res2["matches"][0]["medicine"]["id"] == 508
+    assert res2["matches"][0]["match_confidence"] < 0.90  # Must never silently declare exact
+
+    # 3. Explicit strength conflict '40 mg' -> Strictly rejected from substitution (0 matches)
+    res3 = client.post("/api/prescriptions/search-confirmed", json={"items": [{"medicine_name": "Enotet", "strength": "40 mg"}]}).json()["results"][0]
+    assert res3["match_count"] == 0
+    assert res3["match_status"] == "No Match Found"
+
+
+def test_three_tier_status_categorization(client):
+    """Verifies that search_confirmed returns the exact 3 statuses:
+    1. 'Exact Match'
+    2. 'Possible Match — Needs Review'
+    3. 'No Match Found'
+    """
+    payload = {
+        "items": [
+            {"medicine_name": "Petril Plus"},           # Tier 1: Exact Match
+            {"medicine_name": "Pantil Plus"},           # Tier 2: Possible Match — Needs Review
+            {"medicine_name": "FakeMedicineZyx987"},    # Tier 3: No Match Found
+        ]
+    }
+    response = client.post("/api/prescriptions/search-confirmed", json=payload)
+    assert response.status_code == 200
+    results = response.json()["results"]
+
+    assert results[0]["match_status"] == "Exact Match"
+    assert results[1]["match_status"] == "Possible Match — Needs Review"
+    assert results[2]["match_status"] == "No Match Found"

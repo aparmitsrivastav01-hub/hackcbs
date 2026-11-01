@@ -1,6 +1,10 @@
+import logging
 from pathlib import Path
+import re
 from typing import Any
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 REQUIRED_COLUMNS = {
     "id", "brand_name", "active_salt", "dosage_form", "private_brand_price",
@@ -14,12 +18,14 @@ class MedicineService:
     def __init__(self) -> None:
         self._rows: list[dict[str, Any]] = []
         self._by_id: dict[int, dict[str, Any]] = {}
+        self._csv_path: Path | None = None
 
     def load_csv(self, path: str | Path) -> int:
-        csv_path = Path(path)
+        csv_path = Path(path).resolve()
         if not csv_path.is_file():
             raise FileNotFoundError(f"Medicine catalogue not found: {csv_path}")
-        frame = pd.read_csv(csv_path)
+        self._csv_path = csv_path
+        frame = pd.read_csv(csv_path, encoding="utf-8-sig")
         missing = REQUIRED_COLUMNS - set(frame.columns)
         if missing:
             raise ValueError(f"Catalogue is missing required columns: {', '.join(sorted(missing))}")
@@ -37,7 +43,25 @@ class MedicineService:
         records = frame.to_dict(orient="records")
         self._rows = records
         self._by_id = {int(row["id"]): row for row in records}
+
+        # Diagnostic logs for catalogue verification
+        logger.info("[Catalogue Diagnostic] Absolute path: %s", csv_path)
+        logger.info("[Catalogue Diagnostic] Total records loaded into memory: %d", len(records))
+
+        target_checks = {
+            "Razod / Razo-D": any(re.search(r"\brazod\b|\brazo-d\b", str(r.get("brand_name") or ""), re.I) for r in records),
+            "Ambulox / Ambulax": any(re.search(r"\bambulox\b|\bambulax\b", str(r.get("brand_name") or ""), re.I) for r in records),
+            "Petril Plus": any("petril plus" in str(r.get("brand_name") or "").lower() for r in records),
+            "Placida": any("placida" in str(r.get("brand_name") or "").lower() for r in records),
+        }
+        for med_name, exists in target_checks.items():
+            logger.info("[Catalogue Diagnostic] Example record '%s' exists: %s", med_name, exists)
+
         return len(records)
+
+    @property
+    def csv_path(self) -> Path | None:
+        return self._csv_path
 
     @property
     def count(self) -> int:

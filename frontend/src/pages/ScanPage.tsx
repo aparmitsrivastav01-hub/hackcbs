@@ -235,7 +235,7 @@ export function ScanPage() {
       {
         medicine_name: "",
         strength: "",
-        dosage_form: "Tablet",
+        dosage_form: "",
         raw_text: "Manual entry",
         confidence: "User entered",
       },
@@ -753,9 +753,32 @@ export function ScanPage() {
                         </span>
                       </p>
                     </div>
-                    <span className="rounded-full bg-sky px-3 py-1 text-xs font-bold text-brand">
-                      {res.match_count} {tr("match(es) found", "विकल्प मिले")}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          res.match_status === "Exact Match" ||
+                          (!res.match_status && res.match_count > 0 && res.match_type !== "suggested_candidate" && res.match_type !== "strength_variant")
+                            ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
+                            : res.match_status === "Possible Match — Needs Review" ||
+                              res.match_type === "suggested_candidate" ||
+                              res.match_type === "strength_variant"
+                            ? "bg-amber-50 border border-amber-200 text-amber-800"
+                            : "bg-slate-100 border border-slate-200 text-slate-700"
+                        }`}
+                      >
+                        {res.match_status === "Exact Match" ||
+                        (!res.match_status && res.match_count > 0 && res.match_type !== "suggested_candidate" && res.match_type !== "strength_variant")
+                          ? tr("✓ Exact Match", "✓ सटीक मिलान")
+                          : res.match_status === "Possible Match — Needs Review" ||
+                            res.match_type === "suggested_candidate" ||
+                            res.match_type === "strength_variant"
+                          ? tr("⚠ Possible Match — Needs Review", "⚠ संभावित मिलान — समीक्षा आवश्यक")
+                          : tr("✕ No Match Found", "✕ कोई मिलान नहीं")}
+                      </span>
+                      <span className="rounded-full bg-sky px-3 py-1 text-xs font-bold text-brand">
+                        {res.match_count} {tr("match(es) found", "विकल्प मिले")}
+                      </span>
+                    </div>
                   </div>
 
                   <p className="mt-2 text-xs text-slate-500">{res.review_note}</p>
@@ -782,13 +805,23 @@ export function ScanPage() {
                                   </span>
                                 ) : null}
                                 {match.match_type ? (
-                                  <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-brand">
+                                  <span
+                                    className={`rounded px-2 py-0.5 text-[10px] font-bold ${
+                                      match.match_type === "strength_variant" || match.match_type === "suggested_candidate"
+                                        ? "bg-amber-50 text-amber-800 border border-amber-200"
+                                        : "bg-blue-50 text-brand"
+                                    }`}
+                                  >
                                     {match.match_type === "exact_brand"
                                       ? tr("Exact Brand", "सटीक ब्रांड")
                                       : match.match_type === "exact_alias"
                                       ? tr("Verified Alias", "सत्यापित उपनाम")
                                       : match.match_type === "exact_composition"
                                       ? tr("Composition Match", "सामग्री मिलान")
+                                      : match.match_type === "strength_variant"
+                                      ? tr("Strength Variant", "खुराक भिन्नता")
+                                      : match.match_type === "suggested_candidate"
+                                      ? tr("Suggested Candidate", "सुझाया गया विकल्प")
                                       : tr("Possible Match", "संभावित मिलान")}
                                     {match.match_confidence ? ` (${Math.round(match.match_confidence * 100)}%)` : ""}
                                   </span>
@@ -802,6 +835,25 @@ export function ScanPage() {
                             </div>
                             <p className="mt-1 text-base font-bold text-navy">{match.medicine.brand_name}</p>
                             <p className="text-xs text-slate-500">{match.medicine.active_salt}</p>
+
+                            {/* Safety Notice Banner for suggested candidates or strength variants */}
+                            {match.match_type === "strength_variant" ? (
+                              <div className="mt-2.5 rounded-lg border border-amber-200 bg-amber-50/80 p-2 text-[11px] leading-relaxed text-amber-900">
+                                <span className="font-bold">⚠️ {tr("Dosage Warning:", "खुराक चेतावनी:")} </span>
+                                {tr(
+                                  "Catalogue formulation strength differs from prescription. Verify exact dosage with your doctor before substitution.",
+                                  "कैटलॉग खुराक पर्चे से भिन्न है। प्रतिस्थापन से पहले डॉक्टर से सत्यापित करें।"
+                                )}
+                              </div>
+                            ) : match.match_type === "suggested_candidate" ? (
+                              <div className="mt-2.5 rounded-lg border border-blue-200 bg-blue-50/80 p-2 text-[11px] leading-relaxed text-blue-900">
+                                <span className="font-bold">ℹ️ {tr("Visual Match:", "दृश्य मिलान:")} </span>
+                                {tr(
+                                  "Suggested candidate based on handwriting/name similarity. Verify active salt with pharmacist.",
+                                  "दवा के नाम की समानता पर आधारित सुझाव। फार्मासिस्ट से सत्यापित करें।"
+                                )}
+                              </div>
+                            ) : null}
                           </div>
 
                           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">

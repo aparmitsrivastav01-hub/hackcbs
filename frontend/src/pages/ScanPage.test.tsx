@@ -357,4 +357,238 @@ describe("ScanPage — Prescription Scanning & Catalogue Matching", () => {
       expect(screen.getAllByText(/No verified catalogue match found\./i).length).toBeGreaterThan(0);
     });
   });
+
+  it("displays Suggested Candidate for OCR mismatch such as Pantil Plus", async () => {
+    const mockExtraction: ExtractionResponse = {
+      status: "success",
+      message: "1 medicine extracted",
+      search_performed: false,
+      model: "Gemini Vision",
+      file_name: "test_rx.jpg",
+      extraction: {
+        document_language: "en",
+        items: [
+          {
+            raw_text: "Tab Pantil Plus",
+            medicine_name: "Pantil Plus",
+            strength: "0.5 mg + 10 mg",
+            dosage_form: "Tablet",
+            instructions: "1 daily",
+            confidence: "Medium",
+            uncertain_parts: [],
+            needs_user_confirmation: true,
+          },
+        ],
+        other_text: [],
+        warnings: [],
+      },
+    };
+
+    const mockSearchResults: ConfirmedSearchResult = {
+      status: "success",
+      note: "Price comparisons matching loaded public generic catalogue.",
+      results: [
+        {
+          confirmed_input: {
+            medicine_name: "Pantil Plus",
+            strength: "0.5 mg + 10 mg",
+            dosage_form: "Tablet",
+          },
+          match_count: 1,
+          match_type: "suggested_candidate",
+          match_confidence: 0.78,
+          review_note: "Suggested candidate found based on visual similarity. Requires confirmation.",
+          matches: [
+            {
+              medicine: {
+                id: 506,
+                brand_name: "Petril Plus",
+                active_salt: "Clonazepam 0.5 mg + Escitalopram Oxalate 10 mg Tab",
+                dosage_form: "Tablet",
+                category: "CNS & Neurology",
+                private_brand_price: 159.0,
+                jan_aushadhi_price: 18.0,
+                dava_india_price: 30.0,
+              },
+              match_type: "suggested_candidate",
+              match_confidence: 0.78,
+              price_options: [],
+              recommended_option: {
+                provider: "Jan Aushadhi",
+                price: 18.0,
+                savings: 141.0,
+                savings_percent: 88.68,
+              },
+              comparison_note: "Save up to 89% with generic options.",
+            },
+          ],
+        },
+      ],
+    };
+
+    vi.spyOn(apiClient, "extractPrescription").mockResolvedValueOnce(mockExtraction);
+    vi.spyOn(apiClient, "searchConfirmed").mockResolvedValueOnce(mockSearchResults);
+
+    renderScanPage();
+
+    const file = new File(["dummy content"], "rx.jpg", { type: "image/jpeg" });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    const scanBtn = screen.getByRole("button", { name: /Scan Prescription/i });
+    fireEvent.click(scanBtn);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Pantil Plus")).toBeInTheDocument();
+    });
+
+    const searchConfirmedBtn = screen.getByRole("button", { name: /Search Confirmed Medicines →/i });
+    fireEvent.click(searchConfirmedBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/1 match\(es\) found/i)).toBeInTheDocument();
+      expect(screen.getByText(/Petril Plus/i)).toBeInTheDocument();
+      expect(screen.getByText(/Suggested Candidate \(\d+%\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Requires confirmation/i)).toBeInTheDocument();
+    });
+  });
+
+  it("displays three-tier match status badges and dosage warning for Enotet 40", async () => {
+    const mockExtraction = {
+      status: "success",
+      message: "3 medicines extracted",
+      search_performed: false,
+      model: "Gemini Vision",
+      file_name: "prescription.jpg",
+      extraction: {
+        document_language: "en",
+        items: [
+          { raw_text: "Tab Petril Plus", medicine_name: "Petril Plus", strength: null, dosage_form: "Tablet", instructions: null, confidence: "High", uncertain_parts: [], needs_user_confirmation: true },
+          { raw_text: "T. Placida", medicine_name: "Placida", strength: null, dosage_form: "Tablet", instructions: null, confidence: "High", uncertain_parts: [], needs_user_confirmation: true },
+          { raw_text: "Enotet 40", medicine_name: "Enotet 40", strength: null, dosage_form: "Tablet", instructions: null, confidence: "Medium", uncertain_parts: [], needs_user_confirmation: true },
+        ],
+        other_text: [],
+        warnings: [],
+      },
+    };
+
+    const mockSearchResults = {
+      status: "success",
+      note: "Price comparisons",
+      results: [
+        {
+          confirmed_input: { medicine_name: "Petril Plus", strength: null, dosage_form: "Tablet" },
+          match_count: 1,
+          match_status: "Exact Match",
+          match_type: "exact_brand",
+          match_confidence: 0.98,
+          review_note: "Direct active generic substitutes available in PMBJP catalogue.",
+          matches: [
+            {
+              medicine: {
+                id: 506,
+                brand_name: "Petril Plus",
+                active_salt: "Clonazepam 0.5 mg + Escitalopram Oxalate 10 mg Tab",
+                dosage_form: "Tablet",
+                category: "CNS & Neurology",
+                private_brand_price: 159.0,
+                jan_aushadhi_price: 18.0,
+                dava_india_price: 30.0,
+              },
+              match_type: "exact_brand",
+              match_confidence: 0.98,
+              price_options: [],
+              recommended_option: { provider: "Jan Aushadhi", price: 18.0, savings: 141.0, savings_percent: 88.68 },
+              comparison_note: "Save up to 89% with generic options.",
+            },
+          ],
+        },
+        {
+          confirmed_input: { medicine_name: "Placida", strength: null, dosage_form: "Tablet" },
+          match_count: 1,
+          match_status: "Exact Match",
+          match_type: "exact_brand",
+          match_confidence: 0.98,
+          review_note: "Direct active generic substitutes available in PMBJP catalogue.",
+          matches: [
+            {
+              medicine: {
+                id: 507,
+                brand_name: "Placida",
+                active_salt: "Flupenthixol 0.5 mg + Melitracen 10 mg Tab",
+                dosage_form: "Tablet",
+                category: "CNS & Neurology",
+                private_brand_price: 99.32,
+                jan_aushadhi_price: 14.5,
+                dava_india_price: 24.0,
+              },
+              match_type: "exact_brand",
+              match_confidence: 0.98,
+              price_options: [],
+              recommended_option: { provider: "Jan Aushadhi", price: 14.5, savings: 84.82, savings_percent: 85.4 },
+              comparison_note: "Save up to 85% with generic options.",
+            },
+          ],
+        },
+        {
+          confirmed_input: { medicine_name: "Enotet 40", strength: null, dosage_form: "Tablet" },
+          match_count: 1,
+          match_status: "Possible Match — Needs Review",
+          match_type: "strength_variant",
+          match_confidence: 0.72,
+          review_note: "Catalogue record found for brand 'Enotet / Etojet / Etojet-90', but strength differs. Verification required.",
+          matches: [
+            {
+              medicine: {
+                id: 508,
+                brand_name: "Enotet / Etojet / Etojet-90",
+                active_salt: "Etoricoxib 90 mg Tab",
+                dosage_form: "Tablet",
+                category: "Analgesics",
+                private_brand_price: 119.0,
+                jan_aushadhi_price: 25.99,
+                dava_india_price: 38.0,
+              },
+              match_type: "strength_variant",
+              match_confidence: 0.72,
+              price_options: [],
+              recommended_option: { provider: "Jan Aushadhi", price: 25.99, savings: 93.01, savings_percent: 78.16 },
+              comparison_note: "Strength difference detected. Verify prescribed dosage with doctor/pharmacist.",
+            },
+          ],
+        },
+      ],
+    };
+
+    vi.spyOn(apiClient, "extractPrescription").mockResolvedValueOnce(mockExtraction);
+    vi.spyOn(apiClient, "searchConfirmed").mockResolvedValueOnce(mockSearchResults);
+
+    renderScanPage();
+
+    const file = new File(["dummy"], "rx.jpg", { type: "image/jpeg" });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    const scanBtn = screen.getByRole("button", { name: /Scan Prescription/i });
+    fireEvent.click(scanBtn);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Petril Plus")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("Placida")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("Enotet 40")).toBeInTheDocument();
+    });
+
+    const searchConfirmedBtn = screen.getByRole("button", { name: /Search Confirmed Medicines →/i });
+    fireEvent.click(searchConfirmedBtn);
+
+    await waitFor(() => {
+      // Both Petril Plus and Placida show Exact Match badges
+      expect(screen.getAllByText(/✓ Exact Match/i).length).toBe(2);
+
+      // Enotet 40 shows Possible Match badge and Strength Variant badge
+      expect(screen.getByText(/⚠ Possible Match — Needs Review/i)).toBeInTheDocument();
+      expect(screen.getByText(/Strength Variant/i)).toBeInTheDocument();
+      expect(screen.getByText(/Dosage Warning:/i)).toBeInTheDocument();
+    });
+  });
 });

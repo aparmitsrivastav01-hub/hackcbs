@@ -135,7 +135,7 @@ class PrescriptionService:
             match = match_medicine(extracted, all_catalogue)
 
             matched_medicines = []
-            if match.medicine_id is not None and match.status in ("matched", "possible_match"):
+            if match.medicine_id is not None and match.status in ("matched", "possible_match", "needs_review"):
                 row = self.medicine_service.get(match.medicine_id)
                 if row:
                     matched_medicines.append((row, match.match_type or "exact", match.match_confidence))
@@ -191,11 +191,16 @@ class PrescriptionService:
                         "savings_percent": max_s["percentage"],
                     }
 
-                note = (
-                    f"Save up to {round(max_s['percentage'])}% with generic options."
-                    if max_s and max_s.get("percentage")
-                    else "Public generic alternative available."
-                )
+                if match_type == "strength_variant":
+                    note = "Prescribed strength differs from catalogue formulation. Verify with pharmacist."
+                elif match_type == "suggested_candidate":
+                    note = "Suggested candidate based on visual similarity. Verification required."
+                else:
+                    note = (
+                        f"Save up to {round(max_s['percentage'])}% with generic options."
+                        if max_s and max_s.get("percentage")
+                        else "Public generic alternative available."
+                    )
 
                 matches_formatted.append(
                     {
@@ -217,6 +222,24 @@ class PrescriptionService:
                     }
                 )
 
+            if len(matches_formatted) > 0 and match.status == "matched" and match.match_type in ("exact_brand", "exact_alias", "exact_composition"):
+                match_status = "Exact Match"
+                review_note = "Direct active generic substitutes available in PMBJP catalogue."
+            elif len(matches_formatted) > 0:
+                match_status = "Possible Match — Needs Review"
+                if match.match_type == "strength_variant":
+                    review_note = (
+                        f"Catalogue record found for brand '{match.brand_name}', but strength differs. "
+                        "Verification required before considering any generic substitution."
+                    )
+                elif match.match_type == "suggested_candidate":
+                    review_note = "Suggested candidate found based on visual similarity. Requires confirmation."
+                else:
+                    review_note = "Possible formulation match found. Requires confirmation."
+            else:
+                match_status = "No Match Found"
+                review_note = "No verified catalogue match found."
+
             confirmed_results.append(
                 {
                     "confirmed_input": {
@@ -224,14 +247,11 @@ class PrescriptionService:
                         "strength": item.strength,
                         "dosage_form": item.dosage_form,
                     },
+                    "match_status": match_status,
                     "match_count": len(matches_formatted),
                     "match_type": match.match_type,
                     "match_confidence": match.match_confidence,
-                    "review_note": (
-                        "Direct active generic substitutes available in PMBJP catalogue."
-                        if len(matches_formatted) > 0
-                        else "No verified catalogue match found."
-                    ),
+                    "review_note": review_note,
                     "matches": matches_formatted,
                 }
             )

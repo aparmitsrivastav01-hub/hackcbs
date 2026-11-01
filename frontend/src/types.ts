@@ -165,6 +165,7 @@ export type ConfirmedSearchResult = {
     };
     matches: Comparison[];
     match_count: number;
+    match_status?: "Exact Match" | "Possible Match — Needs Review" | "No Match Found" | string;
     match_type?: string | null;
     match_confidence?: number | null;
     review_note: string;

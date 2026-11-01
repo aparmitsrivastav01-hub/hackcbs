@@ -30,6 +30,22 @@ describe("StoresPage — Google Maps Embed & WhatsApp Enquiry Behaviour", () => 
     sessionStorage.clear();
     mockGetShopWhatsAppContact = vi.spyOn(apiClient, "getShopWhatsAppContact");
     mockWindowOpen = vi.spyOn(window, "open").mockImplementation(() => null);
+    vi.spyOn(directoryService, "fetchPharmacyDirectory").mockResolvedValue({
+      success: true,
+      total: directoryService.DEFAULT_DELHI_SEED_STORES.length,
+      districts: [
+        "Central Delhi",
+        "East Delhi",
+        "New Delhi",
+        "North Delhi",
+        "North West Delhi",
+        "Shahdara",
+        "South Delhi",
+        "South West Delhi",
+        "West Delhi",
+      ],
+      stores: directoryService.DEFAULT_DELHI_SEED_STORES,
+    });
   });
 
   afterEach(() => {
@@ -211,13 +227,18 @@ describe("StoresPage — Google Maps Embed & WhatsApp Enquiry Behaviour", () => 
     // 2. Close modal
     const closeButton = screen.getByLabelText(/Close modal/i);
     fireEvent.click(closeButton);
+    await waitFor(() => {
+      expect(screen.queryByLabelText(/Close modal/i)).not.toBeInTheDocument();
+    });
 
     // 3. Re-open modal for the exact same store
     const prepareButtonsAgain = screen.getAllByRole("button", { name: /Prepare enquiry/i });
     fireEvent.click(prepareButtonsAgain[0]);
 
     // Modal immediately displays cached verified result
-    expect(screen.getByText(/WhatsApp available/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/WhatsApp available/i)).toBeInTheDocument();
+    });
     expect(screen.getAllByText(/\+919811234567/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /Open in WhatsApp →/i })).toBeInTheDocument();
 

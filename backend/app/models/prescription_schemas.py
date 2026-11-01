@@ -88,6 +88,7 @@ class CatalogueCandidate(BaseModel):
     dosage_form: str
     match_confidence: float
     match_type: str | None = None
+    match_status: Literal["Exact Match", "Possible Match — Needs Review", "No Match Found"] | None = None
 
 
 class CatalogueMatch(BaseModel):
@@ -98,6 +99,7 @@ class CatalogueMatch(BaseModel):
     dosage_form: str | None = None
     match_confidence: float | None = None
     match_type: str | None = None
+    match_status: Literal["Exact Match", "Possible Match — Needs Review", "No Match Found"] | None = None
     alternatives: list[CatalogueCandidate] = Field(default_factory=list)
 
 
