@@ -172,7 +172,7 @@ const defaultAuthContext: AuthContextType = {
   dismissConsentPrompt: () => {},
   login: async () => {},
   signup: async () => {},
-  logout: () => {},
+  logout: async () => {},
   updateProfile: async () => {},
   setMekoConsent: async () => {},
 };

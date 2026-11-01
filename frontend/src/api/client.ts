@@ -22,7 +22,11 @@ import type {
 } from "../types";
 export { formatInr, formatSavingsText } from "../i18n/formatters";
 
-const API = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://127.0.0.1:8000";
+export const API =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
+  (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
+    ? `http://${window.location.hostname}:8000`
+    : "http://127.0.0.1:8000");
 
 let inMemoryAccessToken: string | null = null;
 

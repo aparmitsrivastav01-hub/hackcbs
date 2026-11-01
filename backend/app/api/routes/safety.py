@@ -4,6 +4,7 @@ import re
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from pydantic import BaseModel
 
 from app.db.dependencies import get_optional_current_user
 from app.models.safety_schemas import (
@@ -42,6 +43,54 @@ def check_batch(
     service: CDSCOSafetyService = Depends(get_safety_service),
 ):
     return service.check_batch(product_name, batch_number, manufacturer)
+
+
+class BatchCheckPostRequest(BaseModel):
+    product_name: str | None = None
+    batch_number: str
+    manufacturer: str | None = None
+
+
+@batch_safety_router.post("/check")
+def check_batch_post(
+    body: BatchCheckPostRequest,
+    service: CDSCOSafetyService = Depends(get_safety_service),
+):
+    res = service.check_batch(body.product_name, body.batch_number, body.manufacturer)
+    alerts = []
+    if res.get("alert"):
+        alerts.append(res["alert"])
+    if res.get("possible_alerts"):
+        alerts.extend(res["possible_alerts"])
+
+    status_str = "alert_match" if res.get("safety_status") in ("RECALL_CONFIRMED", "MATCH_FOUND") else (
+        "manual_review" if res.get("safety_status") == "NEEDS_REVIEW" else "no_match"
+    )
+
+    matches = []
+    for a in alerts:
+        matches.append({
+            "product_name": a.get("product_name") or body.product_name or "",
+            "manufacturer": a.get("manufacturer") or body.manufacturer or "",
+            "batch_number": a.get("batch_number") or body.batch_number,
+            "alert_type": a.get("nsq_result") or "Not of Standard Quality (NSQ)",
+            "notice_date": a.get("notice_month") or a.get("manufacturing_date") or "",
+            "source_name": "Central Drugs Standard Control Organisation (CDSCO)",
+            "source_url": a.get("official_source_url") or "https://cdsco.gov.in",
+            "notes": a.get("nsq_result") or a.get("review_status") or "",
+        })
+
+    return {
+        "status": status_str,
+        "product_name": body.product_name or "",
+        "manufacturer": body.manufacturer,
+        "batch_number": body.batch_number,
+        "matches": matches,
+        "dataset_records": service.count,
+        "last_updated": service.latest_notice_month or "October 2026",
+        "message": res.get("warning") or ("ALERT MATCH FOUND: This batch was flagged in official CDSCO alert reports." if matches else "No matching record in CDSCO NSQ dataset."),
+        "safety_note": res.get("safety_disclaimer") or "Do not consume medicines from flagged batches. Consult your doctor or pharmacist.",
+    }
 
 
 @router.get("/check-medicine", response_model=MedicineSafetySearchResponse)

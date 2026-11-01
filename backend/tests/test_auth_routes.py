@@ -33,11 +33,14 @@ async def test_app_client():
                 await session.close()
 
     app.dependency_overrides[get_db] = override_get_db
+    old_meko = getattr(app.state, "meko_service", None)
+    app.state.meko_service = None
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
+    app.state.meko_service = old_meko
     app.dependency_overrides.clear()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -303,9 +306,13 @@ async def test_role_based_access_control(test_app_client: AsyncClient):
     # 3. Patient attempts to access CDSCO alert review endpoint -> 403 Forbidden
     import uuid
     dummy_alert_id = str(uuid.uuid4())
+    valid_review_body = {
+        "official_source_url": "https://cdsco.gov.in/notice",
+        "verification_notes": "Official inspection and testing verification notes.",
+    }
     review_attempt = await test_app_client.patch(
         f"/api/safety/alerts/{dummy_alert_id}/review",
-        json={"review_status": "verified"},
+        json=valid_review_body,
         headers=pat_headers,
     )
     assert review_attempt.status_code == 403
@@ -314,7 +321,7 @@ async def test_role_based_access_control(test_app_client: AsyncClient):
     # 4. Pharmacist accesses CDSCO alert review endpoint -> passes RBAC dependency check (returns 404 because dummy_alert_id doesn't exist, not 403)
     pharm_attempt = await test_app_client.patch(
         f"/api/safety/alerts/{dummy_alert_id}/review",
-        json={"review_status": "verified"},
+        json=valid_review_body,
         headers=pharm_headers,
     )
     assert pharm_attempt.status_code != 403

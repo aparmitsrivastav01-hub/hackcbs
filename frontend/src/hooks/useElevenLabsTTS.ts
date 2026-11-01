@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { API, getAccessToken } from "../api/client";
 
 // In-memory audio blob cache for current page session to avoid duplicate API calls
 const audioCache = new Map<string, Blob>();
@@ -91,9 +92,13 @@ export function useElevenLabsTTS(): UseElevenLabsTTSResult {
           const controller = new AbortController();
           abortControllerRef.current = controller;
 
-          const res = await fetch("/api/voice/elevenlabs/speak", {
+          const token = getAccessToken();
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (token) headers["Authorization"] = `Bearer ${token}`;
+
+          const res = await fetch(`${API}/api/voice/elevenlabs/speak`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({
               text: cleanText.slice(0, 2500),
               language: locale,

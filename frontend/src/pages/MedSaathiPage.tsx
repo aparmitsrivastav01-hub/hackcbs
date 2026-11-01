@@ -32,6 +32,7 @@ import { useElevenLabsTTS } from "../hooks/useElevenLabsTTS";
 import { useLanguage } from "../i18n/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { AuthPromptModal } from "../components/auth/AuthPromptModal";
+import { API, getAccessToken } from "../api/client";
 
 function getActionLabel(action: AssistantAction, isHindi: boolean): string {
   if ("labelHi" in action && action.labelHi && action.labelEn) {
@@ -245,9 +246,12 @@ export function MedSaathiPage() {
     setTranscriptPreview("");
 
     // Reset memory in backend (does NOT re-enable consent)
-    void fetch("/api/memory/reset", {
+    const token = getAccessToken();
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    void fetch(`${API}/api/memory/reset`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({}),
     }).catch(() => {});
 

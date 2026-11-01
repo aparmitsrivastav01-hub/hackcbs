@@ -1,4 +1,5 @@
 import type { AssistantAction } from "./assistantTypes";
+import { API, getAccessToken } from "../../api/client";
 
 interface IWindow extends Window {
   webkitSpeechRecognition?: any;
@@ -183,9 +184,12 @@ export class AssistantService {
       if (assistantAudioCache.has(cacheKey)) {
         blob = assistantAudioCache.get(cacheKey)!;
       } else {
-        const response = await fetch("/api/voice/elevenlabs/speak", {
+        const token = getAccessToken();
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const response = await fetch(`${API}/api/voice/elevenlabs/speak`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ text: cleanText.slice(0, 2500), language: locale }),
           signal: controller.signal,
         });
@@ -245,9 +249,12 @@ export class AssistantService {
     sessionId: string | null,
     onDelta?: (text: string) => void,
   ): Promise<GeminiChatResult & { action?: AssistantAction }> {
-    const response = await fetch("/api/ai/chat", {
+    const token = getAccessToken();
+    const headers: Record<string, string> = { "Content-Type": "application/json", Accept: "text/event-stream" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const response = await fetch(`${API}/api/ai/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      headers,
       body: JSON.stringify({ message: query, session_id: sessionId, language: locale, stream: true }),
     });
     if (!response.ok) throw await errorFromResponse(response);
