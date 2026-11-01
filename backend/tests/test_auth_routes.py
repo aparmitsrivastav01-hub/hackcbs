@@ -245,3 +245,76 @@ async def test_token_refresh_and_logout(test_app_client: AsyncClient):
     # Old refresh token should now fail
     ref_fail = await test_app_client.post("/api/auth/refresh")
     assert ref_fail.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_memory_consent_auth_enforcement(test_app_client: AsyncClient):
+    """Verifies unauthenticated POST /api/memory/consent returns 401, but authenticated returns 200."""
+    # 1. Unauthenticated toggle attempt must be rejected with 401
+    unauth_res = await test_app_client.post("/api/memory/consent", json={"consent": True})
+    assert unauth_res.status_code == 401
+
+    # 2. Register and authenticate a patient
+    signup_res = await test_app_client.post(
+        "/api/auth/signup",
+        json={"email": "memory_patient@example.com", "password": "Password123!"},
+    )
+    assert signup_res.status_code == 201
+    token = signup_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 3. Authenticated toggle succeeds
+    auth_res = await test_app_client.post("/api/memory/consent", json={"consent": True}, headers=headers)
+    assert auth_res.status_code == 200
+    assert auth_res.json()["consent"] is True
+
+    # 4. GET reflects consent for authenticated user
+    get_res = await test_app_client.get("/api/memory/consent", headers=headers)
+    assert get_res.status_code == 200
+    assert get_res.json()["consent"] is True
+    assert get_res.json()["authenticated"] is True
+
+
+@pytest.mark.asyncio
+async def test_role_based_access_control(test_app_client: AsyncClient):
+    """Verifies RBAC rules: patients are forbidden from safety alert review (403), pharmacists are permitted."""
+    # 1. Sign up patient
+    res_pat = await test_app_client.post(
+        "/api/auth/signup",
+        json={"email": "regular_patient@example.com", "password": "Password123!", "role": "patient"},
+    )
+    assert res_pat.status_code == 201
+    pat_data = res_pat.json()
+    assert pat_data["user"]["role"] == "patient"
+    pat_token = pat_data["access_token"]
+    pat_headers = {"Authorization": f"Bearer {pat_token}"}
+
+    # 2. Sign up pharmacist
+    res_pharm = await test_app_client.post(
+        "/api/auth/signup",
+        json={"email": "licensed_chemist@example.com", "password": "Password123!", "role": "pharmacist"},
+    )
+    assert res_pharm.status_code == 201
+    pharm_data = res_pharm.json()
+    assert pharm_data["user"]["role"] == "pharmacist"
+    pharm_token = pharm_data["access_token"]
+    pharm_headers = {"Authorization": f"Bearer {pharm_token}"}
+
+    # 3. Patient attempts to access CDSCO alert review endpoint -> 403 Forbidden
+    import uuid
+    dummy_alert_id = str(uuid.uuid4())
+    review_attempt = await test_app_client.patch(
+        f"/api/safety/alerts/{dummy_alert_id}/review",
+        json={"review_status": "verified"},
+        headers=pat_headers,
+    )
+    assert review_attempt.status_code == 403
+    assert "Access denied" in review_attempt.json()["detail"]
+
+    # 4. Pharmacist accesses CDSCO alert review endpoint -> passes RBAC dependency check (returns 404 because dummy_alert_id doesn't exist, not 403)
+    pharm_attempt = await test_app_client.patch(
+        f"/api/safety/alerts/{dummy_alert_id}/review",
+        json={"review_status": "verified"},
+        headers=pharm_headers,
+    )
+    assert pharm_attempt.status_code != 403

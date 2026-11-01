@@ -162,19 +162,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
+const defaultAuthContext: AuthContextType = {
+  user: null,
+  profile: null,
+  consent: null,
+  isAuthenticated: false,
+  isLoading: false,
+  showConsentPrompt: false,
+  dismissConsentPrompt: () => {},
+  login: async () => {},
+  signup: async () => {},
+  logout: () => {},
+  updateProfile: async () => {},
+  setMekoConsent: async () => {},
+};
+
+export function useAuth(): AuthContextType {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    return {
-      user: null,
-      token: null,
-      isLoading: false,
-      login: async () => {},
-      signup: async () => {},
-      logout: () => {},
-      updateConsent: async () => {},
-      refreshProfile: async () => {},
-    };
-  }
-  return ctx;
+  return ctx || defaultAuthContext;
 }
