@@ -2,14 +2,16 @@ import asyncio
 import json
 import logging
 import re
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from app.ai.guardrails.safety_guardrails import AISafetyGuardrail
 from app.ai.memory.meko_memory import HISTORY_QUERY
+from app.db.dependencies import get_optional_current_user
 from app.models.ai_schemas import AIChatRequest, AIChatResponse
+from app.models.user_models import User
 from app.services.gemini_service import (
     GeminiConfigurationError,
     GeminiProviderError,
@@ -77,7 +79,11 @@ def _sse(event: dict[str, Any]) -> str:
 
 
 @router.post("/chat", response_model=AIChatResponse)
-async def chat(request: Request, body: AIChatRequest):
+async def chat(
+    request: Request,
+    body: AIChatRequest,
+    current_user: Optional[User] = Depends(get_optional_current_user),
+):
     sessions = _sessions(request)
     session_id, session = sessions.acquire(body.session_id)
     service = _gemini(request)
@@ -86,7 +92,7 @@ async def chat(request: Request, body: AIChatRequest):
     meko = _meko(request)
 
     # 1. Resolve consistent synthetic patient ID
-    pid = body.patient_id or getattr(session, "patient_id", None) or DEFAULT_PATIENT_ID
+    pid = body.patient_id or (str(current_user.id) if current_user else getattr(session, "patient_id", None)) or DEFAULT_PATIENT_ID
     session.patient_id = pid
 
     # 2. Check explicit consent status

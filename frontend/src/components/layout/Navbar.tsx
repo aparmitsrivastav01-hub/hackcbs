@@ -147,10 +147,21 @@ export function Navbar() {
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-slate-100 bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95">
                   <div className="px-3 py-2 border-b border-slate-100">
-                    <div className="text-xs font-black text-navy truncate">
-                      {profile?.display_label || "Patient"}
+                    <div className="flex items-center justify-between gap-1.5">
+                      <div className="text-xs font-black text-navy truncate">
+                        {profile?.display_label || (user?.role === "pharmacist" ? "Pharmacist" : "Patient")}
+                      </div>
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider ${
+                        user?.role === "pharmacist"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : user?.role === "admin"
+                          ? "bg-purple-50 text-purple-700 border border-purple-200"
+                          : "bg-blue-50 text-brand border border-blue-200"
+                      }`}>
+                        {user?.role || "patient"}
+                      </span>
                     </div>
-                    <div className="text-[11px] text-slate-400 truncate">{user?.email}</div>
+                    <div className="text-[11px] text-slate-400 truncate mt-0.5">{user?.email}</div>
                   </div>
 
                   <div className="mt-1 space-y-0.5">

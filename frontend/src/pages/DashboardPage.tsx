@@ -161,9 +161,20 @@ export function DashboardPage() {
       <header className="border-b border-slate-200/90 bg-white px-4 py-6 md:py-8">
         <div className="mx-auto flex max-w-[1240px] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-navy sm:text-3xl">
-              {tr("Welcome back,", "स्वागत है,")} <span className="text-brand">{patientName}</span>
-            </h1>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-2xl font-black tracking-tight text-navy sm:text-3xl">
+                {tr("Welcome back,", "स्वागत है,")} <span className="text-brand">{patientName}</span>
+              </h1>
+              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                user?.role === "pharmacist"
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  : user?.role === "admin"
+                  ? "bg-purple-50 text-purple-700 border border-purple-200"
+                  : "bg-blue-50 text-brand border border-blue-200"
+              }`}>
+                {user?.role || "patient"}
+              </span>
+            </div>
             <p className="mt-1 text-xs text-slate-500 sm:text-sm">
               {tr(
                 "Find affordable medicines, check batch safety, or consult your health assistant.",

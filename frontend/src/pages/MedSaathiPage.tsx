@@ -30,6 +30,8 @@ import type {
 import { VoiceVisualizer } from "../components/assistant/VoiceVisualizer";
 import { useElevenLabsTTS } from "../hooks/useElevenLabsTTS";
 import { useLanguage } from "../i18n/LanguageContext";
+import { useAuth } from "../context/AuthContext";
+import { AuthPromptModal } from "../components/auth/AuthPromptModal";
 
 function getActionLabel(action: AssistantAction, isHindi: boolean): string {
   if ("labelHi" in action && action.labelHi && action.labelEn) {
@@ -41,6 +43,8 @@ function getActionLabel(action: AssistantAction, isHindi: boolean): string {
 export function MedSaathiPage() {
   const navigate = useNavigate();
   const { locale, setLocale, tr, isHi } = useLanguage();
+  const { isAuthenticated, consent, setMekoConsent } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const [speechState, setSpeechState] = useState<SpeechState>("idle");
   const [isVoiceMuted, setIsVoiceMuted] = useState(false);
@@ -66,31 +70,28 @@ export function MedSaathiPage() {
     }
   }, [tts.isLoading, tts.isPlaying]);
 
+  // Sync memory consent state with authenticated session
   useEffect(() => {
-    fetch("/api/memory/consent")
-      .then((res) => res.json())
-      .then((data: { consent?: boolean }) => {
-        if (typeof data.consent === "boolean") {
-          setMemoryConsent(data.consent);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    if (isAuthenticated && consent !== null) {
+      setMemoryConsent(consent.granted);
+    } else if (!isAuthenticated) {
+      setMemoryConsent(false);
+    }
+  }, [isAuthenticated, consent]);
 
   async function handleToggleMemoryConsent() {
+    // Authentication enforcement: unauthenticated users cannot enable persistent memory
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
     if (memoryUpdating) return;
     setMemoryUpdating(true);
     const nextConsent = !memoryConsent;
     try {
-      const res = await fetch("/api/memory/consent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ consent: nextConsent }),
-      });
-      const data = (await res.json()) as { consent?: boolean };
-      if (typeof data.consent === "boolean") {
-        setMemoryConsent(data.consent);
-      }
+      await setMekoConsent(nextConsent);
+      setMemoryConsent(nextConsent);
     } catch {
       // Fail safely
     } finally {
@@ -714,6 +715,12 @@ export function MedSaathiPage() {
           </div>
         </div>
       </div>
+      <AuthPromptModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        redirectPath="/med-saathi"
+        featureName="MedSaathi AI Health Memory"
+      />
     </>
   );
 }

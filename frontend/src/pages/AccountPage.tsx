@@ -162,6 +162,18 @@ export function AccountPage() {
                 <span>{tr("Account ID:", "खाता आईडी:")}</span>
                 <span className="font-mono text-[11px] text-slate-700">{user?.id.slice(0, 8)}...</span>
               </div>
+              <div className="flex justify-between items-center">
+                <span>{tr("Role:", "भूमिका:")}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                  user?.role === "pharmacist"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : user?.role === "admin"
+                    ? "bg-purple-50 text-purple-700 border border-purple-200"
+                    : "bg-blue-50 text-brand border border-blue-200"
+                }`}>
+                  {user?.role || "patient"}
+                </span>
+              </div>
               <div className="flex justify-between">
                 <span>{tr("Status:", "स्थिति:")}</span>
                 <span className="font-semibold text-emerald-600">{tr("Active", "सक्रिय")}</span>

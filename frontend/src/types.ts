@@ -272,9 +272,12 @@ export type DatasetStatus = {
 // Phase 2: User Account, Patient Profile, & Privacy Consent Types
 // -------------------------------------------------------------
 
+export type UserRole = "patient" | "pharmacist" | "admin";
+
 export type UserPublic = {
   id: string;
   email: string;
+  role: UserRole;
   is_active: boolean;
   created_at: string;
 };

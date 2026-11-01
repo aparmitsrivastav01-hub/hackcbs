@@ -626,6 +626,7 @@ export async function signupUser(payload: {
   confirm_password?: string;
   display_label?: string;
   preferred_language?: string;
+  role?: "patient" | "pharmacist" | "admin";
 }): Promise<AuthResponse> {
   const res = await request<AuthResponse>("/api/auth/signup", {
     method: "POST",

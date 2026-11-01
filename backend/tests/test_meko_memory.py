@@ -46,21 +46,53 @@ def test_memory_consent_defaults_to_off():
 
 
 def test_memory_consent_toggle():
+    import uuid
+    from unittest.mock import AsyncMock, MagicMock
+    from app.db.base import get_db
+    from app.db.dependencies import get_current_user, get_optional_current_user
+
     with TestClient(app) as client:
-        # Enable consent
-        res1 = client.post("/api/memory/consent", json={"consent": True, "patient_id": "patient-1"})
-        assert res1.status_code == 200
-        assert res1.json()["consent"] is True
+        # Unauthenticated toggling of consent must fail with 401 Unauthorized
+        res_unauth = client.post("/api/memory/consent", json={"consent": True, "patient_id": "patient-1"})
+        assert res_unauth.status_code == 401
 
-        # Verify get consent
-        res2 = client.get("/api/memory/consent?patient_id=patient-1")
-        assert res2.status_code == 200
-        assert res2.json()["consent"] is True
+        # Now test with authenticated user and mock db session
+        user_uuid = uuid.uuid4()
+        mock_user = MagicMock()
+        mock_user.id = user_uuid
+        mock_user.email = "test@example.com"
+        mock_user.role = "patient"
+        mock_user.is_active = True
 
-        # Disable consent
-        res3 = client.post("/api/memory/consent", json={"consent": False, "patient_id": "patient-1"})
-        assert res3.status_code == 200
-        assert res3.json()["consent"] is False
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = MagicMock(scalar_one_or_none=lambda: None)
+
+        async def override_get_db():
+            yield mock_db
+
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+        app.dependency_overrides[get_optional_current_user] = lambda: mock_user
+        app.dependency_overrides[get_db] = override_get_db
+
+        try:
+            # Enable consent
+            res1 = client.post("/api/memory/consent", json={"consent": True, "patient_id": str(user_uuid)})
+            assert res1.status_code == 200
+            assert res1.json()["consent"] is True
+
+            # Verify get consent
+            res2 = client.get(f"/api/memory/consent?patient_id={user_uuid}")
+            assert res2.status_code == 200
+            assert res2.json()["consent"] is True
+
+            # Disable consent
+            res3 = client.post("/api/memory/consent", json={"consent": False, "patient_id": str(user_uuid)})
+            assert res3.status_code == 200
+            assert res3.json()["consent"] is False
+        finally:
+            app.dependency_overrides.pop(get_current_user, None)
+            app.dependency_overrides.pop(get_optional_current_user, None)
+            app.dependency_overrides.pop(get_db, None)
 
 
 def test_zero_meko_calls_when_consent_is_off():

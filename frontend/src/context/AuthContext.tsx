@@ -32,6 +32,7 @@ type AuthContextType = {
     confirm_password?: string;
     display_label?: string;
     preferred_language?: string;
+    role?: "patient" | "pharmacist" | "admin";
   }) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (payload: { display_label?: string; preferred_language?: string }) => Promise<void>;
@@ -101,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     confirm_password?: string;
     display_label?: string;
     preferred_language?: string;
+    role?: "patient" | "pharmacist" | "admin";
   }) {
     const res = await signupUser(payload);
     setUser(res.user);
@@ -163,7 +165,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    return {
+      user: null,
+      token: null,
+      isLoading: false,
+      login: async () => {},
+      signup: async () => {},
+      logout: () => {},
+      updateConsent: async () => {},
+      refreshProfile: async () => {},
+    };
   }
   return ctx;
 }

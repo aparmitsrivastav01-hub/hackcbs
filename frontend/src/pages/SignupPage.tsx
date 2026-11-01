@@ -15,6 +15,7 @@ export function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [displayLabel, setDisplayLabel] = useState("");
   const [preferredLanguage, setPreferredLanguage] = useState(locale || "en");
+  const [role, setRole] = useState<"patient" | "pharmacist">("patient");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +46,7 @@ export function SignupPage() {
         confirm_password: confirmPassword,
         display_label: displayLabel.trim() || undefined,
         preferred_language: preferredLanguage,
+        role,
       });
       navigate("/dashboard", { replace: true });
     } catch (err) {
@@ -92,6 +94,47 @@ export function SignupPage() {
         )}
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          {/* Account Role Selection */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              {tr("Account Role *", "खाता भूमिका *")}
+            </label>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setRole("patient")}
+                className={`flex flex-col items-start rounded-xl border p-3 text-left transition ${
+                  role === "patient"
+                    ? "border-brand bg-blue-50/50 ring-2 ring-brand/20"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <span className="text-xs font-bold text-navy">
+                  {tr("Patient / Consumer", "मरीज़ / उपभोक्ता")}
+                </span>
+                <span className="mt-0.5 text-[11px] text-slate-500">
+                  {tr("Search generics, scan prescriptions", "जेनेरिक खोजें, पर्चा स्कैन करें")}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRole("pharmacist")}
+                className={`flex flex-col items-start rounded-xl border p-3 text-left transition ${
+                  role === "pharmacist"
+                    ? "border-brand bg-blue-50/50 ring-2 ring-brand/20"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <span className="text-xs font-bold text-navy">
+                  {tr("Pharmacist / Chemist", "दवा विक्रेता / फार्मासिस्ट")}
+                </span>
+                <span className="mt-0.5 text-[11px] text-slate-500">
+                  {tr("Manage store enquiries & recalls", "पूछताछ व सुरक्षा समीक्षा")}
+                </span>
+              </button>
+            </div>
+          </div>
           <div>
             <label className="block text-xs font-semibold text-slate-700">
               {tr("Email Address *", "ईमेल पता *")}

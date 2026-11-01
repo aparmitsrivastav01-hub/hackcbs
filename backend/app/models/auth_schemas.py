@@ -12,6 +12,7 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, description="Minimum 8 characters")
     confirm_password: Optional[str] = None
+    role: Optional[str] = Field("patient", pattern="^(patient|pharmacist|admin)$")
     display_label: Optional[str] = Field(None, max_length=80, description="Optional patient alias")
     preferred_language: str = Field("en", max_length=12)
 
@@ -24,6 +25,7 @@ class LoginRequest(BaseModel):
 class UserPublic(BaseModel):
     id: uuid.UUID
     email: str
+    role: str = "patient"
     is_active: bool
     created_at: datetime
 

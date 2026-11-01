@@ -9,6 +9,12 @@
 [![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini%202.5%20Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
 [![ElevenLabs](https://img.shields.io/badge/Voice-ElevenLabs%20Multilingual%20v2-black?logo=elevenlabs&logoColor=white)](https://elevenlabs.io/)
 [![CDSCO NSQ Verified](https://img.shields.io/badge/Safety-CDSCO%20NSQ%20Database-green)](https://cdsco.gov.in/)
+[![Meko Track A](https://img.shields.io/badge/HackCBS%20Track%20A-Meko%20Integrated-8A2BE2)](docs/MEKO_TRACK_A_SUBMISSION.md)
+
+> 🏆 **HackCBS Track A (Meko) Official Submission Deliverables**:
+> - ⚡ **Setup in 5 Commands or Fewer**: [Quick Start Section below](#-quick-start--setup-guide)
+> - 🎬 **5-Minute Max Demo Walkthrough (Meko ON vs Meko OFF)**: [Complete Demo Script](docs/MEKO_TRACK_A_SUBMISSION.md#2--5-minute-maximum-demo-walkthrough-script)
+> - 💡 **Meko Feature Proposal (Temporal TTL & Regulatory Envelopes)**: [Complete Architecture Proposal](docs/MEKO_TRACK_A_SUBMISSION.md#3--meko-feature-proposal)
 
 ---
 
@@ -294,10 +300,33 @@ hackcbs/
 
 ## 🚀 Quick Start & Setup Guide
 
-### Prerequisites
-- **Python**: 3.11 or higher
-- **Node.js**: v18 or higher (v20+ recommended)
-- **Git**
+> ⚡ **HackCBS Track A Evaluation**: MedEasy can be set up and launched from cold clone in **5 commands or fewer**:
+
+```bash
+# 1. Clone & enter repository
+git clone https://github.com/aparmitsrivastav01-hub/hackcbs.git && cd hackcbs
+
+# 2. Configure environment defaults
+cp backend/.env.example backend/.env
+
+# 3. Install Python dependencies
+python -m pip install -r backend/requirements.txt
+
+# 4. Install Node.js frontend dependencies
+npm --prefix frontend install
+
+# 5. Launch backend API and frontend Vite servers concurrently
+python -m uvicorn app.main:app --app-dir backend --port 8000 & npm --prefix frontend run dev
+```
+
+- **Web Application**: [http://localhost:5173](http://localhost:5173)
+- **FastAPI Swagger Docs**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+---
+
+### Step-by-Step Manual Setup (Alternative)
+
+If you prefer activating a Python virtual environment and running servers in separate terminals:
 
 ### 1. Clone the Repository
 ```bash

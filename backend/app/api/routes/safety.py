@@ -1,9 +1,11 @@
 import hmac
 import os
 import re
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 
+from app.db.dependencies import get_optional_current_user
 from app.models.safety_schemas import (
     MedicineSafetySearchResponse,
     SafetyAlertsResponse,
@@ -12,6 +14,7 @@ from app.models.safety_schemas import (
     SafetyAlert,
     SafetyDatasetStatusResponse,
 )
+from app.models.user_models import User
 from app.services.cdsco_safety_service import CDSCOSafetyService
 
 router = APIRouter(prefix="/api/safety", tags=["batch safety"])
@@ -82,13 +85,22 @@ def review_alert(
     alert_id: str,
     body: SafetyReviewRequest,
     x_cdsco_review_key: str | None = Header(default=None),
+    current_user: Optional[User] = Depends(get_optional_current_user),
     service: CDSCOSafetyService = Depends(get_safety_service),
 ):
-    configured_key = os.getenv("CDSCO_REVIEW_API_KEY")
-    if not configured_key:
-        raise HTTPException(status_code=503, detail="Manual CDSCO review is not configured")
-    if not x_cdsco_review_key or not hmac.compare_digest(x_cdsco_review_key, configured_key):
-        raise HTTPException(status_code=403, detail="Reviewer authentication failed")
+    # RBAC: Authorized if user is an authenticated pharmacist or admin
+    if current_user:
+        if getattr(current_user, "role", "patient") not in ("pharmacist", "admin"):
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied: CDSCO safety recall verification requires 'pharmacist' or 'admin' role.",
+            )
+    else:
+        configured_key = os.getenv("CDSCO_REVIEW_API_KEY")
+        if not configured_key:
+            raise HTTPException(status_code=503, detail="Manual CDSCO review is not configured")
+        if not x_cdsco_review_key or not hmac.compare_digest(x_cdsco_review_key, configured_key):
+            raise HTTPException(status_code=403, detail="Reviewer authentication failed")
     try:
         corrections = {name: getattr(body, name) for name in (
             "product_name", "batch_number", "manufacturer", "manufacturing_date", "expiry_date", "nsq_result",

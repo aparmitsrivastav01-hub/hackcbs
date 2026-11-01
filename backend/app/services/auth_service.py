@@ -48,13 +48,14 @@ def verify_password(hash_val: str, password: str) -> bool:
         return False
 
 
-def create_access_token(user_id: uuid.UUID, email: str) -> str:
+def create_access_token(user_id: uuid.UUID, email: str, role: str = "patient") -> str:
     """Generates a short-lived cryptographically signed JWT access token."""
     now = datetime.now(timezone.utc)
     exp = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": str(user_id),
         "email": email.lower(),
+        "role": role,
         "iat": int(now.timestamp()),
         "exp": int(exp.timestamp()),
         "type": "access",
@@ -121,6 +122,7 @@ async def create_user_with_profile(
     password: str,
     display_label: Optional[str] = None,
     preferred_language: str = "en",
+    role: str = "patient",
 ) -> tuple[User, PatientProfile, str]:
     """
     Creates a new user account, associated minimal patient profile, default privacy consent,
@@ -138,6 +140,7 @@ async def create_user_with_profile(
     user = User(
         id=user_id,
         email=clean_email,
+        role=role or "patient",
         password_hash=hashed_pwd,
         is_active=True,
     )

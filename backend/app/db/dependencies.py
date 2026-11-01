@@ -76,3 +76,26 @@ async def get_optional_current_user(
         pass
 
     return None
+
+
+def require_roles(*allowed_roles: str):
+    """
+    FastAPI dependency factory: Enforces role-based authorization.
+    Requires an authenticated user whose role matches one of the allowed_roles.
+    Raises HTTP 403 Forbidden if user's role is not authorized.
+    """
+    async def _role_verifier(current_user: User = Depends(get_current_user)) -> User:
+        user_role = getattr(current_user, "role", "patient") or "patient"
+        if user_role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied: this feature requires one of the following roles: {', '.join(allowed_roles)} (current: {user_role})",
+            )
+        return current_user
+
+    return _role_verifier
+
+
+require_patient = require_roles("patient", "admin")
+require_pharmacist = require_roles("pharmacist", "admin")
+require_admin = require_roles("admin")

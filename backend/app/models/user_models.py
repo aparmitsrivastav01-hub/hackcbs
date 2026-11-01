@@ -17,6 +17,9 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(320), unique=True, index=True, nullable=False
     )
+    role: Mapped[str] = mapped_column(
+        String(20), default="patient", nullable=False
+    )  # "patient", "pharmacist", "admin"
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     email_verified_at: Mapped[Optional[datetime]] = mapped_column(

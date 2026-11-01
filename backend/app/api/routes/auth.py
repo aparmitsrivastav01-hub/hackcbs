@@ -79,9 +79,10 @@ async def signup(
         password=body.password,
         display_label=body.display_label,
         preferred_language=body.preferred_language,
+        role=body.role or "patient",
     )
 
-    access_token = create_access_token(user.id, user.email)
+    access_token = create_access_token(user.id, user.email, role=user.role)
     _set_refresh_cookie(response, raw_refresh)
 
     return AuthResponse(
@@ -119,7 +120,7 @@ async def login(
     user.last_login_at = datetime.now(timezone.utc)
     await session.commit()
 
-    access_token = create_access_token(user.id, user.email)
+    access_token = create_access_token(user.id, user.email, role=user.role)
     raw_refresh, _ = await create_refresh_session(session, user.id)
     _set_refresh_cookie(response, raw_refresh)
 
@@ -157,7 +158,7 @@ async def refresh_tokens(
 
     user, new_raw_refresh = result
     _set_refresh_cookie(response, new_raw_refresh)
-    access_token = create_access_token(user.id, user.email)
+    access_token = create_access_token(user.id, user.email, role=user.role)
 
     return TokenRefreshResponse(
         access_token=access_token,
