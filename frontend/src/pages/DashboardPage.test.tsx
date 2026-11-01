@@ -7,7 +7,7 @@ import { CartProvider } from "../context/CartContext";
 import { LanguageProvider } from "../i18n/LanguageContext";
 import { DashboardPage } from "./DashboardPage";
 
-// Mock Auth Context module partially
+// Mock Auth Context
 vi.mock("../context/AuthContext", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../context/AuthContext")>();
   return {
@@ -61,30 +61,40 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("DashboardPage", () => {
-  it("renders patient greeting and active session status", () => {
+describe("DashboardPage (Product-Centric Flow)", () => {
+  it("renders patient greeting and core utility actions", () => {
     renderDashboard();
 
     expect(screen.getByText(/Welcome back,/i)).toBeInTheDocument();
-    expect(screen.getAllByText("Yashraj R.")[0]).toBeInTheDocument();
-    expect(screen.getByText(/Active Patient Session • YugabyteDB Aeon/i)).toBeInTheDocument();
+    expect(screen.getByText("Yashraj R.")).toBeInTheDocument();
+    expect(screen.getByText(/Search Medicine Prices/i)).toBeInTheDocument();
+    expect(screen.getByText(/Scan Doctor's Prescription/i)).toBeInTheDocument();
+    expect(screen.getByText(/MedSaathi Healthcare Assistant/i)).toBeInTheDocument();
+    expect(screen.getByText(/My Medicine Enquiry List/i)).toBeInTheDocument();
+    expect(screen.getByText(/Check Medicine Batch Safety/i)).toBeInTheDocument();
   });
 
-  it("renders both Workflow 1 and Workflow 2 sections", () => {
+  it("allows searching for medicine prices", () => {
     renderDashboard();
 
-    // Workflow 1
-    expect(screen.getByText(/Workflow 1 • Affordable Medicine Pipeline/i)).toBeInTheDocument();
-    expect(screen.getByText(/Prescription to Local Pharmacy/i)).toBeInTheDocument();
-    expect(screen.getByText(/1. Scan Prescription Photo \/ PDF/i)).toBeInTheDocument();
-    expect(screen.getByText(/2. 3-Way Generic Price Comparison/i)).toBeInTheDocument();
-    expect(screen.getByText(/3. Find Verified Pharmacies & WhatsApp Enquiries/i)).toBeInTheDocument();
+    const searchInput = screen.getByPlaceholderText(/Type medicine or salt name/i);
+    expect(searchInput).toBeInTheDocument();
+    fireEvent.change(searchInput, { target: { value: "Paracetamol" } });
+    expect(searchInput).toHaveValue("Paracetamol");
 
-    // Workflow 2
-    expect(screen.getByText(/Workflow 2 • Persistent Patient Memory & AI/i)).toBeInTheDocument();
-    expect(screen.getByText(/MedSaathi AI Companion/i)).toBeInTheDocument();
-    expect(screen.getByText(/Launch MedSaathi AI/i)).toBeInTheDocument();
-    expect(screen.getByText(/Zero Clinical Storage Guarantee:/i)).toBeInTheDocument();
+    const compareBtn = screen.getByRole("button", { name: /Compare/i });
+    expect(compareBtn).toBeEnabled();
+  });
+
+  it("renders MedSaathi query input and prompt suggestions", () => {
+    renderDashboard();
+
+    const assistantInput = screen.getByPlaceholderText(/Ask MedSaathi anything/i);
+    expect(assistantInput).toBeInTheDocument();
+    fireEvent.change(assistantInput, { target: { value: "Can I take Paracetamol?" } });
+    expect(assistantInput).toHaveValue("Can I take Paracetamol?");
+
+    expect(screen.getByText(/Are there cheaper generic alternatives for my medicines\?/i)).toBeInTheDocument();
   });
 
   it("performs quick batch verification against CDSCO database", async () => {
@@ -100,26 +110,26 @@ describe("DashboardPage", () => {
 
     renderDashboard();
 
-    const input = screen.getByPlaceholderText(/Enter pack batch no\./i);
+    const input = screen.getByPlaceholderText(/Enter batch no\. on pack/i);
     fireEvent.change(input, { target: { value: "PCM23H88" } });
 
-    const verifyBtn = screen.getByRole("button", { name: /Verify/i });
+    const verifyBtn = screen.getByRole("button", { name: /Verify Batch/i });
     fireEvent.click(verifyBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/Standard Quality Batch/i)).toBeInTheDocument();
+      expect(screen.getByText(/Standard Quality Batch — No Active Recall Notice/i)).toBeInTheDocument();
       expect(screen.getByText(/Standard quality verified\./i)).toBeInTheDocument();
     });
   });
 
-  it("handles toggling Meko memory consent", async () => {
+  it("handles toggling health memory preference", async () => {
     renderDashboard();
 
-    const toggleBtn = screen.getByRole("button", { name: /Pause Memory/i });
+    const toggleBtn = screen.getByRole("button", { name: /Memory: Active/i });
     fireEvent.click(toggleBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/Meko Memory/i)).toBeInTheDocument();
+      expect(screen.getByText(/Memory paused/i)).toBeInTheDocument();
     });
   });
 });
