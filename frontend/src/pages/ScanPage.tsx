@@ -180,6 +180,22 @@ export function ScanPage() {
       setItems(extractedList);
       if (extractedList.length === 0) {
         setError("No medicines could be clearly identified in this prescription. You can manually add medicines below.");
+      } else {
+        const payload = extractedList
+          .filter((item) => item.medicine_name.trim())
+          .map((item) => ({
+            medicine_name: item.medicine_name.trim(),
+            strength: item.strength.trim() || null,
+            dosage_form: item.dosage_form.trim() || null,
+          }));
+        if (payload.length > 0) {
+          try {
+            const searchRes = await searchConfirmed(payload);
+            setResults(searchRes);
+          } catch {
+            // Keep results null if automatic search encounters network error; user can retry with button
+          }
+        }
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Prescription scanning failed. Please try again or check connection.";
@@ -189,7 +205,8 @@ export function ScanPage() {
     } finally {
       setBusy(false);
       setTimeout(() => {
-        document.getElementById("review-section")?.scrollIntoView?.({ behavior: "smooth" });
+        const target = document.getElementById("results-section") || document.getElementById("review-section");
+        target?.scrollIntoView?.({ behavior: "smooth" });
       }, 150);
     }
   }

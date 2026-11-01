@@ -1,7 +1,7 @@
 import logging
 import re
 from difflib import SequenceMatcher
-from typing import Any
+from typing import Any, NamedTuple
 
 from app.models.prescription_schemas import CatalogueCandidate, CatalogueMatch, ExtractedMedicine
 from app.services.search_service import normalize
@@ -9,6 +9,43 @@ from app.services.search_service import normalize
 logger = logging.getLogger(__name__)
 
 STRENGTH_RE = re.compile(r"\b\d+(?:\.\d+)?\s*(?:mg|mcg|ug|g|ml|iu|%|units?)\b", re.I)
+RATIO_RE = re.compile(r"\b(\d+(?:\.\d+)?)\s*[\+/]\s*(\d+(?:\.\d+)?)\b")
+
+LEADING_NUMBERING_RE = re.compile(
+    r"^(?:(?:\(?\d+[\.\)\-:]|\([a-z]\)|[①-⑳•\-\*#])\s*|\b(?:rx|r/x)\.?\s*)+",
+    re.I,
+)
+DOSAGE_FORM_PREFIX_RE = re.compile(
+    r"^(?:(?:tab|tablet|tablets|cap|capsule|capsules|syp|syrup|inj|injection|susp|suspension|drops|eye drops|ear drops|gel|oint|ointment|cream|respules?|rotacaps?|inhaler)\.?|\b[tcsei]\.)\s+",
+    re.I,
+)
+DURATION_RE = re.compile(
+    r"(?:(?:x|for)\s+)?\b(\d+\s*(?:days?|ds|weeks?|wks?|months?|mths?|d\b))\s*$",
+    re.I,
+)
+SIG_RE = re.compile(
+    r"(?:\b(?:\d+(?:/\d+)?|\bhalf\b)\s*(?:tabs?|tablets?|caps?|capsules?|pills?|cap|tab)?\s*)?"
+    r"(?:\b(?:[012]-[012]-[012](?:-[012])?|[012]\s+[012]\s+[012]|\d+\s*(?:times?\s+a\s+day|daily)|od|bd|bid|tds|tid|qid|hs|qhs|sos|stat|prn|bbf|ac|pc)\b\s*)+"
+    r"(?:\b(?:\d+(?:/\d+)?|\bhalf\b)\s*(?:tabs?|tablets?|caps?|capsules?|pills?|cap|tab)?\b\s*)?$",
+    re.I,
+)
+DOSAGE_FORM_SUFFIX_RE = re.compile(
+    r"\s+(?:tab|tablet|tablets|cap|capsule|capsules|syp|syrup|inj|injection|susp|suspension|drops|gel|oint|ointment|cream)\.?$",
+    re.I,
+)
+RATIO_STRENGTH_RE = re.compile(
+    r"[\(\s]+(\d+(?:\.\d+)?\s*[\+/]\s*\d+(?:\.\d+)?(?:\s*(?:mg|mcg|g))?)\s*[\)]?$",
+    re.I,
+)
+SINGLE_STRENGTH_RE = re.compile(
+    r"\s+(\d+(?:\.\d+)?\s*(?:mg|mcg|ug|g|ml|iu|%)?)$",
+    re.I,
+)
+BRAND_EXTENSION_RE = re.compile(
+    r"\s+\b(DSR|DS|SR|MR|CR|ER|XL|XR|LA|DT|CT|AM|H|L|LS|OZ|SP|AP|M|Forte)\b$",
+    re.I,
+)
+
 NON_INGREDIENT_WORDS = {
     "mg", "mcg", "ug", "g", "ml", "iu", "unit", "units", "tablet", "tablets", "tab", "tabs",
     "capsule", "capsules", "cap", "caps", "injection", "inj", "syrup", "solution", "suspension",
@@ -18,19 +55,23 @@ NON_INGREDIENT_WORDS = {
 }
 
 DOSAGE_FORM_MAP = {
+    "t": "tablet",
     "tab": "tablet",
     "tabs": "tablet",
     "tablet": "tablet",
     "tablets": "tablet",
+    "c": "capsule",
     "cap": "capsule",
     "caps": "capsule",
     "capsule": "capsule",
     "capsules": "capsule",
     "sr caps": "capsule",
     "sr cap": "capsule",
+    "i": "injection",
     "inj": "injection",
     "injections": "injection",
     "injection": "injection",
+    "s": "syrup",
     "syp": "syrup",
     "syr": "syrup",
     "syrup": "syrup",
@@ -82,54 +123,99 @@ def compact_str(val: str) -> str:
     return re.sub(r"[^a-z0-9]", "", str(val or "").casefold())
 
 
-def clean_rx_name(raw: str) -> tuple[str, str | None, str | None]:
+class CleanedRxInfo(NamedTuple):
+    clean_name: str
+    strength: str | None
+    dosage_form: str | None
+    base_brand: str | None = None
+    instructions: str | None = None
+    duration: str | None = None
+
+
+def clean_rx_name(raw: str) -> CleanedRxInfo:
     """Cleans clinical prescription line tokens:
-    - Strips dosage form prefixes: 'Tab. ', 'T. ', 'Cap. ', 'C. ', 'Inj. ', 'I. ', 'Syp. ', etc.
-    - Strips dosage form suffixes: ' Tab', ' Tablet', ' Cap', ' Capsule', ' Inj', ' Syp', etc.
-    - Extracts trailing strength number if attached to the brand name (e.g. 'Enotet 40' -> ('Enotet', '40mg', 'Tablet')).
+    - Strips leading numbering/bullets/Rx ('1. ', '2) ', '• ', 'Rx ', etc.)
+    - Identifies and strips dosage form prefixes: 'Tab. ', 'T. ', 'Cap. ', 'C. ', 'Inj. ', 'I. ', 'Syp. ', etc.
+    - Identifies and strips trailing duration: '10 days', '30 ds', '2 wks', 'x 10 days', etc.
+    - Identifies and strips trailing sig/frequency codes: '1-0-1', '1 HS', '1 OD', '1 tab OD', '1 cap OD', etc.
+    - Identifies and strips dosage form suffixes: ' Tab', ' Tablet', ' Cap', ' Capsule', ' Inj', ' Syp', etc.
+    - Extracts trailing combination ratio strengths (e.g. '0.5+10', '0.5/10') and single strengths (e.g. '40', '40mg').
+    - Separates brand extensions/modifiers (e.g. 'Razod DSR' -> 'Razod', 'Ambulox M' -> 'Ambulox').
     - Infers dosage form if indicated by the prefix/suffix.
     """
     if not raw:
-        return "", None, None
+        return CleanedRxInfo("", None, None, None, None, None)
     s = raw.strip()
+
+    # 1. Strip leading list numbering, bullets, Rx
+    s = LEADING_NUMBERING_RE.sub("", s).strip()
+
+    # 2. Inferred form from prefix
     inferred_form = None
-    if re.search(r"^(?:tab|tablet|t\.)\s+", s, flags=re.I) or re.search(r"\s+(?:tab|tablet|tablets)\.?$", s, flags=re.I):
+    if re.search(r"^(?:tab|tablet|tablets|t\.)\s+", s, re.I):
         inferred_form = "Tablet"
-    elif re.search(r"^(?:cap|capsule|c\.)\s+", s, flags=re.I) or re.search(r"\s+(?:cap|capsule|capsules)\.?$", s, flags=re.I):
+    elif re.search(r"^(?:cap|capsule|capsules|c\.)\s+", s, re.I):
         inferred_form = "Capsule"
-    elif re.search(r"^(?:inj|injection|i\.)\s+", s, flags=re.I) or re.search(r"\s+(?:inj|injection)\.?$", s, flags=re.I):
+    elif re.search(r"^(?:inj|injection|i\.)\s+", s, re.I):
         inferred_form = "Injection"
-    elif re.search(r"^(?:syp|syrup|s\.)\s+", s, flags=re.I) or re.search(r"\s+(?:syp|syrup)\.?$", s, flags=re.I):
+    elif re.search(r"^(?:syp|syrup|s\.)\s+", s, re.I):
         inferred_form = "Syrup"
+    s = DOSAGE_FORM_PREFIX_RE.sub("", s).strip()
 
-    s = re.sub(
-        r"^(?:(?:tab|tablet|cap|capsule|syp|syrup|inj|injection|susp|suspension|drops|gel|oint|ointment|cream)\.?|\b[tcsei]\.)\s+",
-        "",
-        s,
-        flags=re.I,
-    )
-    s = re.sub(
-        r"\s+(?:tab|tablet|tablets|cap|capsule|capsules|syp|syrup|inj|injection|susp|suspension|drops|gel|oint|ointment|cream)\.?$",
-        "",
-        s,
-        flags=re.I,
-    )
-    s = s.strip()
+    # 3. Trailing duration
+    duration = None
+    m_dur = DURATION_RE.search(s)
+    if m_dur:
+        duration = m_dur.group(1).strip()
+        s = s[:m_dur.start()].strip()
 
-    m = re.search(r"\s+(\d+(?:\.\d+)?\s*(?:mg|mcg|ug|g|ml|iu|%)?)$", s, flags=re.I)
-    extracted_str = None
-    if m:
-        val = m.group(1).strip()
-        extracted_str = val if re.search(r"[a-z]", val, re.I) else f"{val}mg"
-        base_name = s[:m.start()].strip()
+    # 4. Trailing sig / frequency / quantity
+    instructions = None
+    m_sig = SIG_RE.search(s)
+    if m_sig:
+        instructions = m_sig.group(0).strip()
+        s = s[:m_sig.start()].strip()
+
+    # 5. Trailing dosage form suffix
+    if DOSAGE_FORM_SUFFIX_RE.search(s):
+        if not inferred_form:
+            if re.search(r"\s+(?:tab|tablet|tablets)\.?$", s, re.I):
+                inferred_form = "Tablet"
+            elif re.search(r"\s+(?:cap|capsule|capsules)\.?$", s, re.I):
+                inferred_form = "Capsule"
+        s = DOSAGE_FORM_SUFFIX_RE.sub("", s).strip()
+
+    # 6. Trailing strength (ratio or single)
+    strength = None
+    m_ratio = RATIO_STRENGTH_RE.search(s)
+    if m_ratio:
+        strength = m_ratio.group(1).strip()
+        s = s[:m_ratio.start()].strip()
     else:
-        base_name = s
-    return base_name, extracted_str, inferred_form
+        m_single = SINGLE_STRENGTH_RE.search(s)
+        if m_single:
+            val = m_single.group(1).strip()
+            strength = val if re.search(r"[a-z%]", val, re.I) else f"{val}mg"
+            s = s[:m_single.start()].strip()
+
+    # 7. Brand extension
+    base_brand = s
+    m_ext = BRAND_EXTENSION_RE.search(s)
+    if m_ext:
+        base_brand = s[:m_ext.start()].strip()
+
+    clean_name = s
+    return CleanedRxInfo(clean_name, strength, inferred_form, base_brand, instructions, duration)
 
 
 def _strengths(value: str) -> set[str]:
     matches = STRENGTH_RE.findall(value or "")
-    return {re.sub(r"\s+", "", m.lower().replace("μ", "u")) for m in matches}
+    res = {re.sub(r"\s+", "", m.lower().replace("μ", "u")) for m in matches}
+    for m in RATIO_RE.finditer(value or ""):
+        n1, n2 = m.group(1), m.group(2)
+        res.add(f"{n1}mg")
+        res.add(f"{n2}mg")
+    return res
 
 
 def _ingredient_tokens(value: str) -> set[str]:
@@ -142,74 +228,68 @@ def _ingredient_tokens(value: str) -> set[str]:
 
 def _candidate_score(extracted: ExtractedMedicine, row: dict[str, Any]) -> tuple[float, str]:
     raw_brand = str(row.get("brand_name") or "")
-    raw_active_salt = str(row.get("active_salt") or "")
+    if not raw_brand:
+        return (0.0, "none")
 
-    base_name, rx_str, inferred_form = clean_rx_name(extracted.prescribed_name or "")
+    raw_active_salt = str(row.get("active_salt") or "")
+    aliases = split_brand_aliases(raw_brand)
+
+    # Clean clinical prescription line tokens
+    clean_info = clean_rx_name(extracted.prescribed_name or "")
+    clean_name = clean_info.clean_name
+    rx_str = clean_info.strength
+    inferred_form = clean_info.dosage_form
+    base_brand = clean_info.base_brand
     form_to_use = extracted.dosage_form or inferred_form
 
-    # Gate 1: Dosage form verification (do not treat different dosage forms as interchangeable)
+    # Gate 1: Dosage form verification (canonical maps 't'/'tab' to tablet, 'c'/'cap' to capsule)
     if form_to_use and row.get("dosage_form"):
         prescribed_form = canonical_dosage_form(form_to_use)
         catalogue_form = canonical_dosage_form(row.get("dosage_form"))
         if prescribed_form and catalogue_form and prescribed_form != catalogue_form:
-            if compact_str(base_name or extracted.prescribed_name or "") in compact_str(raw_brand):
-                logger.info(
-                    "[Matching Diagnostic] Candidate '%s' rejected for '%s': mismatch_dosage_form (prescribed '%s' vs catalogue '%s')",
-                    raw_brand,
-                    extracted.prescribed_name,
-                    prescribed_form,
-                    catalogue_form,
-                )
             return (0.0, "mismatch_dosage_form")
 
     # Gate 2: Strength conflict verification
     explicit_strengths = _strengths(" ".join(filter(None, [extracted.strength, extracted.active_salt])))
     expected_strengths = explicit_strengths or _strengths(" ".join(filter(None, [extracted.prescribed_name, rx_str])))
     catalogue_strengths = _strengths(" ".join(filter(None, [raw_active_salt, raw_brand])))
-
-    is_strength_conflict = False
-    if expected_strengths and catalogue_strengths:
-        if not expected_strengths.issubset(catalogue_strengths) and expected_strengths != catalogue_strengths:
-            is_strength_conflict = True
+    is_strength_conflict = bool(
+        expected_strengths and catalogue_strengths
+        and not expected_strengths.issubset(catalogue_strengths)
+        and expected_strengths != catalogue_strengths
+    )
 
     # If explicit strength was specified and conflicts with catalogue, strictly reject
     if explicit_strengths and is_strength_conflict:
-        if compact_str(extracted.prescribed_name or "") in compact_str(raw_brand):
-            logger.info(
-                "[Matching Diagnostic] Candidate '%s' rejected for '%s': mismatch_strength (prescribed %s vs catalogue %s)",
-                raw_brand,
-                extracted.prescribed_name,
-                explicit_strengths,
-                catalogue_strengths,
-            )
         return (0.0, "mismatch_strength")
 
-    # Gate 3: Active ingredients & combination verification
+    # Gate 3: Active ingredients verification
     extracted_ingredients = _ingredient_tokens(extracted.active_salt or "")
     catalogue_ingredients = _ingredient_tokens(raw_active_salt)
-
     if extracted_ingredients and catalogue_ingredients:
-        # Rule: Do not match a single-ingredient medicine as an equivalent combination
         if len(catalogue_ingredients) >= 2 and len(extracted_ingredients) == 1:
             return (0.0, "mismatch_single_vs_combination")
-        # Rule: Compare the complete combination
         if extracted_ingredients != catalogue_ingredients:
             return (0.0, "mismatch_ingredients")
 
-    queries = [q for q in [extracted.prescribed_name, extracted.normalized_name, base_name] if q]
-    query_pairs = [(normalize(q), compact_str(q)) for q in queries]
+    # Build queries to compare: full prescribed name, cleaned name, and base brand
+    raw_queries = [q for q in [extracted.prescribed_name, extracted.normalized_name, clean_name, base_brand] if q]
+    expanded_queries = list(raw_queries)
+    for q in raw_queries:
+        stripped = re.sub(r"\s+\d+(?:\.\d+)?\s*(?:mg|mcg|ug|g|ml|iu|%)?$", "", q, flags=re.I).strip()
+        if stripped and stripped not in expanded_queries:
+            expanded_queries.append(stripped)
 
+    query_pairs = [(normalize(q), compact_str(q)) for q in expanded_queries]
     full_brand_norm = normalize(raw_brand)
     full_brand_compact = compact_str(raw_brand)
-    aliases = split_brand_aliases(raw_brand)
 
-    # Priority 1: Exact normalized brand-name match
+    # 1. Exact normalized brand or alias match
     brand_matched = any(
         q_norm == full_brand_norm or (len(q_compact) >= 3 and q_compact == full_brand_compact)
         for q_norm, q_compact in query_pairs
     )
 
-    # Priority 2: Exact normalized match against individual aliases when brand_name contains slash-separated names
     alias_matched = False
     for alias in aliases:
         alias_norm = normalize(alias)
@@ -223,54 +303,41 @@ def _candidate_score(extracted: ExtractedMedicine, row: dict[str, Any]) -> tuple
 
     if brand_matched or alias_matched:
         if is_strength_conflict:
-            logger.info(
-                "[Matching Diagnostic] Candidate '%s' matched brand for '%s' but strength differs (prescribed %s vs catalogue %s) -> strength_variant",
-                raw_brand,
-                extracted.prescribed_name,
-                expected_strengths,
-                catalogue_strengths,
-            )
             return (0.72, "strength_variant")
-        if brand_matched:
-            return (0.98, "exact_brand") if (not expected_strengths or expected_strengths == catalogue_strengths) else (0.96, "exact_brand")
-        return (0.96, "exact_alias") if (not expected_strengths or expected_strengths == catalogue_strengths) else (0.94, "exact_alias")
+        return (0.98 if brand_matched else 0.96, "exact_brand" if brand_matched else "exact_alias")
 
     # If strength conflict occurred and brand was not an exact/alias match, reject immediately
     if is_strength_conflict:
         return (0.0, "mismatch_strength")
 
-    # Priority 3: Match using active ingredients / composition, strength and dosage form
-    if extracted_ingredients and extracted_ingredients == catalogue_ingredients:
-        if expected_strengths and catalogue_strengths == expected_strengths:
-            return (0.95, "exact_composition")
-        if not expected_strengths:
-            return (0.78, "composition")
-
-    for q_norm, _ in query_pairs:
-        if q_norm and q_norm == normalize(raw_active_salt):
-            if not expected_strengths or expected_strengths == catalogue_strengths:
-                return (0.94, "exact_composition")
-            elif expected_strengths.issubset(catalogue_strengths):
-                return (0.92, "exact_composition")
-
-    # Priority 4: Fuzzy matching (suggests candidates, but never silently declares an uncertain match as exact)
-    candidate_names = [full_brand_norm, normalize(raw_active_salt)]
+    # 2. Substring matching for aliases
     for alias in aliases:
-        candidate_names.append(normalize(alias))
+        a_compact = compact_str(alias)
+        for _, q_compact in query_pairs:
+            if len(q_compact) >= 4 and len(a_compact) >= 4:
+                if q_compact in a_compact or a_compact in q_compact:
+                    return (0.92, "exact_alias")
 
-    fuzzy_max = 0.0
-    for q_norm, _ in query_pairs:
+    # 3. Fuzzy match for OCR spelling mistakes (e.g. Pestril Plus vs Petril Plus, Pantil Plus vs Petril Plus)
+    best_fuzzy = 0.0
+    candidate_targets = [full_brand_norm] + [normalize(a) for a in aliases]
+    for q_norm, q_compact in query_pairs:
         if not q_norm:
             continue
-        for cand in candidate_names:
-            if cand:
-                ratio = SequenceMatcher(None, q_norm, cand).ratio()
-                if ratio > fuzzy_max:
-                    fuzzy_max = ratio
+        for target in candidate_targets:
+            if not target:
+                continue
+            r1 = SequenceMatcher(None, q_norm, target).ratio()
+            r2 = SequenceMatcher(None, q_compact, compact_str(target)).ratio()
+            best_fuzzy = max(best_fuzzy, r1, r2)
 
-    if fuzzy_max >= 0.80:
-        # Capped at 0.82 so fuzzy match never qualifies as exact (>= 0.90) but qualifies as a suggested candidate
-        return (round(min(fuzzy_max * 0.95, 0.82), 2), "suggested_candidate")
+    if best_fuzzy >= 0.75:
+        return (round(min(best_fuzzy * 0.90, 0.82), 2), "suggested_candidate")
+
+    # 4. Fallback: match using active composition if available
+    for q_norm, _ in query_pairs:
+        if q_norm and q_norm == normalize(raw_active_salt):
+            return (0.94, "exact_composition")
 
     return (0.0, "none")
 

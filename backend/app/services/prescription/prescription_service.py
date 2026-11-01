@@ -19,7 +19,7 @@ from app.services.prescription.extraction_service import (
     ExtractionProviderTimeout,
     GeminiExtractionProvider,
 )
-from app.services.prescription.medicine_matching_service import match_medicine
+from app.services.prescription.medicine_matching_service import clean_rx_name, match_medicine
 from app.services.search_service import normalize
 
 
@@ -47,7 +47,14 @@ class PrescriptionService:
 
         items: list[ExtractedItemSchema] = []
         for m in deduped:
+            raw_val = m.raw_text or m.prescribed_name or m.normalized_name or "Prescription line"
             name = m.prescribed_name or m.normalized_name or ""
+            clean_info = clean_rx_name(name) if name else clean_rx_name(raw_val)
+            final_name = clean_info.clean_name or name or None
+            final_str = m.strength or clean_info.strength
+            final_form = m.dosage_form or clean_info.dosage_form
+            final_inst = m.dosage_instructions or clean_info.instructions
+
             conf_val = m.confidence if m.confidence is not None else 0.5
             if conf_val >= 0.85:
                 conf_str = "High"
@@ -58,11 +65,11 @@ class PrescriptionService:
 
             items.append(
                 ExtractedItemSchema(
-                    raw_text=m.raw_text or name or "Prescription line",
-                    medicine_name=name or None,
-                    strength=m.strength,
-                    dosage_form=m.dosage_form,
-                    instructions=m.dosage_instructions,
+                    raw_text=raw_val,
+                    medicine_name=final_name,
+                    strength=final_str,
+                    dosage_form=final_form,
+                    instructions=final_inst,
                     confidence=conf_str,
                     uncertain_parts=m.uncertain_parts,
                     needs_user_confirmation=True,

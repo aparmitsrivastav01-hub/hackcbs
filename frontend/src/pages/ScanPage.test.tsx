@@ -239,7 +239,7 @@ describe("ScanPage — Prescription Scanning & Catalogue Matching", () => {
     };
 
     vi.spyOn(apiClient, "extractPrescription").mockResolvedValueOnce(mockExtraction);
-    vi.spyOn(apiClient, "searchConfirmed").mockResolvedValueOnce(mockSearchResults);
+    vi.spyOn(apiClient, "searchConfirmed").mockResolvedValue(mockSearchResults);
 
     renderScanPage();
 
@@ -334,7 +334,7 @@ describe("ScanPage — Prescription Scanning & Catalogue Matching", () => {
     };
 
     vi.spyOn(apiClient, "extractPrescription").mockResolvedValueOnce(mockExtraction);
-    vi.spyOn(apiClient, "searchConfirmed").mockResolvedValueOnce(mockSearchResults);
+    vi.spyOn(apiClient, "searchConfirmed").mockResolvedValue(mockSearchResults);
 
     renderScanPage();
 
@@ -427,7 +427,7 @@ describe("ScanPage — Prescription Scanning & Catalogue Matching", () => {
     };
 
     vi.spyOn(apiClient, "extractPrescription").mockResolvedValueOnce(mockExtraction);
-    vi.spyOn(apiClient, "searchConfirmed").mockResolvedValueOnce(mockSearchResults);
+    vi.spyOn(apiClient, "searchConfirmed").mockResolvedValue(mockSearchResults);
 
     renderScanPage();
 
@@ -561,7 +561,7 @@ describe("ScanPage — Prescription Scanning & Catalogue Matching", () => {
     };
 
     vi.spyOn(apiClient, "extractPrescription").mockResolvedValueOnce(mockExtraction);
-    vi.spyOn(apiClient, "searchConfirmed").mockResolvedValueOnce(mockSearchResults);
+    vi.spyOn(apiClient, "searchConfirmed").mockResolvedValue(mockSearchResults);
 
     renderScanPage();
 

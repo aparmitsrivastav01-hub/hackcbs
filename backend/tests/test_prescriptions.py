@@ -558,3 +558,62 @@ def test_three_tier_status_categorization(client):
     assert results[0]["match_status"] == "Exact Match"
     assert results[1]["match_status"] == "Possible Match — Needs Review"
     assert results[2]["match_status"] == "No Match Found"
+
+
+def test_realistic_clinical_prescription_lines_match_catalogue(client):
+    """Verifies that realistic clinical doctor prescription formats (numbering, bullets,
+    dosage form prefixes/suffixes, sig codes, units, durations, and combination ratios)
+    are properly normalized and accurately matched against the catalogue.
+    """
+    payload = {
+        "items": [
+            {"medicine_name": "1. Tab Petril Plus 1-0-1 10 days"},
+            {"medicine_name": "2) T. Placida 1 HS 30 ds"},
+            {"medicine_name": "Tab. Petril Plus (0.5+10)"},
+            {"medicine_name": "Placida 0.5/10 1 tab OD"},
+            {"medicine_name": "Razod DSR 1 cap OD"},
+            {"medicine_name": "Ambulox M 1 tab BD"},
+            {"medicine_name": "3. Enotet 40 1 OD"},
+        ]
+    }
+    response = client.post("/api/prescriptions/search-confirmed", json=payload)
+    assert response.status_code == 200
+    results = response.json()["results"]
+    assert len(results) == 7
+
+    # 1. '1. Tab Petril Plus 1-0-1 10 days' -> Exact Match for Petril Plus (id 506)
+    assert results[0]["match_count"] >= 1
+    assert results[0]["match_status"] == "Exact Match"
+    assert results[0]["matches"][0]["medicine"]["id"] == 506
+
+    # 2. '2) T. Placida 1 HS 30 ds' -> Exact Match for Placida (id 507)
+    assert results[1]["match_count"] >= 1
+    assert results[1]["match_status"] == "Exact Match"
+    assert results[1]["matches"][0]["medicine"]["id"] == 507
+
+    # 3. 'Tab. Petril Plus (0.5+10)' -> Exact Match for Petril Plus (id 506)
+    assert results[2]["match_count"] >= 1
+    assert results[2]["match_status"] == "Exact Match"
+    assert results[2]["matches"][0]["medicine"]["id"] == 506
+
+    # 4. 'Placida 0.5/10 1 tab OD' -> Exact Match for Placida (id 507)
+    assert results[3]["match_count"] >= 1
+    assert results[3]["match_status"] == "Exact Match"
+    assert results[3]["matches"][0]["medicine"]["id"] == 507
+
+    # 5. 'Razod DSR 1 cap OD' -> Exact Match for Razo-D (id 140)
+    assert results[4]["match_count"] >= 1
+    assert results[4]["match_status"] == "Exact Match"
+    assert results[4]["matches"][0]["medicine"]["id"] == 140
+
+    # 6. 'Ambulox M 1 tab BD' -> Exact Match for Ambulox / Ambulax / Ambulax M (id 505)
+    assert results[5]["match_count"] >= 1
+    assert results[5]["match_status"] == "Exact Match"
+    assert results[5]["matches"][0]["medicine"]["id"] == 505
+
+    # 7. '3. Enotet 40 1 OD' -> Possible Match — Needs Review (id 508, strength variant 40mg vs 90mg)
+    assert results[6]["match_count"] >= 1
+    assert results[6]["match_status"] == "Possible Match — Needs Review"
+    assert results[6]["matches"][0]["medicine"]["id"] == 508
+    assert results[6]["matches"][0]["match_type"] == "strength_variant"
+
