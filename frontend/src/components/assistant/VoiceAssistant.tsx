@@ -231,7 +231,7 @@ export function VoiceAssistant() {
             </div>
           )}
 
-          {/* Main Launcher Button with Pulse Ring */}
+          {/* Main Launcher Button */}
           <button
             type="button"
             onClick={() => {
@@ -241,9 +241,6 @@ export function VoiceAssistant() {
             aria-label="Open Voice AI Assistant"
             className="group relative flex h-16 w-16 items-center justify-center rounded-full bg-[linear-gradient(135deg,#087BFF_0%,#0056cc_100%)] text-white shadow-[0_12px_28px_rgba(8,123,255,0.42)] transition-all hover:scale-105 hover:shadow-[0_16px_36px_rgba(8,123,255,0.55)] active:scale-95"
           >
-            {/* Animated Outer Pulse Ring */}
-            <span className="absolute -inset-1 rounded-full bg-brand/30 animate-ping opacity-75" />
-
             <div className="relative flex items-center justify-center">
               <Mic className="h-7 w-7 text-white transition-transform group-hover:scale-110" />
               <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400 border-2 border-white" />
