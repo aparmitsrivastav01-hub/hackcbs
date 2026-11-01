@@ -130,24 +130,25 @@ class PrescriptionService:
                 normalized_name=" ".join(name.split()),
                 strength=item.strength,
                 dosage_form=item.dosage_form,
+                confidence=1.0,
             )
             match = match_medicine(extracted, all_catalogue)
 
             matched_medicines = []
-            if match.medicine_id is not None:
+            if match.medicine_id is not None and match.status in ("matched", "possible_match"):
                 row = self.medicine_service.get(match.medicine_id)
                 if row:
-                    matched_medicines.append(row)
+                    matched_medicines.append((row, match.match_type or "exact", match.match_confidence))
 
             # Include high-confidence candidate alternatives if any
             for alt in match.alternatives:
                 if alt.medicine_id != match.medicine_id and len(matched_medicines) < 3:
                     alt_row = self.medicine_service.get(alt.medicine_id)
-                    if alt_row and alt_row not in matched_medicines:
-                        matched_medicines.append(alt_row)
+                    if alt_row and not any(r[0]["id"] == alt_row["id"] for r in matched_medicines):
+                        matched_medicines.append((alt_row, alt.match_type or "alternative", alt.match_confidence))
 
             matches_formatted = []
-            for row in matched_medicines:
+            for row, match_type, match_conf in matched_medicines:
                 comparison = compare_prices(row)
                 prices = comparison["prices"]
                 savings_source = comparison["savings_comparison"]
@@ -208,6 +209,8 @@ class PrescriptionService:
                             "jan_aushadhi_price": prices["jan_aushadhi"],
                             "dava_india_price": prices["dava_india"],
                         },
+                        "match_type": match_type,
+                        "match_confidence": match_conf,
                         "price_options": price_options,
                         "recommended_option": rec_opt,
                         "comparison_note": note,
@@ -222,10 +225,12 @@ class PrescriptionService:
                         "dosage_form": item.dosage_form,
                     },
                     "match_count": len(matches_formatted),
+                    "match_type": match.match_type,
+                    "match_confidence": match.match_confidence,
                     "review_note": (
                         "Direct active generic substitutes available in PMBJP catalogue."
                         if len(matches_formatted) > 0
-                        else "No exact catalogue match found for this formulation. Consult your pharmacist."
+                        else "No verified catalogue match found."
                     ),
                     "matches": matches_formatted,
                 }

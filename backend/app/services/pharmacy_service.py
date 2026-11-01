@@ -146,7 +146,7 @@ class PharmacyService:
 
         records: list[dict[str, Any]] = []
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, "r", encoding="utf-8-sig") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     store_id = (row.get("store_id") or "").strip()
@@ -163,6 +163,8 @@ class PharmacyService:
                     contact_person = (row.get("contact_person") or "").strip() or None
                     address = (row.get("address") or "").strip()
                     district = (row.get("district") or "").strip()
+                    if district and not district.lower().endswith("delhi"):
+                        district = f"{district} Delhi"
                     pincode = (row.get("pincode") or "").strip()
                     phone = (row.get("phone") or "").strip() or None
                     raw_wa = (row.get("whatsapp_number") or "").strip() or None
@@ -226,7 +228,12 @@ class PharmacyService:
 
         if district and district.strip() and district.lower() != "all":
             d_clean = district.strip().lower()
-            filtered = [s for s in filtered if s["district"].lower() == d_clean]
+            filtered = [
+                s for s in filtered
+                if s["district"].lower() == d_clean
+                or s["district"].lower() in d_clean
+                or d_clean.replace("delhi", "").strip() in s["district"].lower()
+            ]
 
         if search and search.strip():
             term = search.strip().lower()

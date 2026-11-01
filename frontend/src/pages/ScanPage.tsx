@@ -189,7 +189,7 @@ export function ScanPage() {
     } finally {
       setBusy(false);
       setTimeout(() => {
-        document.getElementById("review-section")?.scrollIntoView({ behavior: "smooth" });
+        document.getElementById("review-section")?.scrollIntoView?.({ behavior: "smooth" });
       }, 150);
     }
   }
@@ -223,7 +223,7 @@ export function ScanPage() {
     } finally {
       setBusy(false);
       setTimeout(() => {
-        document.getElementById("results-section")?.scrollIntoView({ behavior: "smooth" });
+        document.getElementById("results-section")?.scrollIntoView?.({ behavior: "smooth" });
       }, 150);
     }
   }
@@ -760,41 +760,76 @@ export function ScanPage() {
 
                   <p className="mt-2 text-xs text-slate-500">{res.review_note}</p>
 
-                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {res.matches.map((match) => (
-                      <Link
-                        key={match.medicine.id}
-                        to={`/medicines/${match.medicine.id}`}
-                        className="flex flex-col justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-xs transition hover:border-brand/40 hover:shadow-md"
-                      >
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-brand">{tr("Generic Option", "जेनेरिक विकल्प")}</span>
-                            <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                              {match.recommended_option?.savings_percent}% {tr("Cheaper", "सस्ता")}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-base font-bold text-navy">{match.medicine.brand_name}</p>
-                          <p className="text-xs text-slate-500">{match.medicine.active_salt}</p>
-                        </div>
-
-                        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                  {res.matches.length === 0 ? (
+                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
+                      {tr("No verified catalogue match found.", "कैटलॉग में कोई सत्यापित मिलान नहीं मिला।")}
+                    </div>
+                  ) : (
+                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {res.matches.map((match) => (
+                        <Link
+                          key={match.medicine.id}
+                          to={`/medicines/${match.medicine.id}`}
+                          className="flex flex-col justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-xs transition hover:border-brand/40 hover:shadow-md"
+                        >
                           <div>
-                            <span className="block text-[10px] text-slate-400">{tr("Jan Aushadhi Price", "जन औषधि मूल्य")}</span>
-                            <span className="text-lg font-extrabold text-emerald-600">
-                              {formatInr(match.recommended_option?.price ?? match.medicine.jan_aushadhi_price)}
-                            </span>
+                            <div className="flex flex-wrap items-center justify-between gap-1.5">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-xs font-bold text-brand">{tr("Generic Option", "जेनेरिक विकल्प")}</span>
+                                {match.medicine.dosage_form ? (
+                                  <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                    {match.medicine.dosage_form}
+                                  </span>
+                                ) : null}
+                                {match.match_type ? (
+                                  <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-brand">
+                                    {match.match_type === "exact_brand"
+                                      ? tr("Exact Brand", "सटीक ब्रांड")
+                                      : match.match_type === "exact_alias"
+                                      ? tr("Verified Alias", "सत्यापित उपनाम")
+                                      : match.match_type === "exact_composition"
+                                      ? tr("Composition Match", "सामग्री मिलान")
+                                      : tr("Possible Match", "संभावित मिलान")}
+                                    {match.match_confidence ? ` (${Math.round(match.match_confidence * 100)}%)` : ""}
+                                  </span>
+                                ) : null}
+                              </div>
+                              {match.recommended_option?.savings_percent ? (
+                                <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                  {match.recommended_option.savings_percent}% {tr("Cheaper", "सस्ता")}
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-1 text-base font-bold text-navy">{match.medicine.brand_name}</p>
+                            <p className="text-xs text-slate-500">{match.medicine.active_salt}</p>
                           </div>
-                          <div className="text-right">
-                            <span className="block text-[10px] text-slate-400">{tr("Market MRP", "बाजार MRP")}</span>
-                            <span className="text-sm font-semibold text-slate-400 line-through">
-                              {formatInr(match.medicine.private_brand_price)}
-                            </span>
+
+                          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                            <div>
+                              <span className="block text-[10px] text-slate-400">{tr("Jan Aushadhi Price", "जन औषधि मूल्य")}</span>
+                              <span className="text-lg font-extrabold text-emerald-600">
+                                {match.medicine.jan_aushadhi_price != null ? formatInr(match.medicine.jan_aushadhi_price) : tr("Not available", "उपलब्ध नहीं")}
+                              </span>
+                            </div>
+                            {match.medicine.dava_india_price != null ? (
+                              <div>
+                                <span className="block text-[10px] text-slate-400">{tr("Dava India", "दवा इंडिया")}</span>
+                                <span className="text-sm font-bold text-slate-700">
+                                  {formatInr(match.medicine.dava_india_price)}
+                                </span>
+                              </div>
+                            ) : null}
+                            <div className="text-right">
+                              <span className="block text-[10px] text-slate-400">{tr("Market MRP", "बाजार MRP")}</span>
+                              <span className="text-sm font-semibold text-slate-400 line-through">
+                                {match.medicine.private_brand_price != null ? formatInr(match.medicine.private_brand_price) : tr("Not available", "उपलब्ध नहीं")}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

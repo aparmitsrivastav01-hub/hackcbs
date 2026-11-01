@@ -87,6 +87,7 @@ class CatalogueCandidate(BaseModel):
     active_salt: str
     dosage_form: str
     match_confidence: float
+    match_type: str | None = None
 
 
 class CatalogueMatch(BaseModel):
@@ -96,6 +97,7 @@ class CatalogueMatch(BaseModel):
     active_salt: str | None = None
     dosage_form: str | None = None
     match_confidence: float | None = None
+    match_type: str | None = None
     alternatives: list[CatalogueCandidate] = Field(default_factory=list)
 
 

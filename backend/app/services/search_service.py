@@ -23,6 +23,10 @@ def _field_score(query: str, value: str) -> float:
         return 0
     if query == candidate:
         return 100
+    if "/" in str(value):
+        aliases = [normalize(alias) for alias in str(value).split("/") if alias.strip()]
+        if any(query == alias for alias in aliases):
+            return 100
     if query in candidate:
         return 82
     query_tokens, candidate_tokens = query.split(), candidate.split()

@@ -328,3 +328,131 @@ def test_search_confirmed_endpoint(client):
     assert len(data["results"]) == 1
     assert data["results"][0]["confirmed_input"]["medicine_name"] == "Zerodol-P"
     assert data["results"][0]["match_count"] >= 1
+
+
+def test_catalogue_records_loaded_by_running_backend():
+    assert medicine_service.count >= 500
+    # Verify the four specific target medicines exist in loaded catalogue
+    all_rows = medicine_service.all()
+    brands = [r["brand_name"] for r in all_rows]
+    assert any("Razo-D" in b or "Razod" in b for b in brands)
+    assert any("Ambulox" in b for b in brands)
+    assert any("Petril Plus" in b for b in brands)
+    assert any("Placida" in b for b in brands)
+
+
+@pytest.mark.parametrize(
+    "medicine_name,expected_brand,expected_form",
+    [
+        ("Razod", "Razo-D", "Capsule"),
+        ("Ambulox", "Ambulox / Ambulax / Ambulax M", "Tablet"),
+        ("Petril Plus", "Petril Plus", "Tablet"),
+        ("Placida", "Placida", "Tablet"),
+    ],
+)
+def test_search_confirmed_exact_four_medicines(client, medicine_name, expected_brand, expected_form):
+    payload = {
+        "items": [
+            {
+                "medicine_name": medicine_name,
+                "dosage_form": expected_form,
+            }
+        ]
+    }
+    response = client.post("/api/prescriptions/search-confirmed", json=payload)
+    assert response.status_code == 200
+    result = response.json()["results"][0]
+    assert result["match_count"] >= 1
+    assert "Direct active generic substitutes available" in result["review_note"]
+    matched_brands = [m["medicine"]["brand_name"] for m in result["matches"]]
+    assert any(expected_brand in b for b in matched_brands)
+    # Validate prices are returned and populated
+    first_match = result["matches"][0]["medicine"]
+    assert first_match["private_brand_price"] is not None
+    assert first_match["jan_aushadhi_price"] is not None or first_match["dava_india_price"] is not None
+
+
+def test_case_insensitive_matching(client):
+    for raw_name in ["razod", "RAZOD", "ambulox", "AMBULOX", "petril plus", "PETRIL PLUS", "placida", "PLACIDA"]:
+        response = client.post(
+            "/api/prescriptions/search-confirmed",
+            json={"items": [{"medicine_name": raw_name}]},
+        )
+        assert response.status_code == 200
+        res = response.json()["results"][0]
+        assert res["match_count"] >= 1, f"Expected matches for case variation: {raw_name}"
+
+
+def test_slash_separated_aliases(client):
+    # Test alternative aliases within slash-separated brand entries
+    # Row 504: Rozad / Razod / Razo-D
+    # Row 505: Ambulox / Ambulax / Ambulax M
+    for alias in ["Rozad", "Razod", "Razo-D", "Ambulox", "Ambulax", "Ambulax M"]:
+        response = client.post(
+            "/api/prescriptions/search-confirmed",
+            json={"items": [{"medicine_name": alias}]},
+        )
+        assert response.status_code == 200
+        res = response.json()["results"][0]
+        assert res["match_count"] >= 1, f"Expected match for alias: {alias}"
+
+
+def test_combination_medicine_preserves_composition():
+    # Petril Plus has Clonazepam 0.5 mg + Escitalopram 10 mg
+    all_catalogue = medicine_service.all()
+    # Prescribing matching combination
+    ext_valid = ExtractedMedicine(
+        prescribed_name="Petril Plus",
+        strength="0.5 mg + 10 mg",
+        dosage_form="Tablet",
+        confidence=1.0,
+    )
+    match_valid = match_medicine(ext_valid, all_catalogue)
+    assert match_valid.status == "matched"
+    assert match_valid.medicine_id == 506
+
+
+def test_strength_mismatch_fails_cleanly(client):
+    # Petril Plus with wrong strength (e.g. 500 mg or 20 mg)
+    response = client.post(
+        "/api/prescriptions/search-confirmed",
+        json={"items": [{"medicine_name": "Petril Plus", "strength": "500 mg", "dosage_form": "Tablet"}]},
+    )
+    assert response.status_code == 200
+    res = response.json()["results"][0]
+    assert res["match_count"] == 0
+    assert res["review_note"] == "No verified catalogue match found."
+
+
+def test_dosage_form_mismatch_fails_cleanly(client):
+    # Petril Plus is a Tablet, prescribing as Syrup should not match
+    response = client.post(
+        "/api/prescriptions/search-confirmed",
+        json={"items": [{"medicine_name": "Petril Plus", "dosage_form": "Syrup"}]},
+    )
+    assert response.status_code == 200
+    res = response.json()["results"][0]
+    assert res["match_count"] == 0
+    assert res["review_note"] == "No verified catalogue match found."
+
+    # Razod is a Capsule, prescribing as Tablet should not match
+    response_razod = client.post(
+        "/api/prescriptions/search-confirmed",
+        json={"items": [{"medicine_name": "Razod", "dosage_form": "Tablet"}]},
+    )
+    assert response_razod.status_code == 200
+    res_razod = response_razod.json()["results"][0]
+    assert res_razod["match_count"] == 0
+    assert res_razod["review_note"] == "No verified catalogue match found."
+
+
+def test_truly_unknown_medicine_returns_no_match(client):
+    response = client.post(
+        "/api/prescriptions/search-confirmed",
+        json={"items": [{"medicine_name": "XyzFakeMedicine123456789"}]},
+    )
+    assert response.status_code == 200
+    res = response.json()["results"][0]
+    assert res["match_count"] == 0
+    assert res["review_note"] == "No verified catalogue match found."
+    assert res["matches"] == []

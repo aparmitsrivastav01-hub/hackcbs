@@ -113,6 +113,8 @@ export type Comparison = {
     savings_percent: number | null;
   } | null;
   comparison_note: string;
+  match_type?: string | null;
+  match_confidence?: number | null;
 };
 
 export type CatalogueStats = {
@@ -163,6 +165,8 @@ export type ConfirmedSearchResult = {
     };
     matches: Comparison[];
     match_count: number;
+    match_type?: string | null;
+    match_confidence?: number | null;
     review_note: string;
   }>;
 };
