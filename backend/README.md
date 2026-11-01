@@ -35,6 +35,12 @@ Swagger UI: `http://localhost:8000/docs`.
 - `PHARMACY_CACHE_TTL_SECONDS` — pharmacy discovery cache lifetime; defaults to 3600 seconds.
 - `CDSCO_ALERTS_CSV_PATH` — optional path to the supplied CDSCO extraction; defaults to `app/data/MedEasy_CDSCO_extraction_updated.csv`.
 - `CDSCO_REVIEW_API_KEY` — key required by the manual alert review endpoint. Keep it secret and configure it before verifying extracted records.
+- `DATABASE_URL` — YugabyteDB Aeon distributed SQL connection URL (YSQL / PostgreSQL: `postgresql://<user>:<pwd>@<host>:5433/<db>?sslmode=require`); falls back to local SQLite when unset.
+- `JWT_SECRET` — secret key used to sign and verify JWT authentication and refresh tokens.
+- `MEKO_ENABLED` — toggle for Meko MCP conversational memory gateway (`true`/`false`).
+- `MEKO_API_KEY` — API key for Meko MCP memory service.
+- `MEKO_MCP_URL` — Meko MCP stream endpoint URL (defaults to `https://mcp.mekodata.ai/mcp`).
+- `MEKO_DATAPACK_ID` — datapack identifier for patient conversational memory.
 
 The Gemini provider implements a small extraction interface and can be replaced with another OCR/VLM adapter. Prescription content is sent to the configured provider for extraction. Do not log file contents or patient details.
 
