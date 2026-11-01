@@ -2,6 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.models.pharmacy_schemas import (
+    PharmacyDirectoryResponse,
     ShopWhatsAppContactRequest,
     ShopWhatsAppContactResponse,
 )
@@ -13,7 +14,29 @@ logger = logging.getLogger(__name__)
 
 
 def get_pharmacy_service(request: Request) -> PharmacyService:
+    if not hasattr(request.app.state, "pharmacy_service") or request.app.state.pharmacy_service is None:
+        request.app.state.pharmacy_service = PharmacyService()
     return request.app.state.pharmacy_service
+
+
+@router.get("/directory", response_model=PharmacyDirectoryResponse)
+def get_pharmacy_directory(
+    search: str | None = None,
+    brand: str | None = None,
+    district: str | None = None,
+    sort_by_distance: bool = False,
+    service: PharmacyService = Depends(get_pharmacy_service),
+):
+    """
+    Search and filter verified and unverified pharmacy directory listings from the configured CSV seed.
+    Does NOT trigger TinyFish web scraping or external requests.
+    """
+    return service.get_directory(
+        search=search,
+        brand=brand,
+        district=district,
+        sort_by_distance=sort_by_distance,
+    )
 
 
 @router.post("/whatsapp-contact", response_model=ShopWhatsAppContactResponse)

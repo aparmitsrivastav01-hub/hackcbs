@@ -1,8 +1,11 @@
 import {
   AlertCircle,
+  ArrowUpDown,
   Check,
+  Clock,
   Copy,
   ExternalLink,
+  Filter,
   MapPin,
   MessageSquare,
   Navigation,
@@ -14,75 +17,64 @@ import {
   Store,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import { createEnquiry, formatInr, getShopWhatsAppContact } from "../api/client";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../i18n/LanguageContext";
-import type { Pharmacy, ShopWhatsAppContactRequest } from "../types";
+import {
+  DEFAULT_DELHI_SEED_STORES,
+  fetchPharmacyDirectory,
+  filterAndSortDirectoryEntries,
+} from "../services/pharmacyDirectoryService";
+import type { PharmacyDirectoryEntry, ShopWhatsAppContactRequest } from "../types";
 
-// Curated reference pharmacy network directory (no hardcoded fake contacts)
-const REFERENCE_PHARMACIES: Pharmacy[] = [
-  {
-    id: "ja-delhi-01",
-    name: "Pradhan Mantri Bhartiya Janaushadhi Kendra (PMBJP)",
-    address: "Shop No. 4, Community Centre, Sector 7, Rohini, New Delhi 110085",
-    distance: "0.8 km",
-    open_now: true,
-    rating: 4.8,
-    review_count: 142,
-    is_generic_store: true,
-    generic_network: "Jan Aushadhi",
-    source: "demo",
-  },
-  {
-    id: "di-delhi-02",
-    name: "Dava India Generic Pharmacy",
-    address: "B-2/14, Main Market, Connaught Place, New Delhi 110001",
-    distance: "1.4 km",
-    open_now: true,
-    rating: 4.6,
-    review_count: 89,
-    is_generic_store: true,
-    generic_network: "Dava India",
-    source: "demo",
-  },
-  {
-    id: "apollo-03",
-    name: "Apollo Pharmacy 24/7",
-    address: "Ground Floor, Metro Station Complex, Rajiv Chowk, New Delhi 110001",
-    distance: "2.1 km",
-    open_now: true,
-    rating: 4.3,
-    review_count: 320,
-    is_generic_store: false,
-    source: "places",
-  },
-  {
-    id: "medplus-04",
-    name: "MedPlus Chemist & Druggist",
-    address: "Plot 18, Block C, Preet Vihar, Vikas Marg, Delhi 110092",
-    distance: "3.2 km",
-    open_now: true,
-    rating: 4.4,
-    review_count: 110,
-    is_generic_store: false,
-    source: "places",
-  },
-  {
-    id: "ja-noida-05",
-    name: "Jan Aushadhi Medical Store",
-    address: "Sector 18 Market, Near Metro Gate 2, Noida 201301",
-    distance: "4.5 km",
-    open_now: false,
-    rating: 4.7,
-    review_count: 67,
-    is_generic_store: true,
-    generic_network: "Jan Aushadhi",
-    source: "demo",
-  },
-];
+export type SelectedPharmacyInfo = {
+  id: string;
+  name: string;
+  address: string;
+  phone?: string | null;
+  whatsapp_number?: string | null;
+  whatsapp_verified?: boolean;
+  brand?: string | null;
+  district?: string | null;
+  pincode?: string | null;
+  distance?: string | null;
+  sourceUrl?: string | null;
+  dataStatus?: string | null;
+};
+
+const SESSION_VERIFIED_WHATSAPP_CACHE_KEY = "medeasy_verified_whatsapp_cache";
+
+export type CachedVerifiedContact = {
+  whatsappNumber: string;
+  phoneNumber?: string | null;
+  shopName?: string | null;
+  address?: string | null;
+  sourceUrl?: string | null;
+  embedUrl?: string | null;
+  runUrl?: string | null;
+};
+
+export function getSessionVerifiedCache(): Record<string, CachedVerifiedContact> {
+  try {
+    const raw = sessionStorage.getItem(SESSION_VERIFIED_WHATSAPP_CACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveSessionVerifiedContact(storeId: string, data: CachedVerifiedContact) {
+  try {
+    const current = getSessionVerifiedCache();
+    current[storeId] = data;
+    sessionStorage.setItem(SESSION_VERIFIED_WHATSAPP_CACHE_KEY, JSON.stringify(current));
+  } catch {
+    /* ignore storage errors */
+  }
+}
 
 type DiscoveryState =
   | { status: "idle" }
@@ -133,14 +125,31 @@ export function StoresPage() {
   const { tr } = useLanguage();
   const { items, itemCount, subtotal } = useCart();
 
-  const [pharmacies] = useState<Pharmacy[]>(REFERENCE_PHARMACIES);
-  const [filterGenericOnly, setFilterGenericOnly] = useState(false);
+  // Pharmacy directory state (Delhi Seed Dataset)
+  const [directoryStores, setDirectoryStores] = useState<PharmacyDirectoryEntry[]>(DEFAULT_DELHI_SEED_STORES);
+  const [availableDistricts, setAvailableDistricts] = useState<string[]>([
+    "Central Delhi",
+    "East Delhi",
+    "New Delhi",
+    "North Delhi",
+    "North West Delhi",
+    "Shahdara",
+    "South Delhi",
+    "South West Delhi",
+    "West Delhi",
+  ]);
+  const [isLoadingDirectory, setIsLoadingDirectory] = useState(false);
+
+  // Search and Filter states
   const [searchLocality, setSearchLocality] = useState("");
+  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const [districtFilter, setDistrictFilter] = useState<string>("all");
+  const [sortByDistance, setSortByDistance] = useState<boolean>(false);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<string | null>(null);
 
   // Selected Pharmacy for Screen 8 (Enquiry Preview & WhatsApp modal)
-  const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
+  const [selectedPharmacy, setSelectedPharmacy] = useState<SelectedPharmacyInfo | null>(null);
   const [customerArea, setCustomerArea] = useState("");
   const [customNotes, setCustomNotes] = useState("");
   const [copied, setCopied] = useState(false);
@@ -148,6 +157,9 @@ export function StoresPage() {
 
   // Discovery state for on-demand TinyFish WhatsApp discovery
   const [discoveryState, setDiscoveryState] = useState<DiscoveryState>({ status: "idle" });
+  const [sessionCache, setSessionCache] = useState<Record<string, CachedVerifiedContact>>(() =>
+    getSessionVerifiedCache()
+  );
 
   // Custom shop input for shops discovered on Google Maps
   const [showCustomShopForm, setShowCustomShopForm] = useState(false);
@@ -163,11 +175,50 @@ export function StoresPage() {
   const [simulatedPrice, setSimulatedPrice] = useState("28.00");
   const [simulatedMfr, setSimulatedMfr] = useState("Karnataka Antibiotics");
 
+  // Load directory entries on mount
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingDirectory(true);
+    fetchPharmacyDirectory()
+      .then((res) => {
+        if (isMounted && res.stores.length > 0) {
+          setDirectoryStores(res.stores);
+          if (res.districts && res.districts.length > 0) {
+            setAvailableDistricts(res.districts);
+          }
+        }
+      })
+      .catch(() => {
+        // Fallback already preloaded
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingDirectory(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Filter and sort displayed stores
+  const displayedStores = useMemo(() => {
+    const res = filterAndSortDirectoryEntries(directoryStores, {
+      search: searchLocality,
+      brand: brandFilter !== "all" ? brandFilter : undefined,
+      district: districtFilter !== "all" ? districtFilter : undefined,
+      sort_by_distance: sortByDistance,
+    });
+    return res.stores;
+  }, [directoryStores, searchLocality, brandFilter, districtFilter, sortByDistance]);
+
   // Dynamic Google Maps Search URL generation without requiring an API key
   function getMapSearchQuery(): string {
-    const categoryTerms = filterGenericOnly
-      ? "Jan Aushadhi stores"
-      : "pharmacies, Jan Aushadhi stores and medical shops";
+    let categoryTerms = "pharmacies, Jan Aushadhi stores and medical shops";
+    if (brandFilter === "Jan Aushadhi") {
+      categoryTerms = "Jan Aushadhi stores";
+    } else if (brandFilter === "Davaindia") {
+      categoryTerms = "Davaindia generic pharmacy";
+    }
 
     if (coords) {
       return `${categoryTerms} near ${coords.latitude.toFixed(5)},${coords.longitude.toFixed(5)}`;
@@ -228,21 +279,8 @@ export function StoresPage() {
     }
   }
 
-  // Filter reference pharmacies based on search and generic-only filter
-  const displayedPharmacies = pharmacies.filter((p) => {
-    if (filterGenericOnly && !p.is_generic_store) return false;
-    if (searchLocality.trim()) {
-      const term = searchLocality.toLowerCase();
-      return (
-        p.name.toLowerCase().includes(term) ||
-        p.address.toLowerCase().includes(term)
-      );
-    }
-    return true;
-  });
-
   // Generate WhatsApp prefilled enquiry text
-  function generateEnquiryMessage(pharmacy: Pharmacy) {
+  function generateEnquiryMessage(pharmacy: SelectedPharmacyInfo) {
     const medicineLines =
       items.length > 0
         ? items
@@ -267,9 +305,66 @@ export function StoresPage() {
     );
   }
 
-  function handleSelectPharmacy(pharmacy: Pharmacy) {
-    setSelectedPharmacy(pharmacy);
-    setDiscoveryState({ status: "idle" });
+  const hasVerifiedWhatsApp = Boolean(
+    (discoveryState.status === "verified" && discoveryState.whatsappNumber) ||
+    (selectedPharmacy?.whatsapp_verified && selectedPharmacy?.whatsapp_number)
+  );
+
+  const verifiedWhatsAppNumber =
+    discoveryState.status === "verified" && discoveryState.whatsappNumber
+      ? discoveryState.whatsappNumber
+      : selectedPharmacy?.whatsapp_verified && selectedPharmacy?.whatsapp_number
+      ? selectedPharmacy.whatsapp_number
+      : null;
+
+  function handleSelectDirectoryStore(store: PharmacyDirectoryEntry) {
+    const cached = sessionCache[store.store_id];
+    const isCsvVerified = Boolean(store.whatsapp_verified && store.whatsapp_number);
+    const initialWa = cached?.whatsappNumber || (isCsvVerified ? store.whatsapp_number : null);
+
+    setSelectedPharmacy({
+      id: store.store_id,
+      name: store.store_name,
+      address: `${store.address}, ${store.district} - ${store.pincode}`,
+      phone: store.phone,
+      whatsapp_number: initialWa,
+      whatsapp_verified: Boolean(initialWa),
+      brand: store.brand,
+      district: store.district,
+      pincode: store.pincode,
+      distance:
+        store.distance_from_shaheed_sukhdev_km !== null
+          ? `${store.distance_from_shaheed_sukhdev_km} km`
+          : null,
+      sourceUrl: cached?.sourceUrl || store.source_url,
+      dataStatus: store.data_status,
+    });
+
+    if (cached) {
+      setDiscoveryState({
+        status: "verified",
+        whatsappNumber: cached.whatsappNumber,
+        phoneNumber: cached.phoneNumber || store.phone,
+        shopName: cached.shopName || store.store_name,
+        address: cached.address || `${store.address}, ${store.district} - ${store.pincode}`,
+        sourceUrl: cached.sourceUrl || store.source_url,
+        embedUrl: cached.embedUrl || null,
+        runUrl: cached.runUrl || null,
+        message: tr("Reused verified WhatsApp contact from current session.", "सत्र से सत्यापित WhatsApp संपर्क पुनः उपयोग किया गया।"),
+      });
+    } else if (isCsvVerified && store.whatsapp_number) {
+      setDiscoveryState({
+        status: "verified",
+        whatsappNumber: store.whatsapp_number,
+        phoneNumber: store.phone,
+        shopName: store.store_name,
+        address: `${store.address}, ${store.district} - ${store.pincode}`,
+        sourceUrl: store.source_url,
+        message: tr("Verified WhatsApp contact available from directory.", "डायरेक्टरी से सत्यापित WhatsApp संपर्क उपलब्ध।"),
+      });
+    } else {
+      setDiscoveryState({ status: "idle" });
+    }
   }
 
   function handleCloseModal() {
@@ -277,56 +372,39 @@ export function StoresPage() {
     setDiscoveryState({ status: "idle" });
   }
 
-  async function handleOpenWhatsApp() {
+  /**
+   * Explicitly triggered ONLY when user clicks "Find WhatsApp".
+   * Queries TinyFish to search official listings.
+   */
+  async function handleFindWhatsApp() {
     if (!selectedPharmacy) return;
     if (discoveryState.status === "loading") return;
 
-    // If verified WhatsApp number was already discovered, launch wa.me directly
-    if (discoveryState.status === "verified" && discoveryState.whatsappNumber) {
-      const cleanPhone = discoveryState.whatsappNumber.replace(/[^0-9]/g, "");
-      const message = generateEnquiryMessage(selectedPharmacy);
-      const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-      window.open(waUrl, "_blank", "noopener,noreferrer");
+    // Check if session cache already has verified number
+    const cached = sessionCache[selectedPharmacy.id];
+    if (cached && cached.whatsappNumber) {
+      setDiscoveryState({
+        status: "verified",
+        whatsappNumber: cached.whatsappNumber,
+        phoneNumber: cached.phoneNumber || selectedPharmacy.phone,
+        shopName: cached.shopName || selectedPharmacy.name,
+        address: cached.address || selectedPharmacy.address,
+        sourceUrl: cached.sourceUrl || selectedPharmacy.sourceUrl,
+        embedUrl: cached.embedUrl || null,
+        runUrl: cached.runUrl || null,
+        message: tr("Reused verified WhatsApp contact from current session.", "सत्र से सत्यापित WhatsApp संपर्क पुनः उपयोग किया गया।"),
+      });
       return;
     }
 
     setDiscoveryState({ status: "loading" });
-    setSavingEnquiry(true);
-
-    try {
-      await createEnquiry({
-        pharmacy_name: selectedPharmacy.name,
-        pharmacy_phone: selectedPharmacy.phone,
-        pharmacy_address: selectedPharmacy.address,
-        customer_area: customerArea || undefined,
-        customer_message: customNotes || undefined,
-        items:
-          items.length > 0
-            ? items.map((i) => ({
-                medicine_name: i.brand_name,
-                dosage_form: i.dosage_form,
-                quantity: `${i.quantity} pack(s)`,
-                catalogue_medicine_id: i.medicine_id,
-              }))
-            : [
-                {
-                  medicine_name: "General Medicine Enquiry",
-                  quantity: "1 strip",
-                },
-              ],
-      });
-    } catch {
-      // Local fallback handled gracefully
-    } finally {
-      setSavingEnquiry(false);
-    }
 
     try {
       const payload: ShopWhatsAppContactRequest = {
         shop_name: selectedPharmacy.name,
         shop_address: selectedPharmacy.address,
-        city: customerArea || searchLocality || undefined,
-        locality: customerArea || searchLocality || undefined,
+        city: customerArea || searchLocality || selectedPharmacy.district || undefined,
+        locality: customerArea || searchLocality || selectedPharmacy.district || undefined,
         maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selectedPharmacy.name} ${selectedPharmacy.address}`)}`,
         query: `${selectedPharmacy.name} ${selectedPharmacy.address} pharmacy contact phone whatsapp`,
       };
@@ -337,6 +415,39 @@ export function StoresPage() {
         (contactRes.verification_status === "verified" || contactRes.verification_status === "verified_whatsapp") &&
         contactRes.whatsapp_number
       ) {
+        saveSessionVerifiedContact(selectedPharmacy.id, {
+          whatsappNumber: contactRes.whatsapp_number,
+          phoneNumber: contactRes.phone_number || contactRes.mobile_number || null,
+          shopName: contactRes.shop_name,
+          address: contactRes.address || selectedPharmacy.address,
+          sourceUrl: contactRes.source_url,
+          embedUrl: contactRes.embed_url,
+          runUrl: contactRes.run_url,
+        });
+
+        setSessionCache((prev) => ({
+          ...prev,
+          [selectedPharmacy.id]: {
+            whatsappNumber: contactRes.whatsapp_number as string,
+            phoneNumber: contactRes.phone_number || contactRes.mobile_number || null,
+            shopName: contactRes.shop_name,
+            address: contactRes.address || selectedPharmacy.address,
+            sourceUrl: contactRes.source_url,
+            embedUrl: contactRes.embed_url,
+            runUrl: contactRes.run_url,
+          },
+        }));
+
+        setSelectedPharmacy((prev) =>
+          prev
+            ? {
+                ...prev,
+                whatsapp_number: contactRes.whatsapp_number,
+                whatsapp_verified: true,
+              }
+            : null
+        );
+
         setDiscoveryState({
           status: "verified",
           whatsappNumber: contactRes.whatsapp_number,
@@ -348,10 +459,6 @@ export function StoresPage() {
           runUrl: contactRes.run_url,
           message: contactRes.message,
         });
-        const cleanPhone = contactRes.whatsapp_number.replace(/[^0-9]/g, "");
-        const message = generateEnquiryMessage(selectedPharmacy);
-        const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-        window.open(waUrl, "_blank", "noopener,noreferrer");
       } else if (contactRes.verification_status === "phone_only" && (contactRes.phone_number || contactRes.mobile_number)) {
         setDiscoveryState({
           status: "phone_only",
@@ -393,6 +500,52 @@ export function StoresPage() {
     }
   }
 
+  /**
+   * Opens WhatsApp with prefilled message ONLY when verified number exists.
+   * NEVER invokes TinyFish.
+   * Calls window.open immediately within click handler to prevent popup blocking.
+   */
+  async function handleOpenWhatsApp() {
+    if (!selectedPharmacy) return;
+    if (!verifiedWhatsAppNumber) return;
+
+    const cleanPhone = verifiedWhatsAppNumber.replace(/[^0-9]/g, "");
+    const message = generateEnquiryMessage(selectedPharmacy);
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+
+    // Launch popup immediately within user click event context to avoid browser popup blockers
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+
+    setSavingEnquiry(true);
+    try {
+      await createEnquiry({
+        pharmacy_name: selectedPharmacy.name,
+        pharmacy_phone: selectedPharmacy.phone || verifiedWhatsAppNumber || undefined,
+        pharmacy_address: selectedPharmacy.address,
+        customer_area: customerArea || undefined,
+        customer_message: customNotes || undefined,
+        items:
+          items.length > 0
+            ? items.map((i) => ({
+                medicine_name: i.brand_name,
+                dosage_form: i.dosage_form,
+                quantity: `${i.quantity} pack(s)`,
+                catalogue_medicine_id: i.medicine_id,
+              }))
+            : [
+                {
+                  medicine_name: "General Medicine Enquiry",
+                  quantity: "1 strip",
+                },
+              ],
+      });
+    } catch {
+      // Local fallback handled gracefully
+    } finally {
+      setSavingEnquiry(false);
+    }
+  }
+
   function handleCopyMessage() {
     if (!selectedPharmacy) return;
     const msg = generateEnquiryMessage(selectedPharmacy);
@@ -416,14 +569,14 @@ export function StoresPage() {
       return;
     }
     setCustomShopError(null);
-    const customPharmacy: Pharmacy = {
+    const customPharmacy: SelectedPharmacyInfo = {
       id: `custom-${Date.now()}`,
       name: cleanName,
       address: cleanAddress,
+      phone: null,
+      whatsapp_number: null,
+      whatsapp_verified: false,
       distance: customShopCity.trim() || searchLocality || "Local Area",
-      open_now: true,
-      is_generic_store: false,
-      source: "places",
     };
     setShowCustomShopForm(false);
     setCustomShopName("");
@@ -434,7 +587,8 @@ export function StoresPage() {
     if (chosenCity) {
       setCustomerArea(chosenCity);
     }
-    handleSelectPharmacy(customPharmacy);
+    setSelectedPharmacy(customPharmacy);
+    setDiscoveryState({ status: "idle" });
   }
 
   return (
@@ -455,15 +609,15 @@ export function StoresPage() {
           <div className="mb-8">
             <div className="inline-flex items-center gap-2 rounded-full bg-[#eef5ff] px-3.5 py-1 text-xs font-bold text-brand">
               <Store className="h-3.5 w-3.5" />
-              <span>{tr("Nearby Pharmacy Directory & Enquiry Handoff", "नज़दीकी फार्मेसी डायरेक्टरी व पूछताछ")}</span>
+              <span>{tr("Delhi Pharmacy Directory & Enquiry Handoff", "दिल्ली फार्मेसी डायरेक्टरी व पूछताछ")}</span>
             </div>
             <h1 className="mt-3 text-3xl font-extrabold text-navy sm:text-4xl">
               {tr("Find Nearby Pharmacies & Send Enquiries", "नज़दीकी मेडिकल स्टोर खोजें व पूछताछ भेजें")}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
               {tr(
-                "Locate Jan Aushadhi Kendras, Dava India outlets, and local licensed chemists. Prepare a structured inquiry with your requested medicines to check live stock, prices, and batch details.",
-                "जन औषधि केंद्र, दवा इंडिया स्टोर और स्थानीय मेडिकल स्टोर खोजें। दवाओं की उपलब्धता, वर्तमान दाम और बैच विवरण पूछने के लिए व्हाट्सएप संदेश तैयार करें।"
+                "Locate Jan Aushadhi Kendras and Dava India stores across Delhi districts. Prepare a structured inquiry with your requested medicines to check live stock, prices, and batch details.",
+                "दिल्ली के विभिन्न जिलों में जन औषधि केंद्र व दवा इंडिया स्टोर खोजें। दवाओं की उपलब्धता, वर्तमान दाम और बैच विवरण पूछने के लिए व्हाट्सएप संदेश तैयार करें।"
               )}
             </p>
           </div>
@@ -477,7 +631,7 @@ export function StoresPage() {
                 <p className="mt-0.5 leading-relaxed text-amber-800">
                   {tr(
                     "Directory listings do not confirm real-time medicine inventory. Always contact the pharmacy directly to verify availability, quoted price, manufacturer, and batch expiry before traveling or placing an order.",
-                    "मैप लिस्टिंग से वास्तविक समय में स्टॉक की पुष्टि नहीं होती। जाने या ऑर्डर देने से पहले उपलब्धता, मूल्य और एक्सपायरी तिथि की पुष्टि स्टोर से सीधे करें।"
+                    "डायरेक्टरी लिस्टिंग से वास्तविक समय में स्टॉक की पुष्टि नहीं होती। जाने या ऑर्डर देने से पहले उपलब्धता, मूल्य और एक्सपायरी तिथि की पुष्टि स्टोर से सीधे करें।"
                   )}
                 </p>
               </div>
@@ -495,8 +649,8 @@ export function StoresPage() {
                   value={searchLocality}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder={tr(
-                    "Search by locality, area, or PIN (e.g. Connaught Place, Rohini, 110001)...",
-                    "क्षेत्र, इलाका या पिनकोड खोजें (उदा. रोहिणी, कनाट प्लेस, 110001)..."
+                    "Search by locality, area, or PIN (e.g. Rohini, Connaught Place, 110085)...",
+                    "क्षेत्र, इलाका, पिनकोड या स्टोर खोजें (उदा. रोहिणी, कनाट प्लेस, 110085)..."
                   )}
                   className="h-11 w-full rounded-2xl border border-slate-200 bg-[#f8fbff] pl-10 pr-4 text-sm font-medium text-navy placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none"
                 />
@@ -511,19 +665,82 @@ export function StoresPage() {
                 <Navigation className="h-3.5 w-3.5 text-brand" />
                 <span>{tr("Use my location", "मेरी लोकेशन खोजें")}</span>
               </button>
+            </div>
 
-              {/* Generic filter toggle */}
+            {/* Filter controls row */}
+            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
+              {/* Brand filter buttons */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-slate-500 mr-1">{tr("Brand:", "ब्रांड:")}</span>
+                <button
+                  type="button"
+                  onClick={() => setBrandFilter("all")}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                    brandFilter === "all"
+                      ? "bg-navy text-white shadow-xs"
+                      : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  {tr("All Brands", "सभी ब्रांड")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBrandFilter("Jan Aushadhi")}
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                    brandFilter === "Jan Aushadhi"
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "border border-emerald-200 bg-emerald-50/60 text-emerald-800 hover:bg-emerald-100/60"
+                  }`}
+                >
+                  <Pill className="h-3 w-3" />
+                  <span>Jan Aushadhi</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBrandFilter("Davaindia")}
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                    brandFilter === "Davaindia"
+                      ? "bg-brand text-white shadow-xs"
+                      : "border border-blue-200 bg-blue-50/60 text-brand hover:bg-blue-100/60"
+                  }`}
+                >
+                  <Store className="h-3 w-3" />
+                  <span>Davaindia</span>
+                </button>
+              </div>
+
+              {/* District dropdown */}
+              <div className="flex items-center gap-1.5">
+                <Filter className="h-3.5 w-3.5 text-slate-400" />
+                <span className="text-xs font-bold text-slate-500">{tr("District:", "ज़िला:")}</span>
+                <select
+                  value={districtFilter}
+                  onChange={(e) => setDistrictFilter(e.target.value)}
+                  className="h-8 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-navy focus:border-brand focus:outline-none"
+                  aria-label="Filter by district"
+                >
+                  <option value="all">{tr("All Districts", "सभी ज़िले")}</option>
+                  {availableDistricts.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Distance sorting toggle */}
               <button
                 type="button"
-                onClick={() => setFilterGenericOnly((v) => !v)}
-                className={`inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-xs font-bold transition ${
-                  filterGenericOnly
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "border border-slate-200 bg-white text-slate-700 hover:border-emerald-400"
+                onClick={() => setSortByDistance((v) => !v)}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                  sortByDistance
+                    ? "bg-brand text-white shadow-xs"
+                    : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                 }`}
+                aria-pressed={sortByDistance}
               >
-                <Pill className="h-3.5 w-3.5" />
-                <span>{tr("Generic Kendras only", "केवल जेनेरिक केंद्र")}</span>
+                <ArrowUpDown className="h-3 w-3" />
+                <span>{tr("Sort by distance (from CBS Rohini)", "दूरी अनुसार क्रमबद्ध (CBS रोहिणी से)")}</span>
               </button>
             </div>
 
@@ -575,16 +792,27 @@ export function StoresPage() {
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
               <p>
                 {tr(
-                  "Google Maps Embed displays real-time search results directly from Google. MedEasy does not parse or claim structured pharmacy data from this map embed. To enquire with any pharmacy shown on the map, select a shop below or enter its name to verify contact via TinyFish.",
+                  "Google Maps Embed displays real-time search results directly from Google. MedEasy does not parse or claim structured pharmacy data from this map embed. To enquire with any pharmacy shown on the map, select a verified listing below or enter its shop name to discover WhatsApp contact via TinyFish.",
                   "गूगल मैप्स एम्बेड सीधे गूगल से लाइव परिणाम प्रदर्शित करता है। मेडईज़ी इस मैप से कोई संरचित स्टोर डेटा प्राप्त नहीं करता है। मैप में दिखने वाले किसी भी स्टोर से पूछताछ करने के लिए नीचे स्टोर चुनें या उसका नाम दर्ज करें।"
                 )}
               </p>
             </div>
           </div>
 
+          {/* Distance Reference Notice */}
+          <div className="mt-4 rounded-xl border border-blue-100 bg-[#eef5ff] p-3 text-xs text-blue-900">
+            <p>
+              <span className="font-bold">{tr("Verified Distance Reference:", "सत्यापित दूरी संदर्भ बिंदु:")} </span>
+              {tr(
+                "Distance values in the seed directory are measured from Shaheed Sukhdev College of Business Studies (CBS, Rohini, Delhi 110089). Unverified listings display 'Distance unavailable' without fabricating straight-line numbers.",
+                "डायरेक्टरी में दूरी शहीद सुखदेव कॉलेज ऑफ बिजनेस स्टडीज (CBS, रोहिणी, दिल्ली 110089) के सापेक्ष मापी गई है। असत्यापित रिकॉर्ड 'Distance unavailable' प्रदर्शित करते हैं।"
+              )}
+            </p>
+          </div>
+
           {/* Enquiry Cart Alert Banner (if user has items) */}
           {items.length > 0 && (
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-[#eef5ff] p-4 text-xs">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-[#eef5ff] p-4 text-xs">
               <div className="flex items-center gap-2 text-brand">
                 <ShoppingCart className="h-4 w-4" />
                 <span className="font-bold">
@@ -605,7 +833,7 @@ export function StoresPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 className="text-lg font-bold text-navy">
-                  {tr("Available Pharmacies", "उपलब्ध मेडिकल स्टोर")} ({displayedPharmacies.length})
+                  {tr("Available Pharmacies", "उपलब्ध मेडिकल स्टोर")} ({displayedStores.length})
                 </h2>
                 <span className="text-xs text-slate-400">
                   {tr(
@@ -749,7 +977,14 @@ export function StoresPage() {
               </form>
             )}
 
-            {displayedPharmacies.length === 0 && (
+            {isLoadingDirectory && (
+              <div className="py-8 text-center text-xs font-medium text-slate-500">
+                <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-brand border-t-transparent mb-2" />
+                <span>{tr("Loading pharmacy directory...", "फार्मेसी डायरेक्टरी लोड हो रही है...")}</span>
+              </div>
+            )}
+
+            {!isLoadingDirectory && displayedStores.length === 0 && (
               <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-6 text-center md:text-left">
                 <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
                   <div className="rounded-2xl bg-white p-3 shadow-xs">
@@ -758,94 +993,180 @@ export function StoresPage() {
                   <div className="flex-1">
                     <h3 className="text-base font-bold text-navy">
                       {searchLocality.trim()
-                        ? tr(`Live Google Maps Discovery for "${searchLocality}"`, `"${searchLocality}" के लिए लाइव Google Maps खोज`)
-                        : tr("Explore Local Pharmacies on the Map", "मैप पर स्थानीय मेडिकल स्टोर देखें")}
+                        ? tr(`No direct seed matches for "${searchLocality}"`, `"${searchLocality}" के लिए कोई डायरेक्टरी परिणाम नहीं`)
+                        : tr("No pharmacies match the selected filters", "चयनित फिल्टर के लिए कोई फार्मेसी नहीं मिली")}
                     </h3>
                     <p className="mt-1 text-xs text-slate-600 leading-relaxed max-w-2xl">
                       {tr(
-                        "Google Maps above is currently displaying live pharmacies, Jan Aushadhi Kendras, and medical shops in this search area. Since Google Maps Embed is for interactive map discovery, select or enter any pharmacy seen on the map to discover its WhatsApp contact and send your enquiry.",
-                        "ऊपर Google Maps इस क्षेत्र के सभी सक्रिय जन औषधि केंद्र और मेडिकल स्टोर दिखा रहा है। मैप पर दिख रही किसी भी दुकान से संपर्क के लिए नीचे दिए गए बटन पर क्लिक करें।"
+                        "Google Maps above is currently displaying live pharmacies and medical shops in this area. You can reset filters, or enquire with any pharmacy shown on the map by clicking the button below.",
+                        "ऊपर Google Maps इस क्षेत्र के सभी सक्रिय स्टोर दिखा रहा है। आप फिल्टर रीसेट कर सकते हैं या मैप से दुकान का नाम दर्ज कर पूछताछ कर सकते हैं।"
                       )}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCustomShopCity(searchLocality.trim());
-                        setShowCustomShopForm(true);
-                      }}
-                      className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-brand-dark"
-                    >
-                      <Store className="h-4 w-4" />
-                      <span>{tr("Enquire with shop from map", "मैप से दुकान चुनें व पूछताछ करें")}</span>
-                    </button>
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchLocality("");
+                          setBrandFilter("all");
+                          setDistrictFilter("all");
+                          setSortByDistance(false);
+                        }}
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-navy shadow-xs transition hover:bg-slate-50"
+                      >
+                        {tr("Reset Filters", "फिल्टर रीसेट करें")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomShopCity(searchLocality.trim());
+                          setShowCustomShopForm(true);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-brand-dark"
+                      >
+                        <Store className="h-4 w-4" />
+                        <span>{tr("Enquire with shop from map", "मैप से दुकान चुनें व पूछताछ करें")}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
+            {/* Store Cards Grid */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {displayedPharmacies.map((pharmacy) => (
-                <div
-                  key={pharmacy.id}
-                  className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition hover:border-brand/40 hover:shadow-md"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
+              {displayedStores.map((store) => {
+                const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${store.store_name}, ${store.address}`)}`;
+                return (
+                  <div
+                    key={store.store_id}
+                    className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition hover:border-brand/40 hover:shadow-md"
+                  >
+                    <div>
+                      {/* Badges row: Brand badge, Verified Distance or Distance Unavailable, Data status */}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          {pharmacy.is_generic_store ? (
-                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                              {pharmacy.generic_network ?? tr("Generic Kendra", "जेनेरिक केंद्र")}
+                          {store.brand === "Jan Aushadhi" ? (
+                            <span className="rounded-full bg-emerald-100 border border-emerald-200/80 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                              Jan Aushadhi
                             </span>
                           ) : (
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                              {tr("Retail Pharmacy", "दवा की दुकान")}
+                            <span className="rounded-full bg-blue-100 border border-blue-200/80 px-2.5 py-0.5 text-[10px] font-bold text-blue-800">
+                              Davaindia
                             </span>
                           )}
-                          {pharmacy.distance && (
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                              {pharmacy.distance} {tr("away", "दूर")}
+
+                          {store.distance_from_shaheed_sukhdev_km !== null ? (
+                            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700">
+                              {store.distance_from_shaheed_sukhdev_km} km {tr("from CBS", "CBS से")}
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-400">
+                              {tr("Distance unavailable", "दूरी उपलब्ध नहीं")}
                             </span>
                           )}
                         </div>
-                        <h3 className="mt-2 text-lg font-bold text-navy">{pharmacy.name}</h3>
+
+                        <span className="rounded bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 text-[10px] font-mono text-slate-400">
+                          {store.data_status}
+                        </span>
                       </div>
 
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          pharmacy.open_now
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
-                        }`}
-                      >
-                        {pharmacy.open_now ? tr("Open now", "अभी खुला है") : tr("Closed", "बंद")}
-                      </span>
+                      {/* Store Name */}
+                      <h3 className="mt-2 text-base sm:text-lg font-bold text-navy">{store.store_name}</h3>
+
+                      {/* Address, District, PIN code */}
+                      <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+                        <MapPin className="mr-1 inline h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        <span>{store.address}, {store.district} {store.pincode ? `- ${store.pincode}` : ""}</span>
+                      </p>
+
+                      {/* Contact Person */}
+                      {store.contact_person && (
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          <span className="font-semibold text-slate-600">{tr("Contact:", "संपर्क:")}</span> {store.contact_person}
+                        </p>
+                      )}
+
+                      {/* Phone and Hours info row */}
+                      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600">
+                        {store.phone ? (
+                          <div className="flex items-center gap-1 font-mono">
+                            <Phone className="h-3 w-3 text-slate-400" />
+                            <a href={`tel:${store.phone}`} className="hover:text-brand font-medium">
+                              {store.phone}
+                            </a>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-slate-400 italic">
+                            <Phone className="h-3 w-3 text-slate-300" />
+                            <span>{tr("Phone unavailable", "फोन उपलब्ध नहीं")}</span>
+                          </div>
+                        )}
+
+                        {store.listed_hours ? (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-slate-400" />
+                            <span>{store.listed_hours}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-slate-400 italic">
+                            <Clock className="h-3 w-3 text-slate-300" />
+                            <span>{tr("Hours unavailable", "समय उपलब्ध नहीं")}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="mt-2 inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                        <span>{tr("WhatsApp verified on demand via TinyFish", "TinyFish द्वारा ऑन-डिमांड संपर्क सत्यापन")}</span>
+                      </p>
                     </div>
 
-                    <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                      <MapPin className="mr-1 inline h-3.5 w-3.5 text-slate-400" />
-                      {pharmacy.address}
-                    </p>
+                    {/* Action buttons row: Call, Directions, Prepare enquiry */}
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
+                      <div className="flex items-center gap-2">
+                        {store.phone ? (
+                          <a
+                            href={`tel:${store.phone}`}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-brand hover:text-brand"
+                            aria-label={`Call ${store.store_name} at ${store.phone}`}
+                          >
+                            <Phone className="h-3.5 w-3.5 text-brand" />
+                            <span>{tr("Call", "कॉल")}</span>
+                          </a>
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed"
+                            title={tr("Phone number unavailable", "फोन नंबर उपलब्ध नहीं")}
+                          >
+                            <Phone className="h-3.5 w-3.5 text-slate-300" />
+                            <span>{tr("No Phone", "फोन नहीं")}</span>
+                          </span>
+                        )}
 
-                    <p className="mt-2 inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
-                      <span>{tr("WhatsApp & phone verified on demand via TinyFish", "TinyFish द्वारा ऑन-डिमांड संपर्क सत्यापन")}</span>
-                    </p>
+                        <a
+                          href={directionsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-brand hover:text-brand"
+                          aria-label={`Directions to ${store.store_name}`}
+                        >
+                          <Navigation className="h-3.5 w-3.5 text-slate-500" />
+                          <span>{tr("Directions", "दिशा-निर्देश")}</span>
+                        </a>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSelectDirectoryStore(store)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-brand-dark"
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        <span>{tr("Prepare enquiry", "पूछताछ तैयार करें")}</span>
+                      </button>
+                    </div>
                   </div>
-
-                  <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-                    <span className="text-[11px] text-slate-400">{tr("Stock not confirmed", "स्टॉक सत्यापित नहीं")}</span>
-
-                    <button
-                      type="button"
-                      onClick={() => handleSelectPharmacy(pharmacy)}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-brand-dark"
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      <span>{tr("Prepare enquiry", "पूछताछ तैयार करें")}</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -917,10 +1238,100 @@ export function StoresPage() {
                 <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-xs text-blue-900">
                   <p className="font-bold">{tr("WhatsApp Manual Handoff Rule:", "WhatsApp संदेश भेजने का नियम:")}</p>
                   <p className="mt-0.5 leading-relaxed text-blue-800">
-                    Clicking &ldquo;Open WhatsApp&rdquo; will verify official public listings for this shop and launch WhatsApp with the message above prefilled.
+                    Clicking &ldquo;Open WhatsApp&rdquo; will launch WhatsApp with the message above prefilled.
                     You must review the text and <strong>manually press Send</strong> in WhatsApp.
                     MedEasy never sends messages on your behalf.
                   </p>
+                </div>
+
+                {/* STORE CONTACT INFORMATION & WHATSAPP VERIFICATION STATUS CARD */}
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-[#f8fbff] p-4 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <Store className="h-4 w-4 text-brand" />
+                      <span className="font-bold text-navy">
+                        {tr("Store Contact & WhatsApp Verification", "दुकान संपर्क व WhatsApp सत्यापन")}
+                      </span>
+                    </div>
+
+                    {hasVerifiedWhatsApp ? (
+                      <span className="rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                        {tr("WhatsApp available", "WhatsApp उपलब्ध")}
+                      </span>
+                    ) : selectedPharmacy.phone ? (
+                      <span className="rounded-full bg-amber-100 border border-amber-200 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
+                        {tr("WhatsApp not verified", "WhatsApp असत्यापित")}
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-slate-200 border border-slate-300 px-2.5 py-0.5 text-[10px] font-bold text-slate-700">
+                        {tr("Contact unavailable", "संपर्क अनुपलब्ध")}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 text-slate-700">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">{tr("Shop Name", "दुकान का नाम")}</span>
+                      <p className="font-semibold text-navy">{selectedPharmacy.name}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">{tr("Address", "पता")}</span>
+                      <p className="font-medium text-slate-600">{selectedPharmacy.address}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">{tr("Phone (Directory)", "फ़ोन (डायरेक्टरी)")}</span>
+                      <p className="font-mono font-medium">
+                        {selectedPharmacy.phone ? (
+                          <a href={`tel:${selectedPharmacy.phone}`} className="hover:text-brand font-medium">
+                            {selectedPharmacy.phone}
+                          </a>
+                        ) : (
+                          <span className="text-slate-400 italic">{tr("Not available", "उपलब्ध नहीं")}</span>
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">{tr("WhatsApp Verification", "WhatsApp सत्यापन")}</span>
+                      <p className="font-mono font-medium">
+                        {hasVerifiedWhatsApp ? (
+                          <span className="text-emerald-700 font-bold">{verifiedWhatsAppNumber}</span>
+                        ) : (
+                          <span className="text-amber-700 font-medium">{tr("WhatsApp not verified", "WhatsApp असत्यापित")}</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Contextual guidance and Find WhatsApp button when unverified */}
+                  {!hasVerifiedWhatsApp && (
+                    <div className="mt-3.5 rounded-xl border border-slate-200 bg-white p-3 text-[11px] leading-relaxed text-slate-600">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                        <div className="flex items-start gap-2 flex-1">
+                          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                          <p>
+                            {selectedPharmacy.phone
+                              ? tr(
+                                  "A normal phone number is not automatically a verified WhatsApp number. Click \"Find WhatsApp\" to search official public business listings via TinyFish.",
+                                  "सामान्य फ़ोन नंबर अपने आप WhatsApp नंबर नहीं होता। TinyFish द्वारा सत्यापित WhatsApp खोजने के लिए \"Find WhatsApp\" पर क्लिक करें।"
+                                )
+                              : tr(
+                                  "No phone or WhatsApp number is listed in the directory for this store. You can search online listings via TinyFish to find a verified WhatsApp contact.",
+                                  "इस स्टोर के लिए कोई फ़ोन नंबर दर्ज नहीं है। सत्यापित संपर्क खोजने के लिए \"Find WhatsApp\" पर क्लिक करें।"
+                                )}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleFindWhatsApp}
+                          disabled={discoveryState.status === "loading"}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-brand-dark disabled:opacity-60 shrink-0"
+                        >
+                          <Search className="h-3.5 w-3.5" />
+                          <span>{tr("Find WhatsApp", "WhatsApp खोजें")}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* ON-DEMAND TINYFISH CONTACT DISCOVERY UI STATES */}
@@ -1047,8 +1458,8 @@ export function StoresPage() {
                     </div>
                     <p className="mt-1 leading-relaxed text-emerald-800">
                       {tr(
-                        "WhatsApp opened in a new tab. Please review the prefilled message and press Send in WhatsApp manually.",
-                        "WhatsApp नए टैब में खुल गया है। कृपया संदेश की समीक्षा करें और स्वयं Send दबाएं।"
+                        "Click \"Open in WhatsApp →\" below to start your conversation. Review the prefilled message and press Send manually.",
+                        "बातचीत शुरू करने के लिए नीचे \"WhatsApp में खोलें →\" पर क्लिक करें। संदेश की समीक्षा करें और स्वयं Send दबाएं।"
                       )}
                     </p>
                   </div>
@@ -1160,10 +1571,10 @@ export function StoresPage() {
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
-                        onClick={handleOpenWhatsApp}
+                        onClick={handleFindWhatsApp}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-red-700"
                       >
-                        <span>{tr("Retry Discovery", "पुनः प्रयास करें")}</span>
+                        <span>{tr("Retry Find WhatsApp", "पुनः प्रयास करें")}</span>
                       </button>
                       <a
                         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selectedPharmacy.name} ${selectedPharmacy.address}`)}`}
@@ -1210,11 +1621,12 @@ export function StoresPage() {
                       Simulate shopkeeper response
                     </button>
 
-                    {discoveryState.status === "verified" ? (
+                    {hasVerifiedWhatsApp ? (
                       <button
                         type="button"
                         onClick={handleOpenWhatsApp}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#20bd5a]"
+                        disabled={savingEnquiry}
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#20bd5a] disabled:opacity-60"
                       >
                         <ExternalLink className="h-4 w-4" />
                         <span>{tr("Open in WhatsApp →", "WhatsApp में खोलें →")}</span>
@@ -1222,9 +1634,9 @@ export function StoresPage() {
                     ) : (
                       <button
                         type="button"
-                        onClick={handleOpenWhatsApp}
-                        disabled={discoveryState.status === "loading" || savingEnquiry}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#20bd5a] disabled:opacity-60"
+                        onClick={handleFindWhatsApp}
+                        disabled={discoveryState.status === "loading"}
+                        className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-brand-dark disabled:opacity-60"
                       >
                         {discoveryState.status === "loading" ? (
                           <>
@@ -1233,8 +1645,8 @@ export function StoresPage() {
                           </>
                         ) : (
                           <>
-                            <ExternalLink className="h-4 w-4" />
-                            <span>{tr("Open in WhatsApp →", "WhatsApp में खोलें →")}</span>
+                            <Search className="h-4 w-4" />
+                            <span>{tr("Find WhatsApp", "WhatsApp खोजें")}</span>
                           </>
                         )}
                       </button>

@@ -339,3 +339,28 @@ export type ShopWhatsAppContactResponse = {
   message: string;
   cached?: boolean;
 };
+
+// Pharmacy Directory (Delhi Seed Dataset)
+export type PharmacyDirectoryEntry = {
+  store_id: string;
+  brand: "Jan Aushadhi" | "Davaindia";
+  store_name: string;
+  contact_person: string | null;
+  address: string;
+  district: string;
+  pincode: string;
+  phone: string | null;
+  whatsapp_number?: string | null;
+  whatsapp_verified?: boolean;
+  listed_hours: string | null;
+  source_url: string | null;
+  data_status: string;
+  distance_from_shaheed_sukhdev_km: number | null;
+};
+
+export type PharmacyDirectoryResponse = {
+  success: boolean;
+  total: number;
+  districts: string[];
+  stores: PharmacyDirectoryEntry[];
+};

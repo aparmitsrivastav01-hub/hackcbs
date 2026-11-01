@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import csv
+import logging
 import math
 import os
 import re
@@ -18,8 +20,16 @@ from app.services.tinyfish_service import TinyFishError, TinyFishNotConfigured, 
 from app.services.cdsco_safety_service import CDSCOSafetyService
 from app.services.search_service import normalize
 
+logger = logging.getLogger(__name__)
+
 PROVIDER_NAMES = {"jan_aushadhi": "Jan Aushadhi Kendra", "dava_india": "Dava India pharmacy"}
 EARTH_RADIUS_KM = 6371.0088
+
+DEFAULT_DIRECTORY_CSV = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data",
+    "delhi_pharmacy_directory_seed.csv",
+)
 
 
 def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -120,9 +130,130 @@ class PharmacyService:
     def get_store(self, store_id: str) -> dict[str, Any] | None:
         store = self._stores.get(store_id)
         if store is None:
+            # Check directory seed
+            for s in self.load_directory_seed():
+                if s["store_id"] == store_id:
+                    return s
             return None
         age = (datetime.now(timezone.utc) - store["last_verified_at"]).total_seconds()
         return store if age <= self.cache_ttl_seconds else None
+
+    def load_directory_seed(self, csv_path: str | None = None) -> list[dict[str, Any]]:
+        path = csv_path or os.getenv("PHARMACY_DIRECTORY_CSV_PATH", DEFAULT_DIRECTORY_CSV)
+        if not os.path.exists(path):
+            logger.warning("Pharmacy directory CSV not found at %s", path)
+            return []
+
+        records: list[dict[str, Any]] = []
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    store_id = (row.get("store_id") or "").strip()
+                    if not store_id:
+                        continue
+
+                    raw_brand = (row.get("brand") or "").strip().lower()
+                    if "dava" in raw_brand:
+                        brand = "Davaindia"
+                    else:
+                        brand = "Jan Aushadhi"
+
+                    store_name = (row.get("store_name") or "").strip()
+                    contact_person = (row.get("contact_person") or "").strip() or None
+                    address = (row.get("address") or "").strip()
+                    district = (row.get("district") or "").strip()
+                    pincode = (row.get("pincode") or "").strip()
+                    phone = (row.get("phone") or "").strip() or None
+                    raw_wa = (row.get("whatsapp_number") or "").strip() or None
+                    whatsapp_number = raw_wa if raw_wa and len(raw_wa) > 4 else None
+                    raw_wa_ver = (row.get("whatsapp_verified") or "").strip().lower()
+                    whatsapp_verified = raw_wa_ver in ["true", "1", "yes", "verified"]
+                    listed_hours = (row.get("listed_hours") or "").strip() or None
+                    source_url = (row.get("source_url") or "").strip() or None
+                    data_status = (row.get("data_status") or "").strip() or "seed_directory_unverified"
+
+                    raw_dist = (row.get("distance_from_shaheed_sukhdev_km") or "").strip()
+                    distance_val = None
+                    if raw_dist:
+                        try:
+                            parsed_dist = float(raw_dist)
+                            if math.isfinite(parsed_dist) and parsed_dist >= 0:
+                                distance_val = round(parsed_dist, 2)
+                        except (ValueError, TypeError):
+                            distance_val = None
+
+                    entry = {
+                        "store_id": store_id,
+                        "brand": brand,
+                        "store_name": store_name,
+                        "contact_person": contact_person,
+                        "address": address,
+                        "district": district,
+                        "pincode": pincode,
+                        "phone": phone,
+                        "whatsapp_number": whatsapp_number,
+                        "whatsapp_verified": whatsapp_verified,
+                        "listed_hours": listed_hours,
+                        "source_url": source_url,
+                        "data_status": data_status,
+                        "distance_from_shaheed_sukhdev_km": distance_val,
+                    }
+                    records.append(entry)
+        except Exception as exc:
+            logger.error("Failed to load pharmacy directory CSV: %s", exc)
+            return []
+
+        return records
+
+    def get_directory(
+        self,
+        search: str | None = None,
+        brand: str | None = None,
+        district: str | None = None,
+        sort_by_distance: bool = False,
+    ) -> dict[str, Any]:
+        stores = self.load_directory_seed()
+        districts = sorted(list(set(s["district"] for s in stores if s.get("district"))))
+
+        filtered = stores
+        if brand and brand.strip() and brand.lower() != "all":
+            b_clean = brand.strip().lower()
+            if "dava" in b_clean:
+                filtered = [s for s in filtered if s["brand"] == "Davaindia"]
+            elif "jan" in b_clean or "aushadhi" in b_clean:
+                filtered = [s for s in filtered if s["brand"] == "Jan Aushadhi"]
+
+        if district and district.strip() and district.lower() != "all":
+            d_clean = district.strip().lower()
+            filtered = [s for s in filtered if s["district"].lower() == d_clean]
+
+        if search and search.strip():
+            term = search.strip().lower()
+            filtered = [
+                s for s in filtered
+                if term in s["store_name"].lower()
+                or term in s["address"].lower()
+                or term in s["district"].lower()
+                or term in s["pincode"].lower()
+            ]
+
+        if sort_by_distance:
+            # Sort only when valid numeric distance values exist; missing/None goes to end
+            filtered = sorted(
+                filtered,
+                key=lambda s: (
+                    s["distance_from_shaheed_sukhdev_km"] is None,
+                    s["distance_from_shaheed_sukhdev_km"] if s["distance_from_shaheed_sukhdev_km"] is not None else float("inf")
+                )
+            )
+
+        return {
+            "success": True,
+            "total": len(filtered),
+            "districts": districts,
+            "stores": filtered,
+        }
 
     async def get_shop_whatsapp_contact(self, request: ShopWhatsAppContactRequest) -> dict[str, Any]:
         cache_key = f"{re.sub(r'\\W+', ' ', request.shop_name.casefold()).strip()}|{re.sub(r'\\W+', ' ', (request.shop_address or request.locality or request.city or '').casefold()).strip()}"

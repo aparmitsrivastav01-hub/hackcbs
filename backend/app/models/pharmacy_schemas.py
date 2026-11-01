@@ -138,3 +138,28 @@ class ShopWhatsAppContactResponse(BaseModel):
     message: str
     cached: bool = False
 
+
+class PharmacyDirectoryEntry(BaseModel):
+    store_id: str
+    brand: Literal["Jan Aushadhi", "Davaindia"]
+    store_name: str
+    contact_person: str | None = None
+    address: str
+    district: str
+    pincode: str
+    phone: str | None = None
+    whatsapp_number: str | None = None
+    whatsapp_verified: bool = False
+    listed_hours: str | None = None
+    source_url: str | None = None
+    data_status: str
+    distance_from_shaheed_sukhdev_km: float | None = None
+
+
+class PharmacyDirectoryResponse(BaseModel):
+    success: bool
+    total: int
+    districts: list[str]
+    stores: list[PharmacyDirectoryEntry]
+
+

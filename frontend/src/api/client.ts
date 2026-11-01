@@ -11,6 +11,7 @@ import type {
   MaximumSavingsResponse,
   MedicineResponse,
   PatientProfile,
+  PharmacyDirectoryResponse,
   PharmacyEnquiry,
   PriceOption,
   PrivacyConsent,
@@ -476,6 +477,27 @@ export async function getShopWhatsAppContact(
     signal,
     timeoutMs: 90000,
   });
+}
+
+/**
+ * GET /api/stores/directory
+ * Delhi pharmacy directory seed dataset with search, brand, district filters and distance sorting.
+ */
+export async function getPharmacyDirectory(params?: {
+  search?: string;
+  brand?: string;
+  district?: string;
+  sort_by_distance?: boolean;
+}): Promise<PharmacyDirectoryResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.search) searchParams.set("search", params.search);
+  if (params?.brand) searchParams.set("brand", params.brand);
+  if (params?.district) searchParams.set("district", params.district);
+  if (params?.sort_by_distance) searchParams.set("sort_by_distance", "true");
+
+  const queryString = searchParams.toString();
+  const endpoint = `/api/stores/directory${queryString ? `?${queryString}` : ""}`;
+  return request<PharmacyDirectoryResponse>(endpoint);
 }
 
 // -------------------------------------------------------------
