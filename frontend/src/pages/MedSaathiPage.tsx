@@ -329,6 +329,29 @@ export function MedSaathiPage() {
             </p>
           </div>
 
+          {/* AI Safety & Guardrail Notice */}
+          <div className="mx-auto mt-6 max-w-4xl rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/80 via-white to-emerald-50/60 p-4 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+              <div className="flex-1 text-xs leading-relaxed text-slate-700">
+                <p className="font-bold text-navy">
+                  {tr(
+                    "🛡️ Responsible AI Health Information Agent (Non-Doctor Boundary)",
+                    "🛡️ जिम्मेदार AI स्वास्थ्य सूचना सहायक (गैर-चिकित्सक सीमा)"
+                  )}
+                </p>
+                <p className="mt-1 text-slate-600">
+                  {tr(
+                    "MedSaathi is strictly an AI Information Agent — NOT a doctor or healthcare practitioner. It assists with generic medicine price comparisons, CDSCO batch safety alerts, and safe non-medicinal home care. It will never diagnose illnesses, prescribe prescription drugs, or alter doctor instructions. Always consult a licensed doctor for medical decisions.",
+                    "मेडसाथी एक AI सूचना सहायक है — कोई डॉक्टर या प्रमाणित स्वास्थ्य विशेषज्ञ नहीं। यह जेनेरिक दवाओं के मूल्यों की तुलना, CDSCO बैच सुरक्षा अलर्ट और सुरक्षित गैर-चिकित्सीय घरेलू उपाय बताने में सहायता करता है। यह किसी बीमारी का निदान, दवा पर्चा या डॉक्टर के निर्देशों में फेरबदल नहीं करता। चिकित्सीय निर्णयों के लिए हमेशा डॉक्टर से परामर्श लें।"
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* MAIN TWO-COLUMN AGENT CONSOLE */}
           <div className="mt-10 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
             {/* LEFT COLUMN: Voice Interaction Pod (5 cols) */}
@@ -525,8 +548,33 @@ export function MedSaathiPage() {
                           : "bg-[#f8fbff] text-navy border border-slate-200/80 rounded-bl-xs"
                       }`}
                     >
-                      <p>{isHi ? msg.textHi : msg.textEn}</p>
-                      {msg.safetyFlags?.includes("potential_emergency") && <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{tr("Potential emergency detected. Seek urgent local medical care.", "संभावित आपातस्थिति है। तुरंत स्थानीय चिकित्सा सहायता लें।")}</p>}
+                      <p className="whitespace-pre-line">{isHi ? msg.textHi : msg.textEn}</p>
+                      {msg.safetyFlags?.includes("potential_emergency") && (
+                        <div className="mt-2.5 rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs text-red-900">
+                          <p className="font-bold flex items-center gap-1.5 text-red-700">
+                            🚨 {tr("Immediate Emergency Escalation", "तत्काल आपातकालीन सहायता")}
+                          </p>
+                          <p className="mt-1">
+                            {tr(
+                              "If you or someone nearby is experiencing an emergency, immediately call 108 (Ambulance in India) or 112 (National Emergency), or visit the nearest hospital emergency room.",
+                              "यदि आप या कोई अन्य आपातकालीन स्थिति में है, तो तुरंत 108 (एंबुलेंस) या 112 (राष्ट्रीय आपातकाल) पर कॉल करें या तुरंत नज़दीकी अस्पताल जाएं।"
+                            )}
+                          </p>
+                        </div>
+                      )}
+                      {msg.safetyFlags?.includes("prescription_refusal") && (
+                        <div className="mt-2.5 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">
+                          <p className="font-bold flex items-center gap-1.5 text-amber-800">
+                            🛡️ {tr("Responsible AI Guardrail: Non-Doctor Policy", "जिम्मेदार AI सुरक्षा नीति: गैर-चिकित्सक नियम")}
+                          </p>
+                          <p className="mt-1 text-amber-800">
+                            {tr(
+                              "MedSaathi cannot prescribe medicines or antibiotics. Only non-medicinal home comfort and preventive measures are suggested. Please consult a licensed doctor for prescriptions.",
+                              "मेडसाथी दवाएं या एंटीबायोटिक नहीं लिख सकता। केवल सुरक्षित गैर-चिकित्सीय घरेलू देखभाल उपाय सुझाए गए हैं। दवा पर्चे के लिए प्रमाणित डॉक्टर से परामर्श लें।"
+                            )}
+                          </p>
+                        </div>
+                      )}
                       {msg.role === "assistant" && (
                         <button
                           type="button"

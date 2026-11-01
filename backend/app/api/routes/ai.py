@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
+from app.ai.guardrails.safety_guardrails import AISafetyGuardrail
 from app.ai.memory.meko_memory import HISTORY_QUERY
 from app.models.ai_schemas import AIChatRequest, AIChatResponse
 from app.services.gemini_service import (
@@ -161,6 +162,47 @@ async def chat(request: Request, body: AIChatRequest):
             task.add_done_callback(_bg.discard)
         return task
 
+    # 4. Deterministic AI Safety Guardrail Checks
+    guardrail_result = AISafetyGuardrail.check_emergency(body.message)
+    guardrail_flag = "potential_emergency" if guardrail_result else None
+
+    if not guardrail_result:
+        guardrail_result = AISafetyGuardrail.check_prescription_or_diagnosis_demand(body.message, memory_context)
+        if guardrail_result:
+            guardrail_flag = "prescription_refusal"
+
+    if guardrail_result:
+        resp_text = guardrail_result.response_text(body.language)
+        async with session.lock:
+            sessions.add_turn(session, body.message.strip(), resp_text)
+            _log_turn_background(body.message.strip(), resp_text)
+
+        if not body.stream:
+            return {
+                "success": True,
+                "session_id": session_id,
+                "response": resp_text,
+                "safety_flags": [guardrail_flag] if guardrail_flag else [],
+                "usage": {"prompt_tokens": 0, "response_tokens": 0, "total_tokens": 0},
+            }
+
+        async def guardrail_stream():
+            yield _sse({"type": "meta", "session_id": session_id})
+            yield _sse({"type": "delta", "text": resp_text})
+            yield _sse({
+                "type": "done",
+                "session_id": session_id,
+                "response": resp_text,
+                "safety_flags": [guardrail_flag] if guardrail_flag else [],
+                "usage": {"prompt_tokens": 0, "response_tokens": 0, "total_tokens": 0},
+            })
+
+        return StreamingResponse(
+            guardrail_stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
     if not body.stream:
         async with session.lock:
             history = sessions.context(session)
@@ -183,6 +225,7 @@ async def chat(request: Request, body: AIChatRequest):
             except (GeminiConfigurationError, GeminiTimeoutError, GeminiRateLimitError, GeminiProviderError) as exc:
                 raise _provider_http_error(exc) from exc
 
+            result["response"] = AISafetyGuardrail.sanitize_llm_response(result["response"], body.language)
             sessions.add_turn(session, body.message.strip(), result["response"])
             _log_turn_background(body.message.strip(), result["response"])
             return {"success": True, "session_id": session_id, **result}
@@ -230,6 +273,7 @@ async def chat(request: Request, body: AIChatRequest):
                     except asyncio.TimeoutError:
                         continue
                 result = await task
+                result["response"] = AISafetyGuardrail.sanitize_llm_response(result["response"], body.language)
                 sessions.add_turn(session, body.message.strip(), result["response"])
                 _log_turn_background(body.message.strip(), result["response"])
                 yield _sse({"type": "done", "session_id": session_id, **result})
