@@ -184,6 +184,7 @@ export type CartItem = {
   private_brand_price: number | null;
   quantity: number;
   pack_info?: string;
+  prescribed_medicine_name?: string;
 };
 
 // Pharmacy & Enquiries

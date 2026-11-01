@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as apiClient from "../api/client";
 import { LanguageProvider } from "../i18n/LanguageContext";
 import { ScanPage } from "./ScanPage";
+import { CartProvider } from "../context/CartContext";
 import type { ConfirmedSearchResult, ExtractionResponse } from "../types";
 
 describe("ScanPage — Prescription Scanning & Catalogue Matching", () => {
@@ -21,7 +22,7 @@ describe("ScanPage — Prescription Scanning & Catalogue Matching", () => {
       <HelmetProvider>
         <MemoryRouter>
           <LanguageProvider>
-            <ScanPage />
+            <CartProvider><ScanPage /></CartProvider>
           </LanguageProvider>
         </MemoryRouter>
       </HelmetProvider>

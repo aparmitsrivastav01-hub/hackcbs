@@ -35,16 +35,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   function addItem(newItem: Omit<CartItem, "id">) {
     setItems((prev) => {
-      // Check if medicine already exists in cart with same provider
+      // A catalogue medicine/provider pair is a single cart entry. Repeated adds
+      // are idempotent; quantity is changed explicitly from the cart page.
       const existingIdx = prev.findIndex(
         (i) =>
           i.medicine_id === newItem.medicine_id &&
           i.selected_provider === newItem.selected_provider,
       );
       if (existingIdx >= 0) {
-        const copy = [...prev];
-        copy[existingIdx].quantity += newItem.quantity;
-        return copy;
+        return prev;
       }
       const itemWithId: CartItem = {
         ...newItem,

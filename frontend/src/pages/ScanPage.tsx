@@ -6,6 +6,7 @@ import {
   RotateCcw,
   ScanLine,
   Search,
+  ShoppingCart,
   Sparkles,
   Sun,
   Trash2,
@@ -16,6 +17,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { extractPrescription, formatInr, searchConfirmed } from "../api/client";
 import samplePrescriptionImg from "../assets/sample-prescription.jpg";
 import { useLanguage } from "../i18n/LanguageContext";
+import { useCart } from "../context/CartContext";
 import type { ConfirmedSearchResult, ExtractedItem, ExtractionResponse } from "../types";
 
 type EditableItem = {
@@ -33,8 +35,25 @@ export function ScanPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, tr } = useLanguage();
+  const { items: cartItems, addItem, removeItem } = useCart();
+  const [cartNotice, setCartNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const locationHandledRef = useRef(false);
+
+  function addMatchedMedicine(res: ConfirmedSearchResult["results"][number], match: ConfirmedSearchResult["results"][number]["matches"][number]) {
+    const medicine = match.medicine;
+    const provider: "jan_aushadhi" | "dava_india" | "private_brand" =
+      medicine.jan_aushadhi_price != null && (medicine.dava_india_price == null || medicine.jan_aushadhi_price <= medicine.dava_india_price)
+        ? "jan_aushadhi"
+        : medicine.dava_india_price != null ? "dava_india" : "private_brand";
+    const price = provider === "jan_aushadhi" ? medicine.jan_aushadhi_price : provider === "dava_india" ? medicine.dava_india_price : medicine.private_brand_price;
+    addItem({ medicine_id: medicine.id, brand_name: medicine.brand_name, active_salt: medicine.active_salt,
+      dosage_form: medicine.dosage_form, selected_provider: provider, selected_price: price ?? null,
+      private_brand_price: medicine.private_brand_price ?? null, quantity: 1, pack_info: medicine.dosage_form,
+      prescribed_medicine_name: res.confirmed_input.medicine_name });
+    setCartNotice("Added to cart");
+    window.setTimeout(() => setCartNotice(null), 2200);
+  }
 
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -752,6 +771,14 @@ export function ScanPage() {
               </button>
             </div>
 
+            {results.results.some((result) => result.match_status === "Exact Match" && result.matches.length > 0) && (
+              <button type="button" onClick={() => results.results.filter((result) => result.match_status === "Exact Match").forEach((result) => result.matches.slice(0, 1).forEach((match) => addMatchedMedicine(result, match)))}
+                className="mt-4 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-700">
+                {tr("Add All Matched Medicines", "सभी मिलान वाली दवाइयां जोड़ें")}
+              </button>
+            )}
+            {cartNotice && <p role="status" className="mt-3 text-sm font-semibold text-emerald-700">{cartNotice}</p>}
+
             <div className="mt-6 space-y-6">
               {results.results.map((res) => (
                 <div
@@ -807,11 +834,7 @@ export function ScanPage() {
                   ) : (
                     <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
                       {res.matches.map((match) => (
-                        <Link
-                          key={match.medicine.id}
-                          to={`/medicines/${match.medicine.id}`}
-                          className="flex flex-col justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-xs transition hover:border-brand/40 hover:shadow-md"
-                        >
+                        <div key={`${res.confirmed_input.medicine_name}-${match.medicine.id}`} className="flex flex-col justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-xs">
                           <div>
                             <div className="flex flex-wrap items-center justify-between gap-1.5">
                               <div className="flex flex-wrap items-center gap-1.5">
@@ -850,7 +873,7 @@ export function ScanPage() {
                                 </span>
                               ) : null}
                             </div>
-                            <p className="mt-1 text-base font-bold text-navy">{match.medicine.brand_name}</p>
+                            <Link to={`/medicines/${match.medicine.id}`} className="mt-1 block text-base font-bold text-navy hover:text-brand">{match.medicine.brand_name}</Link>
                             <p className="text-xs text-slate-500">{match.medicine.active_salt}</p>
 
                             {/* Safety Notice Banner for suggested candidates or strength variants */}
@@ -873,7 +896,7 @@ export function ScanPage() {
                             ) : null}
                           </div>
 
-                          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
                             <div>
                               <span className="block text-[10px] text-slate-400">{tr("Jan Aushadhi Price", "जन औषधि मूल्य")}</span>
                               <span className="text-lg font-extrabold text-emerald-600">
@@ -895,7 +918,24 @@ export function ScanPage() {
                               </span>
                             </div>
                           </div>
-                        </Link>
+                          {(() => {
+                            const cartItem = cartItems.find((item) => item.medicine_id === match.medicine.id);
+                            const needsReview = res.match_status === "Possible Match — Needs Review" || match.match_type === "suggested_candidate" || match.match_type === "strength_variant";
+                            return cartItem ? (
+                              <div className="mt-4 flex items-center justify-between">
+                                <span className="text-sm font-bold text-emerald-700">Added ✓</span>
+                                <button type="button" onClick={() => removeItem(cartItem.id)} className="text-sm font-semibold text-red-600 hover:underline">{tr("Remove", "हटाएं")}</button>
+                              </div>
+                            ) : (
+                              <button type="button" onClick={() => {
+                                if (needsReview && !window.confirm("This is a suggested match, not a confirmed equivalent. Confirm you want to add it?")) return;
+                                addMatchedMedicine(res, match);
+                              }} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-600">
+                                <ShoppingCart className="h-4 w-4" />{tr("Add to Cart", "कार्ट में जोड़ें")}
+                              </button>
+                            );
+                          })()}
+                        </div>
                       ))}
                     </div>
                   )}

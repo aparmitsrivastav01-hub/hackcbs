@@ -131,6 +131,9 @@ export function CartPage() {
                         {item.active_salt && (
                           <p className="text-xs text-slate-500 truncate">{item.active_salt}</p>
                         )}
+                        {item.prescribed_medicine_name && item.prescribed_medicine_name !== item.brand_name && (
+                          <p className="text-xs text-slate-500">{tr("Prescribed:", "पर्चे में:")} {item.prescribed_medicine_name}</p>
+                        )}
                         <div className="mt-1 flex flex-wrap items-center gap-2">
                           <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
                             {providerLabel}
@@ -169,6 +172,7 @@ export function CartPage() {
 
                       {/* Total for item */}
                       <div className="text-right min-w-[70px]">
+                        <span className="block text-[10px] text-slate-400">{tr("Subtotal", "कुल")}</span>
                         <span className="block text-sm font-extrabold text-navy">
                           {formatInr(itemTotal)}
                         </span>
@@ -216,6 +220,10 @@ export function CartPage() {
                   <div className="flex justify-between text-slate-600">
                     <span>{tr("Total units / packs", "कुल इकाइयां / पैक")}</span>
                     <span className="font-semibold text-navy">{itemCount} {tr("units", "इकाइयां")}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>{tr("Total amount", "कुल राशि")}</span>
+                    <span className="font-semibold text-navy">{formatInr(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-slate-600">
                     <span>{tr("Catalogue reference subtotal", "कैटलॉग संदर्भ उपकुल")}</span>
