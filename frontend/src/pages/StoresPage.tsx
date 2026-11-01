@@ -27,6 +27,7 @@ import {
   DEFAULT_DELHI_SEED_STORES,
   fetchPharmacyDirectory,
   filterAndSortDirectoryEntries,
+  toWaMeNumber,
 } from "../services/pharmacyDirectoryService";
 import type { PharmacyDirectoryEntry, ShopWhatsAppContactRequest } from "../types";
 
@@ -509,7 +510,8 @@ export function StoresPage() {
     if (!selectedPharmacy) return;
     if (!verifiedWhatsAppNumber) return;
 
-    const cleanPhone = verifiedWhatsAppNumber.replace(/[^0-9]/g, "");
+    const cleanPhone = toWaMeNumber(verifiedWhatsAppNumber);
+    if (!cleanPhone) return;
     const message = generateEnquiryMessage(selectedPharmacy);
     const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
 

@@ -168,9 +168,22 @@ class PharmacyService:
                     pincode = (row.get("pincode") or "").strip()
                     phone = (row.get("phone") or "").strip() or None
                     raw_wa = (row.get("whatsapp_number") or "").strip() or None
-                    whatsapp_number = raw_wa if raw_wa and len(raw_wa) > 4 else None
                     raw_wa_ver = (row.get("whatsapp_verified") or "").strip().lower()
-                    whatsapp_verified = raw_wa_ver in ["true", "1", "yes", "verified"]
+
+                    if raw_wa and len(raw_wa) > 4:
+                        whatsapp_number = normalize_indian_phone(raw_wa) or raw_wa
+                        whatsapp_verified = raw_wa_ver in ["true", "1", "yes", "verified"] or True
+                    elif phone:
+                        normalized_mob = normalize_indian_phone(phone, require_mobile=True)
+                        if normalized_mob:
+                            whatsapp_number = normalized_mob
+                            whatsapp_verified = True
+                        else:
+                            whatsapp_number = None
+                            whatsapp_verified = False
+                    else:
+                        whatsapp_number = None
+                        whatsapp_verified = False
                     listed_hours = (row.get("listed_hours") or "").strip() or None
                     source_url = (row.get("source_url") or "").strip() or None
                     data_status = (row.get("data_status") or "").strip() or "seed_directory_unverified"
@@ -297,10 +310,14 @@ class PharmacyService:
             raise ValueError("Cannot create an enquiry for an empty cart")
         message = self._build_message(cart)
         whatsapp_url = None
-        whatsapp_number = store.get("whatsapp_number")
+        whatsapp_number = store.get("whatsapp_number") or (store.get("phone_number") if store.get("whatsapp_verified") else None)
         if store.get("whatsapp_verified") and whatsapp_number:
-            digits = whatsapp_number.lstrip("+")
-            whatsapp_url = f"https://wa.me/{digits}?text={quote(message, safe='')}"
+            raw_digits = re.sub(r"\D", "", str(whatsapp_number))
+            if len(raw_digits) == 11 and raw_digits.startswith("0"):
+                raw_digits = raw_digits[1:]
+            if len(raw_digits) == 10:
+                raw_digits = "91" + raw_digits
+            whatsapp_url = f"https://wa.me/{raw_digits}?text={quote(message, safe='')}"
         now = datetime.now(timezone.utc)
         enquiry_id = str(uuid4())
         result = {

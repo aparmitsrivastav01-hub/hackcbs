@@ -2,6 +2,38 @@ import { getPharmacyDirectory } from "../api/client";
 import type { PharmacyDirectoryEntry, PharmacyDirectoryResponse } from "../types";
 
 /**
+ * Checks if a phone string is an Indian mobile number (starts with 6, 7, 8, or 9).
+ */
+export function isIndianMobile(phoneStr: string | null | undefined): boolean {
+  if (!phoneStr) return false;
+  let digits = phoneStr.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+  return digits.length === 10 && "6789".includes(digits[0]);
+}
+
+/**
+ * Formats a phone string into a clean international number for wa.me (e.g. 919811234567).
+ */
+export function toWaMeNumber(phoneOrWa: string | null | undefined): string | null {
+  if (!phoneOrWa) return null;
+  let digits = phoneOrWa.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return digits;
+  }
+  if (digits.length === 11 && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+  if (digits.length === 10) {
+    return "91" + digits;
+  }
+  return digits.length >= 10 ? digits : null;
+}
+
+/**
  * Robust CSV parser that handles quotes, commas inside quotes, CRLF, and empty rows.
  */
 export function parseCSVLines(text: string): string[][] {
