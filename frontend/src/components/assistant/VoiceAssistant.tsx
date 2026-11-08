@@ -128,7 +128,7 @@ export function VoiceAssistant() {
 
       addMessage(response.response, response.response, "assistant", response.action);
 
-      // 3. Spoken Response via ElevenLabs / Web Speech
+      // 3. Spoken Response via Gnani AI / Web Speech
       const spokenText = response.response;
 
       if (!isVoiceMuted) {
@@ -264,7 +264,7 @@ export function VoiceAssistant() {
                   {isHi ? "MedEasy साथी (AI)" : "MedEasy Saathi (AI)"}
                 </h3>
                 <p className="text-[10.5px] font-medium text-slate-500">
-                  {isHi ? "Gemini व ElevenLabs संचालित" : "Powered by Gemini & ElevenLabs"}
+                  {isHi ? "Gemini व Gnani AI संचालित" : "Powered by Gemini & Gnani AI"}
                 </p>
               </div>
             </div>

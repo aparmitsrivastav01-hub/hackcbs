@@ -144,7 +144,7 @@ describe("MedicinesPage — Voice Search & ElevenLabs TTS Integration", () => {
     });
 
     mockFetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (url: any) => {
-      if (url === "/api/voice/elevenlabs/speak") {
+      if (url === "/api/voice/speak" || url === "/api/voice/elevenlabs/speak") {
         return new Response(new Blob(["mock-mp3"], { type: "audio/mpeg" }), {
           status: 200,
           headers: { "Content-Type": "audio/mpeg" },
@@ -226,7 +226,7 @@ describe("MedicinesPage — Voice Search & ElevenLabs TTS Integration", () => {
     await waitFor(
       () => {
         expect(mockFetch).toHaveBeenCalledWith(
-          "/api/voice/elevenlabs/speak",
+          "/api/voice/speak",
           expect.objectContaining({
             method: "POST",
           })
@@ -238,7 +238,7 @@ describe("MedicinesPage — Voice Search & ElevenLabs TTS Integration", () => {
 
   it("10. TTS failure displays notice without breaking medicine search or catalogue results", async () => {
     mockFetch.mockImplementation(async (url: any) => {
-      if (url === "/api/voice/elevenlabs/speak") {
+      if (url === "/api/voice/speak" || url === "/api/voice/elevenlabs/speak") {
         return new Response(JSON.stringify({ detail: "ElevenLabs API offline" }), {
           status: 502,
           headers: { "Content-Type": "application/json" },

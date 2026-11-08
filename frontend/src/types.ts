@@ -76,6 +76,29 @@ export type HealthResponse = {
   catalogue_records: number;
 };
 
+export type VoiceLanguage = "auto" | "hi-IN" | "en-IN" | "hi" | "en" | "hinglish";
+
+export type VoiceTranscriptResponse = {
+  success: boolean;
+  transcript: string;
+  language: string | null;
+  confidence: number | null;
+};
+
+export type VoiceSearchResponse = {
+  success: boolean;
+  transcript: string;
+  search_query: string;
+  language: string | null;
+  confidence: number | null;
+  total_results: number;
+  medicines: MedicineResponse[];
+  spoken_response: string;
+  audio_base64: string | null;
+  audio_content_type: string | null;
+  speech_error: string | null;
+};
+
 // Base medicine item type supporting both legacy views and full catalogue responses
 export type Medicine = {
   id: number;

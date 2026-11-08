@@ -213,9 +213,10 @@ def test_memory_reset_does_not_silently_re_enable_consent():
     service.set_consent(True, "patient-test")
     assert service.get_consent("patient-test") is True
 
-    # Calling reset preserves or reports consent without arbitrarily forcing it ON or broken
+    # A requested remote reset must not claim success when Meko is unavailable.
     res2 = asyncio.run(service.reset_memory(patient_id="patient-test"))
-    assert res2["success"] is True
+    assert res2["success"] is False
+    assert res2["cleared_memories"] is False
     assert res2["consent"] is True
 
 

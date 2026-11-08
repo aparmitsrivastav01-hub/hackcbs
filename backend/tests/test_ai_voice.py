@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.services.voice_service import GnaniVoiceService
 
 
 class FakeGemini:
@@ -21,9 +22,12 @@ class FakeGemini:
         pass
 
 
-class FakeElevenLabs:
-    async def synthesize(self, text, language):
+class FakeGnaniVoiceService:
+    async def speak(self, text, language):
         return b"test-mp3-audio"
+
+    async def synthesize(self, text, language):
+        return await self.speak(text, language)
 
 
 def test_gemini_chat_json_returns_session_and_safety_flags():
@@ -48,9 +52,19 @@ def test_gemini_chat_stream_emits_delta_and_final_response():
         assert "MedEasy helps compare medicines" in response.text
 
 
-def test_elevenlabs_route_returns_mp3_bytes_for_both_languages():
+def test_voice_speak_route_returns_mp3_bytes_for_both_languages():
     with TestClient(app) as client:
-        app.state.elevenlabs_service = FakeElevenLabs()
+        app.state.voice_service = FakeGnaniVoiceService()
+        for language in ("en", "hi", "en-IN", "hi-IN"):
+            response = client.post("/api/voice/speak", json={"text": "Hello", "language": language})
+            assert response.status_code == 200
+            assert response.headers["content-type"] == "audio/mpeg"
+            assert response.content == b"test-mp3-audio"
+
+
+def test_elevenlabs_compatibility_route_returns_mp3_bytes():
+    with TestClient(app) as client:
+        app.state.voice_service = FakeGnaniVoiceService()
         for language in ("en", "hi"):
             response = client.post("/api/voice/elevenlabs/speak", json={"text": "Hello", "language": language})
             assert response.status_code == 200
@@ -64,44 +78,39 @@ def test_elevenlabs_route_rejects_invalid_language():
         assert response.status_code == 422
 
 
-def test_elevenlabs_service_reports_missing_credentials(monkeypatch):
-    monkeypatch.setenv("ELEVENLABS_API_KEY", "")
-    monkeypatch.setenv("ELEVENLABS_VOICE_ID", "")
-    monkeypatch.setenv("ELEVENLABS_MODEL_ID", "")
+def test_gnani_service_reports_missing_credentials(monkeypatch):
+    monkeypatch.delenv("GNANI_API_KEY", raising=False)
+    monkeypatch.setenv("GNANI_API_KEY", "")
     with TestClient(app) as client:
+        app.state.voice_service = None
         app.state.elevenlabs_service = None
-        response = client.post("/api/voice/elevenlabs/speak", json={"text": "Hello", "language": "en"})
+        response = client.post("/api/voice/speak", json={"text": "Hello", "language": "en"})
         assert response.status_code == 503
-        assert "ELEVENLABS_API_KEY" in response.json()["detail"]
+        assert "GNANI_API_KEY" in response.json()["detail"]
 
 
-def test_elevenlabs_service_library_voice_fallback():
-    from app.services.elevenlabs_service import ElevenLabsSpeechService, DEFAULT_PREMADE_VOICE_ID
-
+def test_gnani_voice_service_synthesize_fallback():
     calls = []
 
-    class DummyConvertClient:
-        class text_to_speech:
-            @staticmethod
-            def convert(**kwargs):
-                calls.append(kwargs["voice_id"])
-                if kwargs["voice_id"] == "library-voice-id":
-                    class DummyApiError(Exception):
-                        status_code = 402
-                    raise DummyApiError("Free users cannot use library voices via the API.")
-                return [b"premade-audio-chunk"]
+    class DummyTTSClient:
+        def synthesize(self, text, voice=None, model=None, language=None, audio_config=None):
+            calls.append((voice, model, language))
+            return b"gnani-audio-chunk"
 
-    def dummy_factory(api_key, timeout):
-        return DummyConvertClient
+    def dummy_factory(api_key):
+        return DummyTTSClient()
 
-    service = ElevenLabsSpeechService(
+    service = GnaniVoiceService(
         api_key="test-key",
-        voice_id="library-voice-id",
-        model_id="eleven_multilingual_v2",
-        client_factory=dummy_factory,
+        tts_model="timbre-v2.5",
+        voice="Pranav",
+        tts_client_factory=dummy_factory,
     )
 
     import asyncio
-    audio = asyncio.run(service.synthesize("Test fallback speech", "en"))
-    assert audio == b"premade-audio-chunk"
-    assert calls == ["library-voice-id", DEFAULT_PREMADE_VOICE_ID]
+    audio = asyncio.run(service.speak("Test speech", "en-IN"))
+    assert audio == b"gnani-audio-chunk"
+    assert len(calls) == 1
+    assert calls[0][0] == "Pranav"
+    assert calls[0][1] == "timbre-v2.5"
+    assert calls[0][2] == "en-IN"

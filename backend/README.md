@@ -6,7 +6,7 @@ MedEasy's Python backend has two modular stages:
 - **Stage 2:** prescription upload, Gemini vision extraction, conservative catalogue matching, and structured price comparisons.
 - **Stage 3:** cart, nearby pharmacy discovery, and WhatsApp stock enquiry.
 - **Stage 12:** CDSCO NSQ alert lookup and pharmacy batch verification.
-- **MedSaathi:** Gemini healthcare chat with temporary session context and ElevenLabs text-to-speech.
+- **MedSaathi:** Gemini healthcare chat with temporary session context and Gnani AI text-to-speech.
 
 The catalogue is loaded with Pandas on startup. Prescription images/PDFs are validated and processed in memory; uploaded files are not retained. Scan results use temporary in-memory storage and are lost when the server restarts or when a different worker receives a later request.
 
@@ -26,9 +26,10 @@ Swagger UI: `http://localhost:8000/docs`.
 
 - `GEMINI_API_KEY` — required to use the default Google Gemini extraction provider. If missing, scan returns HTTP 503. Never commit this key.
 - `GEMINI_MODEL` — optional Gemini model name; defaults to `gemini-2.5-flash`.
-- `ELEVENLABS_API_KEY` — required for speech synthesis; keep it in the backend environment only.
-- `ELEVENLABS_VOICE_ID` — provider voice ID used for synthesis.
-- `ELEVENLABS_MODEL_ID` — provider model; `eleven_multilingual_v2` is the default and infers Hindi or English from the text.
+- `GNANI_API_KEY` — API key for Gnani AI Prisma STT and Timbre TTS.
+- `GNANI_ASR_MODEL` — optional Gnani ASR model; defaults to `prisma-v3.0`.
+- `GNANI_TTS_MODEL` — optional Gnani TTS model; defaults to `timbre-v2.5`.
+- `GNANI_VOICE` — optional Gnani TTS voice ID; defaults to `Pranav`.
 - `MEDEASY_CSV_PATH` — optional catalogue path; defaults to `app/data/MedEasy_catalogue_500_complete.csv`.
 - `MEDEASY_CORS_ORIGINS` — comma-separated allowed browser origins; defaults to localhost ports 5173.
 - `TINYFISH_API_KEY` — required for live pharmacy discovery; stored in ignored `backend/.env`.
@@ -41,6 +42,8 @@ Swagger UI: `http://localhost:8000/docs`.
 - `MEKO_API_KEY` — API key for Meko MCP memory service.
 - `MEKO_MCP_URL` — Meko MCP stream endpoint URL (defaults to `https://mcp.mekodata.ai/mcp`).
 - `MEKO_DATAPACK_ID` — datapack identifier for patient conversational memory.
+
+The backend communicates with Meko through the official Streamable HTTP MCP client. Install backend dependencies from `requirements.txt`; this includes the MCP SDK and the JSON Schema validator used to validate dynamically discovered tool inputs. Memory search and write tools require a conversation ID, so the adapter creates a trace container when a caller does not supply one. A successful MCP connection does not provision per-user datapacks: link each authenticated user's isolated datapack before enabling patient-specific memory in production.
 
 The Gemini provider implements a small extraction interface and can be replaced with another OCR/VLM adapter. Prescription content is sent to the configured provider for extraction. Do not log file contents or patient details.
 
@@ -75,11 +78,11 @@ From `backend/`, run `pytest -q`. Prescription tests use a mocked extraction pro
 ## MedSaathi AI and voice
 
 - `POST /api/ai/chat` accepts `message`, optional `session_id`, `language` (`en` or `hi`), and `stream`. Set `stream: true` for Server-Sent Events (`meta`, `delta`, `done` or `error` frames); `stream: false` returns the JSON response directly.
-- `POST /api/voice/elevenlabs/speak` accepts `text` and `language`, and returns playable `audio/mpeg` bytes. API credentials and the selected voice stay on the backend.
+- `POST /api/voice/speak` accepts `text` and `language`, and returns playable `audio/mpeg` bytes powered by Gnani Timbre TTS (`/api/voice/elevenlabs/speak` is preserved as a backward-compatibility route). API credentials stay exclusively on the backend.
 - Chat context is held in bounded, expiring in-memory sessions only. It is temporary conversation context, not persistent medical memory; restarts clear it.
 - The existing browser SpeechRecognition implementation remains the microphone input path. The UI sends recognized speech and typed questions to Gemini. Typed replies can be spoken with the per-message **Speak response** control; voice-originated interactions can speak the response in the left voice panel. Playback supports pause, resume and stop.
 - Gemini is instructed to provide general health information, avoid diagnosis/prescribing, flag emergency situations, and use catalogue facts only when supplied by the backend. A potential-emergency flag is a heuristic on the user message, not a clinical triage result.
-- Gemini provider calls are asynchronous with bounded retries and timeout. ElevenLabs calls use the official SDK with a timeout. Provider errors are returned as HTTP errors (or an SSE `error` frame once streaming begins); no canned answer or fabricated audio is substituted.
+- Gemini provider calls are asynchronous with bounded retries and timeout. Gnani calls use the official SDK with bounded retries and timeout. Provider errors are returned as HTTP errors (or an SSE `error` frame once streaming begins); no canned answer or fabricated audio is substituted.
 
 ## Stage 3: cart and pharmacy enquiries
 
@@ -135,3 +138,14 @@ curl -X POST http://localhost:8000/api/pharmacies/nearby \
   -H 'Content-Type: application/json' \
   -d '{"area":"Hazratganj, Lucknow","radius_km":10,"providers":["jan_aushadhi","dava_india"]}'
 ```
+# Voice medicine search (Gnani)
+
+Set `GNANI_API_KEY` in `backend/.env` or the backend process environment. The API key stays on the server. The integration uses Gnani's `prisma-v3.0` ASR model and `timbre-v2.5` TTS model by default; the official Python package is installed from `requirements.txt`.
+
+The voice endpoints accept uncompressed PCM WAV only (mono or stereo, up to 30 seconds and 10 MB). The browser converts its recording to mono 16 kHz WAV before upload. The API does not save audio files or log transcripts. ASR confidence is returned as `null` when the provider does not supply a score.
+
+- `POST /api/voice/transcribe`: multipart `file` plus `language=auto|hi-IN|en-IN`; returns transcript and detected language.
+- `POST /api/voice/search`: transcribes audio, removes common request phrasing, searches the existing catalogue and returns actual prices/savings plus optional base64 MP3 speech.
+- `POST /api/voice/speak`: JSON `{ "text": "...", "language": "hi-IN" }`; returns `audio/mpeg`.
+
+To run and verify: `cd backend && python -m pip install -r requirements.txt && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`. Live transcription and speech synthesis require a valid `GNANI_API_KEY`; without it, these endpoints return HTTP 503 rather than sample data.

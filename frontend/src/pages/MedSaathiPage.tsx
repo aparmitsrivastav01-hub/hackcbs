@@ -28,7 +28,7 @@ import type {
   SpeechState,
 } from "../components/assistant/assistantTypes";
 import { VoiceVisualizer } from "../components/assistant/VoiceVisualizer";
-import { useElevenLabsTTS } from "../hooks/useElevenLabsTTS";
+import { useGnaniTTS } from "../hooks/useGnaniTTS";
 import { useLanguage } from "../i18n/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { AuthPromptModal } from "../components/auth/AuthPromptModal";
@@ -59,7 +59,7 @@ export function MedSaathiPage() {
   const requestInFlight = useRef(false);
   const voiceQueryPending = useRef(false);
 
-  const tts = useElevenLabsTTS();
+  const tts = useGnaniTTS();
 
   useEffect(() => {
     if (tts.isLoading) {

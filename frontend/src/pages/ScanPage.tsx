@@ -165,13 +165,15 @@ export function ScanPage() {
 
   // Scan Prescription action
   async function handleScan() {
-    if (!file && !previewUrl) {
+    if (!file) {
       setError("Please choose or drag-and-drop a prescription first.");
       return;
     }
 
     setBusy(true);
     setError(null);
+    setExtraction(null);
+    setItems([]);
     setResults(null);
 
     try {

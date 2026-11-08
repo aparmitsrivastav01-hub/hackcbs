@@ -63,7 +63,7 @@ export function VoiceVisualizer({ state }: VoiceVisualizerProps) {
         {isSpeaking && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-brand">
             <span className="h-2 w-2 rounded-full bg-brand animate-pulse" />
-            {tr("Speaking via ElevenLabs...", "ElevenLabs बोल रहा है...")}
+            {tr("Speaking via Gnani AI...", "Gnani AI बोल रहा है...")}
           </span>
         )}
         {state === "idle" && (

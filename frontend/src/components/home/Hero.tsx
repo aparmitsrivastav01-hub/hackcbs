@@ -88,8 +88,8 @@ export function Hero() {
       icon: Bot,
       title: tr("MedSaathi Voice AI", "मेडसाथी वॉयस AI"),
       body: tr(
-        "Multilingual voice & text consultations in Hindi & English with ElevenLabs speech.",
-        "ग्यारह प्रयोगशालाओं की आवाज़ के साथ हिंदी और अंग्रेजी में परामर्श।"
+        "Multilingual voice & text consultations in Hindi & English with Gnani AI speech.",
+        "Gnani AI की आवाज़ के साथ हिंदी और अंग्रेजी में परामर्श।"
       ),
       to: "/med-saathi",
     },

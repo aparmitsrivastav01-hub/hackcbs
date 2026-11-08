@@ -19,6 +19,9 @@ import type {
   ShopWhatsAppContactRequest,
   ShopWhatsAppContactResponse,
   UserPublic,
+  VoiceLanguage,
+  VoiceSearchResponse,
+  VoiceTranscriptResponse,
 } from "../types";
 export { formatInr, formatSavingsText } from "../i18n/formatters";
 
@@ -174,6 +177,56 @@ export function getMaximumSavings(
   return request<MaximumSavingsResponse>(`/api/medicines/maximum-savings${query}`, { signal });
 }
 
+export function voiceMedicineSearch(audio: Blob, language: VoiceLanguage): Promise<VoiceSearchResponse> {
+  const form = new FormData();
+  form.append("file", audio, "voice-search.wav");
+  form.append("language", language);
+  return request<VoiceSearchResponse>("/api/voice/search", {
+    method: "POST",
+    body: form,
+    timeoutMs: 90000,
+  });
+}
+
+export function transcribeAudio(audio: Blob, language: VoiceLanguage = "auto"): Promise<VoiceTranscriptResponse> {
+  const form = new FormData();
+  form.append("file", audio, "voice-recording.wav");
+  form.append("language", language);
+  return request<VoiceTranscriptResponse>("/api/voice/transcribe", {
+    method: "POST",
+    body: form,
+    timeoutMs: 60000,
+  });
+}
+
+export async function speakWithGnani(text: string, language: string = "hi-IN"): Promise<Blob> {
+  const token = getAccessToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+  const res = await fetch(`${apiBase}/api/voice/speak`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      text: text.slice(0, 2500),
+      language,
+    }),
+  });
+
+  if (!res.ok) {
+    let detail = "Speech generation request failed.";
+    try {
+      const errJson = (await res.json()) as { detail?: string };
+      if (errJson.detail) detail = errJson.detail;
+    } catch {
+      detail = `Server error (${res.status})`;
+    }
+    throw new Error(detail);
+  }
+
+  return res.blob();
+}
+
 // -------------------------------------------------------------
 // Adapters & Helper Transformers
 // -------------------------------------------------------------
@@ -252,7 +305,6 @@ export async function compareMedicine(id: number, signal?: AbortSignal): Promise
 export async function extractPrescription(file: File): Promise<ExtractionResponse> {
   const form = new FormData();
   form.append("file", file);
-
   // Call the real Gemini Vision + OCR extraction endpoint
   try {
     return await request<ExtractionResponse>("/api/prescriptions/extract", {

@@ -5,47 +5,26 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-from app.services.elevenlabs_service import (
-    ElevenLabsAuthenticationError,
-    ElevenLabsConfigurationError,
-    ElevenLabsProviderError,
-    ElevenLabsRateLimitError,
-    ElevenLabsSpeechService,
-    ElevenLabsTimeoutError,
-)
+from app.api.routes.voice import get_voice_service, _map_provider_errors
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/voice/elevenlabs", tags=["ElevenLabs speech"])
+# Compatibility router preserving previous /api/voice/elevenlabs/speak endpoint
+router = APIRouter(prefix="/api/voice/elevenlabs", tags=["Voice speech compatibility"])
 
 
 class SpeakRequest(BaseModel):
     text: str = Field(min_length=1, max_length=2500)
-    language: Literal["en", "hi"] = "en"
-
-
-def _service(request: Request) -> ElevenLabsSpeechService:
-    service = getattr(request.app.state, "elevenlabs_service", None)
-    if service is None:
-        service = ElevenLabsSpeechService()
-        request.app.state.elevenlabs_service = service
-    return service
+    language: Literal["en", "hi", "en-IN", "hi-IN"] = "en"
 
 
 @router.post("/speak")
 async def speak(request: Request, body: SpeakRequest):
+    """
+    Backward-compatibility endpoint for previous ElevenLabs callers.
+    Powered by backend Gnani AI Timbre voice synthesis without external ElevenLabs dependencies.
+    """
     try:
-        audio = await _service(request).synthesize(body.text, body.language)
-    except ElevenLabsConfigurationError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except ElevenLabsAuthenticationError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    except ElevenLabsRateLimitError as exc:
-        raise HTTPException(status_code=429, detail=str(exc)) from exc
-    except ElevenLabsTimeoutError as exc:
-        raise HTTPException(status_code=504, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    except ElevenLabsProviderError as exc:
-        logger.warning("ElevenLabs speech request failed")
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        audio = await get_voice_service(request).speak(body.text, body.language)
+    except Exception as exc:
+        raise _map_provider_errors(exc) from exc
     return Response(content=audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})

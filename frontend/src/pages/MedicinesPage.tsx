@@ -28,7 +28,7 @@ import { useCart } from "../context/CartContext";
 import { Skeleton } from "../components/ui/Skeleton";
 import { useLanguage } from "../i18n/LanguageContext";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { useElevenLabsTTS } from "../hooks/useElevenLabsTTS";
+import { useGnaniTTS } from "../hooks/useGnaniTTS";
 import type { MaximumSavingsResponse, MedicineResponse } from "../types";
 
 export function getMedicineSpeechText(med: MedicineResponse, locale: "en" | "hi"): string {
@@ -92,7 +92,7 @@ export function MedicinesPage() {
 
   // Voice search & TTS hooks
   const speechRecognition = useSpeechRecognition();
-  const tts = useElevenLabsTTS();
+  const tts = useGnaniTTS();
 
   function handleToggleVoiceSearch() {
     if (speechRecognition.isListening) {

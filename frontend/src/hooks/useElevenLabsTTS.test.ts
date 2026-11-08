@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useGnaniTTS } from "./useGnaniTTS";
 import { useElevenLabsTTS } from "./useElevenLabsTTS";
 
 class MockAudio {
@@ -21,7 +22,7 @@ class MockAudio {
   removeAttribute = vi.fn();
 }
 
-describe("useElevenLabsTTS hook", () => {
+describe("useGnaniTTS hook", () => {
   let mockFetch: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -30,7 +31,7 @@ describe("useElevenLabsTTS hook", () => {
     vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
 
     mockFetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (url: any) => {
-      if (url === "/api/voice/elevenlabs/speak") {
+      if (url === "/api/voice/speak" || url === "/api/voice/elevenlabs/speak") {
         return new Response(new Blob(["mock-mp3-bytes"], { type: "audio/mpeg" }), {
           status: 200,
           headers: { "Content-Type": "audio/mpeg" },
@@ -45,15 +46,15 @@ describe("useElevenLabsTTS hook", () => {
     vi.restoreAllMocks();
   });
 
-  it("calls /api/voice/elevenlabs/speak with language and text and starts playback", async () => {
-    const { result } = renderHook(() => useElevenLabsTTS());
+  it("calls /api/voice/speak with language and text and starts playback", async () => {
+    const { result } = renderHook(() => useGnaniTTS());
 
     await act(async () => {
       await result.current.speak("msg-1", "Paracetamol 500 mg", "en");
     });
 
     expect(mockFetch).toHaveBeenCalledWith(
-      "/api/voice/elevenlabs/speak",
+      "/api/voice/speak",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ text: "Paracetamol 500 mg", language: "en" }),
@@ -64,14 +65,14 @@ describe("useElevenLabsTTS hook", () => {
   });
 
   it("supports Hindi language TTS requests", async () => {
-    const { result } = renderHook(() => useElevenLabsTTS());
+    const { result } = renderHook(() => useGnaniTTS());
 
     await act(async () => {
       await result.current.speak("msg-hi", "पैरासिटामोल 500 एमजी", "hi");
     });
 
     expect(mockFetch).toHaveBeenCalledWith(
-      "/api/voice/elevenlabs/speak",
+      "/api/voice/speak",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ text: "पैरासिटामोल 500 एमजी", language: "hi" }),
@@ -81,7 +82,7 @@ describe("useElevenLabsTTS hook", () => {
   });
 
   it("stops playback when stop() is called or when same ID is toggled", async () => {
-    const { result } = renderHook(() => useElevenLabsTTS());
+    const { result } = renderHook(() => useGnaniTTS());
 
     await act(async () => {
       await result.current.speak("msg-1", "Paracetamol 500 mg", "en");
@@ -97,7 +98,7 @@ describe("useElevenLabsTTS hook", () => {
   });
 
   it("prevents overlapping audio: starting a new item stops previous playback", async () => {
-    const { result } = renderHook(() => useElevenLabsTTS());
+    const { result } = renderHook(() => useGnaniTTS());
 
     await act(async () => {
       await result.current.speak("item-1", "First item", "en");
@@ -113,19 +114,27 @@ describe("useElevenLabsTTS hook", () => {
 
   it("handles backend API failures gracefully with error state", async () => {
     mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify({ detail: "ElevenLabs rate limit reached" }), {
+      new Response(JSON.stringify({ detail: "Gnani rate limit reached" }), {
         status: 429,
         headers: { "Content-Type": "application/json" },
       })
     );
 
-    const { result } = renderHook(() => useElevenLabsTTS());
+    const { result } = renderHook(() => useGnaniTTS());
 
     await act(async () => {
       await result.current.speak("fail-1", "Will fail", "en");
     });
 
     expect(result.current.isPlaying).toBe(false);
-    expect(result.current.error).toBe("ElevenLabs rate limit reached");
+    expect(result.current.error).toBe("Gnani rate limit reached");
+  });
+
+  it("provides useElevenLabsTTS as a functional backward compatibility alias", async () => {
+    const { result } = renderHook(() => useElevenLabsTTS());
+    await act(async () => {
+      await result.current.speak("alias-1", "Alias test", "en");
+    });
+    expect(result.current.isPlaying).toBe(true);
   });
 });

@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 from typing import Protocol
 
 import pymupdf
@@ -99,6 +100,15 @@ def extract_document_text(data: bytes, mime_type: str) -> str:
     return ""
 
 
+def _safe_provider_error(exc: Exception, api_key: str | None) -> str:
+    detail = str(exc)
+    if api_key:
+        detail = detail.replace(api_key, "[REDACTED]")
+    detail = re.sub(r"\bAIza[A-Za-z0-9_-]+\b", "[REDACTED]", detail)
+    detail = re.sub(r"\bAQ\.[A-Za-z0-9._-]+", "[REDACTED]", detail)
+    return detail[:500]
+
+
 class GeminiExtractionProvider:
     # Model fallback order: User config -> 3.5-flash-lite -> 3.5-flash -> 3.8-flash
     FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
@@ -121,6 +131,10 @@ class GeminiExtractionProvider:
         except ExtractionProviderError:
             raise
         except Exception as exc:
+            logger.error(
+                "Gemini Vision request failed (model=%s, mime_type=%s, error_type=%s): %s",
+                self.model, mime_type, type(exc).__name__, _safe_provider_error(exc, self.api_key),
+            )
             raise ExtractionProviderError("Prescription extraction provider failed") from exc
 
     def _generate(self, data: bytes, mime_type: str, ocr_context: str | None = None) -> ExtractionResult:
@@ -177,4 +191,8 @@ class GeminiExtractionProvider:
 
             raise ValueError("All extraction model attempts failed")
         except Exception as exc:
+            logger.error(
+                "Gemini Vision API call failed (model=%s, mime_type=%s, error_type=%s): %s",
+                self.model, mime_type, type(exc).__name__, _safe_provider_error(exc, self.api_key),
+            )
             raise ExtractionProviderError(f"Prescription extraction provider failed: {exc}") from exc

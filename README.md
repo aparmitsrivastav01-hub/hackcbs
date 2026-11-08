@@ -7,7 +7,7 @@
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![YugabyteDB Aeon](https://img.shields.io/badge/Database-YugabyteDB%20Aeon-FF6E42?logo=postgresql&logoColor=white)](https://www.yugabyte.com/)
 [![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini%202.5%20Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
-[![ElevenLabs](https://img.shields.io/badge/Voice-ElevenLabs%20Multilingual%20v2-black?logo=elevenlabs&logoColor=white)](https://elevenlabs.io/)
+[![Gnani AI](https://img.shields.io/badge/Voice-Gnani%20AI%20Prisma%20%26%20Timbre-0066CC)](https://gnani.ai/)
 [![CDSCO NSQ Verified](https://img.shields.io/badge/Safety-CDSCO%20NSQ%20Database-green)](https://cdsco.gov.in/)
 [![Meko Track A](https://img.shields.io/badge/HackCBS%20Track%20A-Meko%20Integrated-8A2BE2)](docs/MEKO_TRACK_A_SUBMISSION.md)
 
@@ -87,7 +87,7 @@
 
 1. **Multimodal Bilingual Voice Agent (MedSaathi / मेडसाथी)**:
    - Voice-first interface allowing users to simply speak in **Hindi or English** to search medicines, ask for price comparisons, find pharmacies, or check batch recalls.
-   - Powered by **Google Gemini 2.5 Flash** for reasoning and **ElevenLabs Multilingual v2** for ultra-natural, empathetic speech synthesis.
+   - Powered by **Google Gemini 2.5 Flash** for reasoning and **Gnani AI Prisma & Timbre** for high-accuracy speech recognition and natural Indian voice synthesis.
 2. **Conservative Clinical Matching Engine**:
    - Prescription extraction avoids dangerous false matches. It normalizes chemical salt compounds, dosage forms (*Tablet, Capsule, Syrup, Inhaler*), and dosage strengths (*500 mg vs 650 mg*).
    - Enforces a mandatory **human confirmation gate** before querying the catalogue. Strength mismatches or unverified substitutions are strictly flagged for review.
@@ -110,7 +110,7 @@
 | **Pricing Philosophy** | **100% Transparent**: Highlights PMBJP Jan Aushadhi & Dava India generic salts (80-90% savings). | **Commercial**: Promotes high-margin proprietary brands and private labels. | No live Indian generic medicine pricing catalogue. |
 | **Data Privacy** | **Zero-Storage Architecture**: Clinical files & prescription images are NEVER stored on cloud disks. | Stores prescriptions, health histories, and diagnostic records in commercial profiling clouds. | Logs and retains user chat queries for model training. |
 | **Safety & Guardrails** | **Deterministic Non-Doctor Engine**: Refuses prescriptions, suggests safe non-medicinal home care, 0ms emergency 108/112 routing. | E-commerce checkout oriented; doctors act via asynchronous tele-consults. | Prone to medical hallucinations, dangerous dosage advice, and delay in emergencies. |
-| **Accessibility** | **Voice-First for Bharat**: Bilingual English + हिंदी with Web Speech input and ElevenLabs voice playback. | Primarily text-based English mobile UI; difficult for elderly or rural citizens. | English-centric text prompt interfaces without localized healthcare workflows. |
+| **Accessibility** | **Voice-First for Bharat**: Bilingual English + हिंदी with Gnani Prisma STT input and Gnani Timbre voice playback. | Primarily text-based English mobile UI; difficult for elderly or rural citizens. | English-centric text prompt interfaces without localized healthcare workflows. |
 | **Chemist Ecosystem** | **Support Local Chemists**: Structured WhatsApp inquiries to local neighborhood stores without predatory middleman fees. | Replaces local chemists with centralized corporate fulfillment warehouses. | No integration with local pharmacy directories or WhatsApp. |
 | **Quality Vigilance** | **CDSCO Batch NSQ Checker**: Integrated government recall notices directly linked to search and camera review. | None: Patients cannot verify whether a dispensed batch is flagged by CDSCO. | None: Lacks real-time CDSCO batch recall awareness. |
 
@@ -130,9 +130,9 @@ MedEasy seamlessly ties together best-in-class developer platforms and enterpris
 │                       │                        │ • Batch & expiry packaging extraction │
 │                       │                        │ • MedSaathi contextual healthcare AI  │
 ├───────────────────────┼────────────────────────┼───────────────────────────────────────┤
-│ ElevenLabs            │ eleven_multilingual_v2 │ • Ultra-realistic speech synthesis    │
-│                       │ Audio REST API         │ • Natural bilingual English/Hindi TTS │
-│                       │                        │ • Real-time per-message voice readouts│
+│ Gnani AI              │ Prisma v3.0 &          │ • Multilingual Indian speech-to-text  │
+│                       │ Timbre v2.5            │ • Natural bilingual English/Hindi TTS │
+│                       │ REST Speech APIs       │ • Real-time per-message voice readouts│
 ├───────────────────────┼────────────────────────┼───────────────────────────────────────┤
 │ YugabyteDB Aeon       │ Distributed SQL (YSQL) │ • Cloud-native multi-region resilience│
 │                       │ Managed Cloud Cluster  │ • Argon2id password authentication    │
@@ -160,7 +160,7 @@ flowchart TD
     subgraph Client["Frontend Client (React 19 + TypeScript + Vite)"]
         UI["User Interface (Tailwind CSS)"]
         VoiceIn["Web Speech Recognition (Bilingual)"]
-        VoiceOut["Audio Stream Player (ElevenLabs)"]
+        VoiceOut["Audio Stream Player (Gnani Timbre)"]
         State["Auth, Cart & Language Context"]
     end
 
@@ -184,7 +184,7 @@ flowchart TD
 
     subgraph AIIntegrations["AI & Speech Infrastructure"]
         Gemini["Google Gemini 2.5 Flash\n(Vision & Reasoning)"]
-        ElevenLabs["ElevenLabs Engine\n(Multilingual v2 Audio)"]
+        GnaniAI["Gnani AI Engine\n(Prisma STT & Timbre TTS)"]
         MekoMCP["Meko MCP Gateway\n(Conversational Memory)"]
         TinyFish["TinyFish Web Agent\n(Chemist WhatsApp Discovery)"]
     end
@@ -217,7 +217,7 @@ flowchart TD
     AuthSvc --> Yugabyte
     Router --> MekoMCP
     CartSvc --> TinyFish
-    Router --> ElevenLabs
+    Router --> GnaniAI
 ```
 
 ---
@@ -226,7 +226,7 @@ flowchart TD
 
 ### 1. High Reliability & Fault Tolerance
 - **Deterministic 0ms Emergency Interception**: Emergency situations bypass LLM reasoning completely. Deterministic regex engines catch cardiovascular, respiratory, stroke, and suicide red flags in 0 milliseconds, delivering immediate 108/112 emergency escalation with zero token cost and zero hallucination risk.
-- **Fail-Open Transient Integrations**: If external services (e.g., Meko MCP or ElevenLabs) experience network latency or provider outages, MedEasy gracefully degrades to localized in-memory operations and standard text display without crashing user flows.
+- **Fail-Open Transient Integrations**: If external services (e.g., Meko MCP or Gnani AI) experience network latency or provider outages, MedEasy gracefully degrades to localized in-memory operations and standard text display without crashing user flows.
 - **Conservative Medicine Matching**: In medicine matching, a false positive is far more dangerous than no match. If dosage strengths (*e.g., 500 mg vs 650 mg*) or delivery forms (*e.g., tablet vs syrup*) differ, the engine refuses automatic matching and marks the record for human pharmacist review.
 - **Automated Test Coverage**: 140+ unit and integration tests covering database transactions, JWT refresh tokens, catalogue indexing, prescription OCR, and CDSCO recall verification.
 
@@ -278,7 +278,7 @@ hackcbs/
 │   │   ├── data/                  # Generic medicines catalogue & CDSCO NSQ dataset
 │   │   ├── db/                    # SQLAlchemy models & YugabyteDB connection pool
 │   │   ├── models/                # Pydantic request/response schemas
-│   │   └── services/              # Gemini OCR, ElevenLabs voice, TinyFish agent, CDSCO matcher
+│   │   └── services/              # Gemini OCR, Gnani voice, TinyFish agent, CDSCO matcher
 │   ├── tests/                     # Comprehensive pytest test suite (140+ tests)
 │   ├── requirements.txt           # Python dependencies
 │   └── README.md                  # Backend technical documentation
@@ -381,9 +381,10 @@ Create a `.env` file in `backend/` with the following variables:
 # Core AI & Speech Providers
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
-ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
-ELEVENLABS_VOICE_ID=your_voice_id_here
-ELEVENLABS_MODEL_ID=eleven_multilingual_v2
+GNANI_API_KEY=your_gnani_api_key_here
+GNANI_ASR_MODEL=prisma-v3.0
+GNANI_TTS_MODEL=timbre-v2.5
+GNANI_VOICE=Pranav
 
 # YugabyteDB Aeon Distributed SQL Database
 # Production YugabyteDB format:
@@ -431,7 +432,8 @@ python -m pytest -v
 - `test_safety.py`: CDSCO NSQ alert lookups, batch number verification.
 - `test_cart_pharmacy.py`: Cart management, duplicate line merging, store discovery.
 - `test_stores_whatsapp.py`: TinyFish WhatsApp extraction, distance calculations.
-- `test_ai_voice.py`: ElevenLabs speech synthesis routes and error fallbacks.
+- `test_ai_voice.py`: Gnani AI speech synthesis routes and error fallbacks.
+- `test_gnani_integration.py`: End-to-end 9-step Gnani Prisma STT and Timbre TTS verification suite.
 
 ### Frontend Quality & Test Suite (Vitest & Oxlint)
 ```bash
@@ -451,7 +453,7 @@ npm test -- --run
 
 ## 👥 Contributors & Acknowledgements
 - **Team MedEasy**: Built with passion for **HackCBS** to democratize healthcare price transparency and safe AI navigation for every Indian citizen.
-- Special thanks to the **Jan Aushadhi (PMBJP)** initiative, **CDSCO**, **Google Gemini**, **ElevenLabs**, **YugabyteDB**, **Meko Data**, and **TinyFish AI**.
+- Special thanks to the **Jan Aushadhi (PMBJP)** initiative, **CDSCO**, **Google Gemini**, **Gnani AI**, **YugabyteDB**, **Meko Data**, and **TinyFish AI**.
 
 ---
 

@@ -81,8 +81,8 @@ export function LandingGuide() {
       icon: Bot,
       color: "purple",
       description: tr(
-        "Voice and text assistant in Hindi & English with ElevenLabs speech. MedSaathi safely recalls your allergies and health context across sessions via Meko memory.",
-        "ग्यारह प्रयोगशालाओं की आवाज़ के साथ हिंदी और अंग्रेजी में AI सहायक। मेडसाथी आपकी एलर्जी और प्राथमिकताओं को सुरक्षित रूप से याद रखता है।"
+        "Voice and text assistant in Hindi & English with Gnani AI speech. MedSaathi safely recalls your allergies and health context across sessions via Meko memory.",
+        "Gnani AI की आवाज़ के साथ हिंदी और अंग्रेजी में AI सहायक। मेडसाथी आपकी एलर्जी और प्राथमिकताओं को सुरक्षित रूप से याद रखता है।"
       ),
       cta: tr("Consult MedSaathi", "मेडसाथी से पूछें"),
       href: "/med-saathi",
@@ -166,8 +166,8 @@ export function LandingGuide() {
       step: "01",
       title: tr("Multilingual AI Consultation", "बहुभाषी एआई परामर्श"),
       desc: tr(
-        "Ask health questions in Hindi or English using voice or text. Powered by LangChain medical orchestration and ElevenLabs voice narration.",
-        "हिंदी या अंग्रेजी में बोलकर या लिखकर सवाल पूछें। ग्यारह प्रयोगशालाओं की आवाज़ से स्वाभाविक संवाद।"
+        "Ask health questions in Hindi or English using voice or text. Powered by LangChain medical orchestration and Gnani AI voice narration.",
+        "हिंदी या अंग्रेजी में बोलकर या लिखकर सवाल पूछें। Gnani AI की आवाज़ से स्वाभाविक संवाद।"
       ),
       icon: Mic,
     },
@@ -269,8 +269,8 @@ export function LandingGuide() {
         "मेडसाथी एआई क्या है और यह मरीज़ों की कैसे सहायता करता है?"
       ),
       a: tr(
-        "MedSaathi is our AI health assistant. It answers questions about medicine uses, common side effects, timing, and generic alternatives in natural Hindi or English. Powered by LangChain and Gemini multimodal intelligence, with natural ElevenLabs voice synthesis for listening to responses.",
-        "मेडसाथी हमारा स्वास्थ्य एआई साथी है। यह दवाइयों के उपयोग, खुराक के समय और जेनेरिक विकल्पों के बारे में सहज हिंदी या अंग्रेजी में जानकारी देता है। इसमें उत्तर सुनने के लिए ElevenLabs आवाज़ तकनीक भी उपलब्ध है।"
+        "MedSaathi is our AI health assistant. It answers questions about medicine uses, common side effects, timing, and generic alternatives in natural Hindi or English. Powered by LangChain and Gemini multimodal intelligence, with natural Gnani AI voice synthesis for listening to responses.",
+        "मेडसाथी हमारा स्वास्थ्य एआई साथी है। यह दवाइयों के उपयोग, खुराक के समय और जेनेरिक विकल्पों के बारे में सहज हिंदी या अंग्रेजी में जानकारी देता है। इसमें उत्तर सुनने के लिए Gnani AI आवाज़ तकनीक भी उपलब्ध है।"
       ),
     },
     {
@@ -296,7 +296,7 @@ export function LandingGuide() {
     {
       q: tr("Can I talk to MedSaathi in Hindi using my voice?", "क्या मैं मेडसाथी से हिंदी में बोलकर बात कर सकता हूँ?"),
       a: tr(
-        "Yes! MedSaathi includes built-in microphone speech recognition in both Hindi and English. It also offers live audio playback using ElevenLabs natural voice so you can listen to healthcare explanations comfortably.",
+        "Yes! MedSaathi includes built-in microphone speech recognition in both Hindi and English. It also offers live audio playback using Gnani AI natural voice so you can listen to healthcare explanations comfortably.",
         "हाँ! मेडसाथी में हिंदी और अंग्रेजी दोनों में वॉयस इनपुट की सुविधा है। आप अपना सवाल बोल सकते हैं और 'उत्तर सुनें' बटन दबाकर उच्च-गुणवत्ता वाली आवाज़ में सुन सकते हैं।"
       ),
     },
@@ -591,7 +591,7 @@ export function LandingGuide() {
                   </h3>
                   <p className="mt-1.5 text-xs sm:text-sm text-slate-500">
                     {tr(
-                      "Multilingual AI health companion with ElevenLabs voice synthesis. Never forgets your allergies and health context across sessions.",
+                      "Multilingual AI health companion with Gnani AI voice synthesis. Never forgets your allergies and health context across sessions.",
                       "आवाज़ और टेक्स्ट से स्वास्थ्य साथी जो आपकी एलर्जी और पुरानी बीमारियों को याद रखता है।"
                     )}
                   </p>
@@ -686,7 +686,7 @@ export function LandingGuide() {
                     <span className="font-black text-purple-700">MedSaathi AI</span>
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-600 bg-white px-2 py-0.5 rounded-full">
                       <Volume2 className="h-3 w-3" />
-                      <span>{tr("ElevenLabs Audio Narration", "ग्यारह प्रयोगशालाओं की आवाज़")}</span>
+                      <span>{tr("Gnani AI Audio Narration", "Gnani AI की आवाज़")}</span>
                     </span>
                   </div>
                   <p>

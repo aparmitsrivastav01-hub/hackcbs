@@ -23,6 +23,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.profile import router as profile_router
 from app.api.routes.privacy import router as privacy_router
 from app.api.routes.memory import router as memory_router
+from app.api.routes.voice import router as voice_router
 from app.core.config import DEFAULT_CSV_PATH, get_cors_origins
 from app.db.base import check_database_health, get_async_engine
 from app.services.medicine_service import MedicineService
@@ -31,7 +32,7 @@ from app.services.cart_service import CartService
 from app.services.pharmacy_service import PharmacyService
 from app.services.cdsco_safety_service import CDSCOSafetyService
 from app.services.gemini_service import GeminiService, TemporaryChatSessions
-from app.services.elevenlabs_service import ElevenLabsSpeechService
+from app.services.voice_service import GnaniVoiceService
 from app.services.meko_service import MekoService
 
 medicine_service = MedicineService()
@@ -48,7 +49,8 @@ async def lifespan(app: FastAPI):
     app.state.batch_extraction_service = BatchExtractionService()
     app.state.gemini_service = GeminiService()
     app.state.ai_chat_sessions = TemporaryChatSessions()
-    app.state.elevenlabs_service = ElevenLabsSpeechService()
+    app.state.voice_service = GnaniVoiceService()
+    app.state.elevenlabs_service = app.state.voice_service
     safety_path = os.getenv("CDSCO_ALERTS_CSV_PATH")
     app.state.safety_service = CDSCOSafetyService(safety_path)
     try:
@@ -65,6 +67,19 @@ async def lifespan(app: FastAPI):
     db_health = await check_database_health()
     if db_health.get("connected"):
         logger.info("YugabyteDB / Accounts database connection verified: %s", db_health.get("status"))
+        try:
+            from app.models.user_models import Base
+            engine = get_async_engine()
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+                if str(engine.url).startswith("sqlite"):
+                    from sqlalchemy import text
+                    res = await conn.execute(text("PRAGMA table_info(users)"))
+                    cols = [row[1] for row in res.fetchall()]
+                    if cols and "role" not in cols:
+                        await conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'patient' NOT NULL"))
+        except Exception as e:
+            logger.warning("Database schema check notice: %s", e)
     else:
         logger.warning("YugabyteDB connection warning: %s", db_health.get("error"))
 
@@ -120,3 +135,4 @@ app.include_router(auth_router)
 app.include_router(profile_router)
 app.include_router(privacy_router)
 app.include_router(memory_router)
+app.include_router(voice_router)

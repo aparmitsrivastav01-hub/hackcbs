@@ -2,6 +2,7 @@ import json
 import logging
 import re
 from typing import Any
+from uuid import uuid4
 
 from app.ai.memory.memory_models import MemoryContext
 from app.ai.memory.meko_memory import MekoMemoryProvider, _result_payload
@@ -229,6 +230,21 @@ class MekoService:
         cleared_conversation = False
 
         if self.is_available and current_consent:
+            if not conversation_id:
+                conversation_id = await self.create_conversation(
+                    session_id=f"medeasy-reset-{uuid4().hex}",
+                    title="MedEasy memory reset",
+                    patient_id=pid,
+                )
+            if not conversation_id:
+                return {
+                    "success": False,
+                    "patient_id": pid,
+                    "consent": current_consent,
+                    "cleared_memories": False,
+                    "cleared_conversation": False,
+                    "message": "Memory reset could not start because Meko did not provide a conversation ID.",
+                }
             try:
                 await self.provider.forget_all(conversation_id=conversation_id)
                 cleared_memories = True
@@ -242,11 +258,18 @@ class MekoService:
                 except Exception as exc:
                     logger.warning("Meko delete_conversation failed during reset: %s", type(exc).__name__)
 
+        reset_succeeded = not current_consent or (
+            self.is_available and cleared_memories and cleared_conversation
+        )
         return {
-            "success": True,
+            "success": reset_succeeded,
             "patient_id": pid,
             "consent": current_consent,  # Consent is NOT silently re-enabled
             "cleared_memories": cleared_memories,
             "cleared_conversation": cleared_conversation,
-            "message": "Conversational memory reset completed successfully.",
+            "message": (
+                "Conversational memory reset completed successfully."
+                if reset_succeeded
+                else "Memory reset could not be confirmed; retry when Meko is available."
+            ),
         }

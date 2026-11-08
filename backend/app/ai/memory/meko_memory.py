@@ -2,6 +2,7 @@ import json
 import logging
 import re
 from typing import Any
+from uuid import uuid4
 
 from app.ai.memory.memory_models import MemoryContext, MemoryContextItem
 from app.ai.memory.memory_provider import MemoryProvider
@@ -195,14 +196,38 @@ class MekoMemoryProvider(MemoryProvider):
         self.client = client
         self.agent_id = agent_id
 
+    async def _conversation_id(self, conversation_id: str | None, title: str) -> str:
+        """Meko's current memory/search tools require a conversation trace ID."""
+        if conversation_id:
+            return str(conversation_id)
+        created = await self.client.call_tool(
+            "conversation_create",
+            {
+                "agent_id": self.agent_id,
+                "session_id": f"medeasy-{uuid4().hex}",
+                "title": title,
+                "metadata": json.dumps({"source": "medeasy", "data_classification": "patient_context_unverified"}),
+            },
+        )
+        payload = _result_payload(created)
+        if isinstance(payload, dict):
+            value = payload.get("id") or payload.get("conversation_id")
+        elif isinstance(payload, list) and payload and isinstance(payload[0], dict):
+            value = payload[0].get("id") or payload[0].get("conversation_id")
+        else:
+            value = None
+        if not value:
+            raise RuntimeError("Meko conversation_create did not return a conversation ID")
+        return str(value)
+
     @property
     def available(self) -> bool:
         return bool(self.client and getattr(self.client, "available", False))
 
     async def recall(self, query: str, conversation_id: str | None = None) -> MemoryContext:
+        conversation_id = await self._conversation_id(conversation_id, "MedEasy context retrieval")
         args: dict[str, Any] = {"query": query, "agent_id": self.agent_id, "limit": 5}
-        if conversation_id:
-            args["conversation_id"] = str(conversation_id)
+        args["conversation_id"] = conversation_id
 
         items: list[MemoryContextItem] = []
         try:
@@ -265,37 +290,34 @@ class MekoMemoryProvider(MemoryProvider):
         return await self.recall(query, conversation_id=conversation_id)
 
     async def remember(self, text: str, conversation_id: str | None = None) -> Any:
+        conversation_id = await self._conversation_id(conversation_id, "MedEasy preference memory")
         args: dict[str, Any] = {
             "text": text,
+            "conversation_id": conversation_id,
             "agent_id": self.agent_id,
             "metadata": json.dumps({
                 "provenance": "patient_reported",
                 "verification": "unverified",
             }),
         }
-        if conversation_id:
-            args["conversation_id"] = str(conversation_id)
         result = await self.client.call_tool("memory_add", args)
         return _result_payload(result)
 
     async def update(self, memory_id: str, text: str, conversation_id: str | None = None) -> Any:
-        args: dict[str, Any] = {"memory_id": memory_id, "text": text, "agent_id": self.agent_id}
-        if conversation_id:
-            args["conversation_id"] = str(conversation_id)
+        conversation_id = await self._conversation_id(conversation_id, "MedEasy memory correction")
+        args: dict[str, Any] = {"memory_id": memory_id, "text": text, "agent_id": self.agent_id, "conversation_id": conversation_id}
         result = await self.client.call_tool("memory_update", args)
         return _result_payload(result)
 
     async def forget(self, memory_id: str, conversation_id: str | None = None) -> Any:
-        args: dict[str, Any] = {"memory_id": memory_id, "agent_id": self.agent_id}
-        if conversation_id:
-            args["conversation_id"] = str(conversation_id)
+        conversation_id = await self._conversation_id(conversation_id, "MedEasy memory deletion")
+        args: dict[str, Any] = {"memory_id": memory_id, "agent_id": self.agent_id, "conversation_id": conversation_id}
         result = await self.client.call_tool("memory_delete_by_id", args)
         return _result_payload(result)
 
     async def forget_all(self, conversation_id: str | None = None) -> Any:
-        args: dict[str, Any] = {"agent_id": self.agent_id}
-        if conversation_id:
-            args["conversation_id"] = str(conversation_id)
+        conversation_id = await self._conversation_id(conversation_id, "MedEasy memory reset")
+        args: dict[str, Any] = {"agent_id": self.agent_id, "conversation_id": conversation_id}
         result = await self.client.call_tool("memory_delete_all", args)
         return _result_payload(result)
 

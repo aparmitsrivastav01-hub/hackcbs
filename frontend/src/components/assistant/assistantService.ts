@@ -187,7 +187,7 @@ export class AssistantService {
         const token = getAccessToken();
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (token) headers["Authorization"] = `Bearer ${token}`;
-        const response = await fetch(`${API}/api/voice/elevenlabs/speak`, {
+        const response = await fetch(`${API}/api/voice/speak`, {
           method: "POST",
           headers,
           body: JSON.stringify({ text: cleanText.slice(0, 2500), language: locale }),
@@ -227,7 +227,7 @@ export class AssistantService {
             this.currentAudioUrl = null;
           }
           this.finishPlayback = null;
-          reject(new Error("ElevenLabs audio could not be played by this browser."));
+          reject(new Error("Gnani audio could not be played by this browser."));
         };
         void audio.play().then(() => onSpeaking?.()).catch(reject);
       });

@@ -52,7 +52,7 @@ describe("MedSaathiPage — ElevenLabs TTS Integration", () => {
       if (urlStr === "/api/memory/consent") {
         return new Response(JSON.stringify({ consent: false }), { status: 200 });
       }
-      if (urlStr === "/api/voice/elevenlabs/speak") {
+      if (urlStr === "/api/voice/speak" || urlStr === "/api/voice/elevenlabs/speak") {
         const body = JSON.parse((init?.body as string) || "{}");
         return new Response(new Blob([`audio-for-${body.language}`], { type: "audio/mpeg" }), {
           status: 200,
@@ -82,7 +82,7 @@ describe("MedSaathiPage — ElevenLabs TTS Integration", () => {
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
-        "/api/voice/elevenlabs/speak",
+        "/api/voice/speak",
         expect.objectContaining({
           method: "POST",
           body: expect.stringContaining('"language":"en"'),
@@ -110,7 +110,7 @@ describe("MedSaathiPage — ElevenLabs TTS Integration", () => {
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
-        "/api/voice/elevenlabs/speak",
+        "/api/voice/speak",
         expect.objectContaining({
           method: "POST",
           body: expect.stringContaining('"language":"hi"'),
@@ -140,7 +140,7 @@ describe("MedSaathiPage — ElevenLabs TTS Integration", () => {
 
   it("6. API failure shows fallback error banner", async () => {
     mockFetch.mockImplementation(async (url: any) => {
-      if (String(url) === "/api/voice/elevenlabs/speak") {
+      if (String(url) === "/api/voice/speak" || String(url) === "/api/voice/elevenlabs/speak") {
         return new Response(JSON.stringify({ detail: "Voice synthesis service unavailable" }), {
           status: 503,
           headers: { "Content-Type": "application/json" },
